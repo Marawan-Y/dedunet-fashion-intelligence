@@ -1,0 +1,8 @@
+/* Operations portal — inherits storefront tokens, widens the shell for tables. */
+main { max-width: 1240px; }
+.inline { display: flex; gap: 0.4rem; align-items: center; flex-wrap: wrap; }
+.inline input[type="number"] { width: 5.5rem; }
+.inline input[type="text"] { width: 10rem; }
+.inline input { padding: 0.4rem 0.5rem; border: 1px solid var(--line); border-radius: var(--radius); font: inherit; }
+.table td { vertical-align: middle; }
+.table td button { margin-right: 0.35rem; }

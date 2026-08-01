@@ -33,7 +33,52 @@ jobs:
 
       - name: Backend test suite
         working-directory: backend
+        env:
+          DATABASE_URL: "sqlite+pysqlite:///:memory:"
+          APP_ENV: test
         run: python -m pytest -q -p no:cacheprovider
+
+      - name: Migrations must apply and reverse
+        working-directory: backend
+        env:
+          DATABASE_URL: "sqlite+pysqlite:///ci_migration_probe.sqlite3"
+        run: |
+          python -m alembic upgrade head
+          python -m alembic downgrade base
+          python -m alembic upgrade head
+          rm -f ci_migration_probe.sqlite3
+
+      - name: Bootstrap must succeed from a clean database and be idempotent
+        working-directory: backend
+        env:
+          DATABASE_URL: "sqlite+pysqlite:///ci_bootstrap.sqlite3"
+        run: |
+          python manage.py bootstrap
+          # A second seed must create nothing; non-idempotent seeding duplicates catalogue rows.
+          python manage.py seed | tee second-seed.json
+          python - <<'PY'
+          import json
+          created = json.load(open("second-seed.json"))["seeded"]
+          assert all(v == 0 for v in created.values()), f"seed is not idempotent: {created}"
+          print("OK: seed is idempotent")
+          PY
+          rm -f ci_bootstrap.sqlite3 second-seed.json
+
+      - name: Exported API contract must match the application
+        working-directory: backend
+        run: |
+          python manage.py export-openapi
+          # A drifted contract is worse than none: consumers integrate against a lie.
+          git diff --exit-code ../docs/api/openapi.json \
+            || { echo "FAIL: docs/api/openapi.json is stale; run 'python manage.py export-openapi' and commit"; exit 1; }
+
+      - name: No secrets committed
+        run: |
+          if git log --all --name-only --format="" | grep -qE '(^|/)\.env$'; then
+            echo "FAIL: a .env file exists in git history"
+            exit 1
+          fi
+          echo "OK: no .env in history"
 
       - name: Validate product master fixture
         run: python scripts/validate_product_data.py
