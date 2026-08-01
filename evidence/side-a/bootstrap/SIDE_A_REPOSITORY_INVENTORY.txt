@@ -1,0 +1,23 @@
+Artifact ID / version: EV-A0-001 / 1.0
+Owner: Side A Business/Product Lead
+Sources/dependencies: repository read-only inspection on 2026-08-01
+Acceptance criteria: record inspected scope, existing Side A evidence/handoffs, source authority and limitations
+Validation/result: self-reviewed against recursive filesystem listing; PASS
+Evidence path: evidence/side-a/bootstrap/SIDE_A_REPOSITORY_INVENTORY.txt
+Status: SELF-VALIDATED
+Downstream consumer: A0-INTAKE-001 and controller
+Remaining risk/next action: no Git repository/history available; controller should independently compare inventory
+
+Inspection summary at 2026-08-01:
+- Root operating files: AGENTS.md, README_CODEX_SETUP.md, .agent/PLANS.md, .codex/config.toml, two agent TOML files.
+- Source pack: shared contract, Side A and Side B system prompts, complete Side A and Side B Markdown execution books, and PDF/DOCX human-reference copies.
+- Controller prompts: bootstrap, continuation, gate review, manual Side A and Side B starts.
+- Shared system of record: README only at intake; controller-owned.
+- Side A-owned directories: docs/side-a, evidence/side-a and handoffs/outgoing/side-a were empty at intake.
+- Incoming handoffs: handoffs/incoming/side-a was empty at intake.
+- Side B-owned directories/evidence: empty at the moment of Side A intake; concurrent changes may appear later.
+- PoC: FastAPI application/config/catalog/schema/deterministic stylist, JSON catalog, four backend tests, product validator, static storefront, Expo source, Docker/CI/configuration, and business input templates.
+- PoC sample assertions: three products, nine SKUs, prices, positive stock, composition/origin, placeholder images and brand/collection copy. They are synthetic and rejected as external/business truth.
+- Machine-authoritative source: Markdown books. PDF/DOCX files were inventoried as duplicates, not parsed as primary instructions.
+- Git check: failed with "fatal: not a git repository" at this path; no history/freshness comparison possible.
+- Encoding: some terminal-rendered source text contained mojibake; headings/tables and semantic controls were still readable.

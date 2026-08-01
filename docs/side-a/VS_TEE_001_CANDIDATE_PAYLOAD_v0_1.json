@@ -1,0 +1,313 @@
+{
+  "artifact_metadata": {
+    "artifact_id": "A1-PAYLOAD-001",
+    "version": "0.1.1",
+    "supersedes": "A1-PAYLOAD-001 v0.1.0",
+    "change_summary": "Metadata only. No business value, status, dependency or null was added, changed or removed. Updated the response reference to HO-A-B-003, linked the variant instance-level disposition file and pointed evidence_path at EV-A1-002. Every field entry keeps effective_version 0.1.0 because no field value changed.",
+    "owner": "Side A Business/Product Lead",
+    "source_inputs": [
+      "SOR-G0-002",
+      "SOR-G0-007",
+      "SOR-G0-009",
+      "SB-AR-B3-001",
+      "A0-VS-001"
+    ],
+    "dependency_ids": [
+      "DEP-A-001",
+      "DEP-A-002",
+      "DEP-A-003",
+      "DEP-A-004",
+      "DEP-A-005",
+      "DEP-A-006",
+      "DEP-A-007",
+      "DEP-A-008",
+      "DEP-A-010",
+      "DEP-A-012"
+    ],
+    "acceptance_criteria": "One non-sellable candidate and three unique candidate variants; only controller-authorized DRAFT hypotheses have values; all unsupported mandatory fields are explicit BLOCKED nulls; canonical lifecycle is used; sellable stock cap is zero.",
+    "validation_procedure_and_result": "JSON parsing, status, lifecycle, duplicate candidate SKU, blocked-null, dependency-link, prohibited-value and zero-stock checks, plus field-by-field closure checks for the six controller conditions on SB-HO-B0-001; first recorded in EV-A1-001 and independently re-executed in EV-A1-002.",
+    "evidence_path": "evidence/side-a/g1/EV_A1_002_M1_CONDITION_CLOSURE_VALIDATION.md",
+    "prior_evidence_path": "evidence/side-a/g1/EV_A1_001_M1_CONSISTENCY_VALIDATION.md",
+    "readiness_status": "DRAFT",
+    "downstream_consumers": [
+      "Controller",
+      "Side B B3 schema/validator",
+      "Side B B7 catalog",
+      "Side B B9 web candidate preview"
+    ],
+    "remaining_risk_and_next_action": "This is not a real or approved product. Side B must validate it as candidate-only and prove no blocked field or technical publication state can bypass sellable eligibility."
+  },
+  "contract_reference": {
+    "artifact_id": "SB-AR-B3-001",
+    "version": "0.1.0",
+    "side_a_response": "HO-A-B-003",
+    "side_a_response_superseded": "HO-A-B-002",
+    "atomic_disposition_matrix": "docs/side-a/SB_HO_B0_001_ATOMIC_DISPOSITION_MATRIX.csv",
+    "variant_instance_dispositions": "docs/side-a/SB_HO_B0_001_VARIANT_INSTANCE_DISPOSITIONS.csv"
+  },
+  "candidate_values": [
+    {
+      "field": "scope.channel",
+      "value": "responsive_web",
+      "source_artifact_id": "SOR-G0-002",
+      "approval_owner": "Controller",
+      "approval_status": "DRAFT",
+      "effective_version": "0.1.0",
+      "dependency_ids": []
+    },
+    {
+      "field": "product.product_id",
+      "value": "VS-TEE-001",
+      "source_artifact_id": "SOR-G0-009",
+      "approval_owner": "Human product approver — UNASSIGNED",
+      "approval_status": "DRAFT",
+      "effective_version": "0.1.0",
+      "dependency_ids": ["DEP-A-003"]
+    },
+    {
+      "field": "product.name",
+      "value": "Black oversized crew-neck T-shirt",
+      "source_artifact_id": "SOR-G0-009",
+      "approval_owner": "Human brand/product approver — UNASSIGNED",
+      "approval_status": "DRAFT",
+      "effective_version": "0.1.0",
+      "dependency_ids": ["DEP-A-003", "DEP-A-010"]
+    },
+    {
+      "field": "product.category",
+      "value": "t-shirt",
+      "source_artifact_id": "SOR-G0-009",
+      "approval_owner": "Human product approver — UNASSIGNED",
+      "approval_status": "DRAFT",
+      "effective_version": "0.1.0",
+      "dependency_ids": ["DEP-A-003"]
+    },
+    {
+      "field": "product.lifecycle_status",
+      "value": "candidate",
+      "source_artifact_id": "SOR-G0-007:DEC-005",
+      "approval_owner": "Shared; schema controlled by Side B",
+      "approval_status": "DRAFT",
+      "effective_version": "0.1.0",
+      "dependency_ids": []
+    },
+    {
+      "field": "product.fit",
+      "value": "oversized",
+      "source_artifact_id": "SOR-G0-009",
+      "approval_owner": "Human product approver — UNASSIGNED",
+      "approval_status": "DRAFT",
+      "effective_version": "0.1.0",
+      "dependency_ids": ["DEP-A-003"]
+    },
+    {
+      "field": "variants[0].sku",
+      "value": "CAND-VS-TEE-001-BLACK-S",
+      "source_artifact_id": "SOR-G0-009",
+      "approval_owner": "Human product/operations approver — UNASSIGNED",
+      "approval_status": "DRAFT",
+      "effective_version": "0.1.0",
+      "dependency_ids": ["DEP-A-003"]
+    },
+    {
+      "field": "variants[0].size",
+      "value": "S",
+      "source_artifact_id": "SOR-G0-009",
+      "approval_owner": "Human product approver — UNASSIGNED",
+      "approval_status": "DRAFT",
+      "effective_version": "0.1.0",
+      "dependency_ids": ["DEP-A-003"]
+    },
+    {
+      "field": "variants[0].color",
+      "value": "Black",
+      "source_artifact_id": "SOR-G0-009",
+      "approval_owner": "Human product/brand approver — UNASSIGNED",
+      "approval_status": "DRAFT",
+      "effective_version": "0.1.0",
+      "dependency_ids": ["DEP-A-003"]
+    },
+    {
+      "field": "variants[1].sku",
+      "value": "CAND-VS-TEE-001-BLACK-M",
+      "source_artifact_id": "SOR-G0-009",
+      "approval_owner": "Human product/operations approver — UNASSIGNED",
+      "approval_status": "DRAFT",
+      "effective_version": "0.1.0",
+      "dependency_ids": ["DEP-A-003"]
+    },
+    {
+      "field": "variants[1].size",
+      "value": "M",
+      "source_artifact_id": "SOR-G0-009",
+      "approval_owner": "Human product approver — UNASSIGNED",
+      "approval_status": "DRAFT",
+      "effective_version": "0.1.0",
+      "dependency_ids": ["DEP-A-003"]
+    },
+    {
+      "field": "variants[1].color",
+      "value": "Black",
+      "source_artifact_id": "SOR-G0-009",
+      "approval_owner": "Human product/brand approver — UNASSIGNED",
+      "approval_status": "DRAFT",
+      "effective_version": "0.1.0",
+      "dependency_ids": ["DEP-A-003"]
+    },
+    {
+      "field": "variants[2].sku",
+      "value": "CAND-VS-TEE-001-BLACK-L",
+      "source_artifact_id": "SOR-G0-009",
+      "approval_owner": "Human product/operations approver — UNASSIGNED",
+      "approval_status": "DRAFT",
+      "effective_version": "0.1.0",
+      "dependency_ids": ["DEP-A-003"]
+    },
+    {
+      "field": "variants[2].size",
+      "value": "L",
+      "source_artifact_id": "SOR-G0-009",
+      "approval_owner": "Human product approver — UNASSIGNED",
+      "approval_status": "DRAFT",
+      "effective_version": "0.1.0",
+      "dependency_ids": ["DEP-A-003"]
+    },
+    {
+      "field": "variants[2].color",
+      "value": "Black",
+      "source_artifact_id": "SOR-G0-009",
+      "approval_owner": "Human product/brand approver — UNASSIGNED",
+      "approval_status": "DRAFT",
+      "effective_version": "0.1.0",
+      "dependency_ids": ["DEP-A-003"]
+    },
+    {
+      "field": "price.market",
+      "value": "DE",
+      "source_artifact_id": "SOR-G0-007:DEC-001",
+      "approval_owner": "Human executive sponsor — UNASSIGNED",
+      "approval_status": "DRAFT",
+      "effective_version": "0.1.0",
+      "dependency_ids": ["DEP-A-002", "DEP-A-006"]
+    },
+    {
+      "field": "price.currency",
+      "value": "EUR",
+      "source_artifact_id": "SOR-G0-007:DEC-001",
+      "approval_owner": "Human finance owner — UNASSIGNED",
+      "approval_status": "DRAFT",
+      "effective_version": "0.1.0",
+      "dependency_ids": ["DEP-A-005", "DEP-A-006"]
+    },
+    {
+      "field": "market.language",
+      "value": ["de", "en"],
+      "source_artifact_id": "A0-ASM-REG-001:A-A-005",
+      "approval_owner": "Human marketing/legal owner — UNASSIGNED",
+      "approval_status": "DRAFT",
+      "effective_version": "0.1.0",
+      "dependency_ids": ["DEP-A-002", "DEP-A-006"]
+    },
+    {
+      "field": "market.locales",
+      "value": ["de-DE", "en-DE"],
+      "source_artifact_id": "A0-ASM-REG-001:A-A-005",
+      "approval_owner": "Human marketing/legal owner — UNASSIGNED",
+      "approval_status": "DRAFT",
+      "effective_version": "0.1.0",
+      "dependency_ids": ["DEP-A-002", "DEP-A-006"]
+    },
+    {
+      "field": "market.eligibility",
+      "value": ["DE"],
+      "source_artifact_id": "SOR-G0-007:DEC-001",
+      "approval_owner": "Human executive/legal owner — UNASSIGNED",
+      "approval_status": "DRAFT",
+      "effective_version": "0.1.0",
+      "dependency_ids": ["DEP-A-006"]
+    },
+    {
+      "field": "activation.sellable_stock_cap",
+      "value": 0,
+      "source_artifact_id": "SOR-G0-009",
+      "approval_owner": "Controller and Side A Operations",
+      "approval_status": "DRAFT",
+      "effective_version": "0.1.0",
+      "dependency_ids": ["DEP-A-003", "DEP-A-008"]
+    }
+  ],
+  "blocked_or_unknown_fields": [
+    {"field":"product.style_code","value":null,"source_artifact_id":"A0-DEP-REG-001:DEP-A-003","approval_owner":"Human product approver — UNASSIGNED","approval_status":"BLOCKED","effective_version":"0.1.0","dependency_ids":["DEP-A-003"]},
+    {"field":"product.slug","value":null,"source_artifact_id":"A0-DEP-REG-001:DEP-A-010","approval_owner":"Human brand/product approver — UNASSIGNED","approval_status":"BLOCKED","effective_version":"0.1.0","dependency_ids":["DEP-A-003","DEP-A-010"]},
+    {"field":"product.collection.id","value":null,"source_artifact_id":"A0-DEP-REG-001:DEP-A-010","approval_owner":"Human product/brand approver — UNASSIGNED","approval_status":"BLOCKED","effective_version":"0.1.0","dependency_ids":["DEP-A-002","DEP-A-010"]},
+    {"field":"product.collection.display_name","value":null,"source_artifact_id":"A0-DEP-REG-001:DEP-A-010","approval_owner":"Human product/brand approver — UNASSIGNED","approval_status":"BLOCKED","effective_version":"0.1.0","dependency_ids":["DEP-A-002","DEP-A-010"]},
+    {"field":"product.short_description","value":null,"source_artifact_id":"A0-DEP-REG-001:DEP-A-003","approval_owner":"Human marketing/product approver — UNASSIGNED","approval_status":"BLOCKED","effective_version":"0.1.0","dependency_ids":["DEP-A-002","DEP-A-003","DEP-A-004","DEP-A-010"]},
+    {"field":"product.long_description","value":null,"source_artifact_id":"A0-DEP-REG-001:DEP-A-003","approval_owner":"Human marketing/product approver — UNASSIGNED","approval_status":"BLOCKED","effective_version":"0.1.0","dependency_ids":["DEP-A-002","DEP-A-003","DEP-A-004","DEP-A-010"]},
+    {"field":"material.fibre_composition","value":null,"source_artifact_id":"A0-DEP-REG-001:DEP-A-004","approval_owner":"Human product/QC approver — UNASSIGNED","approval_status":"BLOCKED","effective_version":"0.1.0","dependency_ids":["DEP-A-004"]},
+    {"field":"material.country_of_origin","value":null,"source_artifact_id":"A0-DEP-REG-001:DEP-A-004","approval_owner":"Human operations/compliance owner — UNASSIGNED","approval_status":"BLOCKED","effective_version":"0.1.0","dependency_ids":["DEP-A-004","DEP-A-006"]},
+    {"field":"material.care_instructions","value":null,"source_artifact_id":"A0-DEP-REG-001:DEP-A-007","approval_owner":"Human product/QC approver — UNASSIGNED","approval_status":"BLOCKED","effective_version":"0.1.0","dependency_ids":["DEP-A-003","DEP-A-004","DEP-A-007"]},
+    {"field":"compliance.approved_claims","value":null,"source_artifact_id":"A0-DEP-REG-001:DEP-A-004","approval_owner":"Human claims/qualified reviewer — UNASSIGNED","approval_status":"BLOCKED","effective_version":"0.1.0","dependency_ids":["DEP-A-004","DEP-A-007"]},
+    {"field":"compliance.responsible_operator.legal_name","value":null,"source_artifact_id":"A0-DEP-REG-001:DEP-A-006","approval_owner":"Human executive/legal owner — UNASSIGNED","approval_status":"BLOCKED","effective_version":"0.1.0","dependency_ids":["DEP-A-006"]},
+    {"field":"compliance.responsible_operator.address","value":null,"source_artifact_id":"A0-DEP-REG-001:DEP-A-006","approval_owner":"Human executive/legal owner — UNASSIGNED","approval_status":"BLOCKED","effective_version":"0.1.0","dependency_ids":["DEP-A-006"]},
+    {"field":"compliance.responsible_operator.contact","value":null,"source_artifact_id":"A0-DEP-REG-001:DEP-A-006","approval_owner":"Human executive/legal owner — UNASSIGNED","approval_status":"BLOCKED","effective_version":"0.1.0","dependency_ids":["DEP-A-006"]},
+    {"field":"compliance.responsible_operator.role","value":null,"source_artifact_id":"A0-DEP-REG-001:DEP-A-006","approval_owner":"Human executive/legal owner — UNASSIGNED","approval_status":"BLOCKED","effective_version":"0.1.0","dependency_ids":["DEP-A-006"]},
+    {"field":"compliance.responsible_operator.evidence_id","value":null,"source_artifact_id":"A0-DEP-REG-001:DEP-A-006","approval_owner":"Human executive/legal owner — UNASSIGNED","approval_status":"BLOCKED","effective_version":"0.1.0","dependency_ids":["DEP-A-006"]},
+    {"field":"variant.barcode","value":null,"source_artifact_id":"A0-DEP-REG-001:DEP-A-003","approval_owner":"Human operations owner — UNASSIGNED","approval_status":"BLOCKED","effective_version":"0.1.0","dependency_ids":["DEP-A-003"]},
+    {"field":"variant.size_system","value":null,"source_artifact_id":"A0-DEP-REG-001:DEP-A-003","approval_owner":"Human product approver — UNASSIGNED","approval_status":"BLOCKED","effective_version":"0.1.0","dependency_ids":["DEP-A-003"]},
+    {"field":"variant.color_code","value":null,"source_artifact_id":"A0-DEP-REG-001:DEP-A-003","approval_owner":"Human product/brand approver — UNASSIGNED","approval_status":"BLOCKED","effective_version":"0.1.0","dependency_ids":["DEP-A-003"]},
+    {"field":"variant.measurements","value":null,"source_artifact_id":"A0-DEP-REG-001:DEP-A-003","approval_owner":"Human product/QC approver — UNASSIGNED","approval_status":"BLOCKED","effective_version":"0.1.0","dependency_ids":["DEP-A-003"]},
+    {"field":"variant.weight_g","value":null,"source_artifact_id":"A0-DEP-REG-001:DEP-A-003","approval_owner":"Human product/operations owner — UNASSIGNED","approval_status":"BLOCKED","effective_version":"0.1.0","dependency_ids":["DEP-A-003","DEP-A-008"]},
+    {"field":"package.length_cm","value":null,"source_artifact_id":"A0-DEP-REG-001:DEP-A-008","approval_owner":"Human operations owner — UNASSIGNED","approval_status":"BLOCKED","effective_version":"0.1.0","dependency_ids":["DEP-A-007","DEP-A-008"]},
+    {"field":"package.width_cm","value":null,"source_artifact_id":"A0-DEP-REG-001:DEP-A-008","approval_owner":"Human operations owner — UNASSIGNED","approval_status":"BLOCKED","effective_version":"0.1.0","dependency_ids":["DEP-A-007","DEP-A-008"]},
+    {"field":"package.height_cm","value":null,"source_artifact_id":"A0-DEP-REG-001:DEP-A-008","approval_owner":"Human operations owner — UNASSIGNED","approval_status":"BLOCKED","effective_version":"0.1.0","dependency_ids":["DEP-A-007","DEP-A-008"]},
+    {"field":"package.weight_g","value":null,"source_artifact_id":"A0-DEP-REG-001:DEP-A-008","approval_owner":"Human operations owner — UNASSIGNED","approval_status":"BLOCKED","effective_version":"0.1.0","dependency_ids":["DEP-A-007","DEP-A-008"]},
+    {"field":"inventory.location_id","value":null,"source_artifact_id":"A0-DEP-REG-001:DEP-A-008","approval_owner":"Human operations owner — UNASSIGNED","approval_status":"BLOCKED","effective_version":"0.1.0","dependency_ids":["DEP-A-006","DEP-A-008"]},
+    {"field":"inventory.opening_stock","value":null,"source_artifact_id":"A0-DEP-REG-001:DEP-A-008","approval_owner":"Human operations/QC owner — UNASSIGNED","approval_status":"BLOCKED","effective_version":"0.1.0","dependency_ids":["DEP-A-003","DEP-A-008"]},
+    {"field":"batch.supplier_id","value":null,"source_artifact_id":"A0-DEP-REG-001:DEP-A-003","approval_owner":"Human sourcing owner — UNASSIGNED","approval_status":"BLOCKED","effective_version":"0.1.0","dependency_ids":["DEP-A-003"]},
+    {"field":"batch.production_batch_id","value":null,"source_artifact_id":"A0-DEP-REG-001:DEP-A-003","approval_owner":"Human production/QC owner — UNASSIGNED","approval_status":"BLOCKED","effective_version":"0.1.0","dependency_ids":["DEP-A-003","DEP-A-004"]},
+    {"field":"batch.qc_release_id","value":null,"source_artifact_id":"A0-DEP-REG-001:DEP-A-003","approval_owner":"Human QC approver — UNASSIGNED","approval_status":"BLOCKED","effective_version":"0.1.0","dependency_ids":["DEP-A-003","DEP-A-004"]},
+    {"field":"price.gross_minor_units","value":null,"source_artifact_id":"A0-DEP-REG-001:DEP-A-005","approval_owner":"Human finance owner — UNASSIGNED","approval_status":"BLOCKED","effective_version":"0.1.0","dependency_ids":["DEP-A-005","DEP-A-006"]},
+    {"field":"price.tax_class","value":null,"source_artifact_id":"A0-DEP-REG-001:DEP-A-006","approval_owner":"Human finance/qualified tax adviser — UNASSIGNED","approval_status":"BLOCKED","effective_version":"0.1.0","dependency_ids":["DEP-A-006"]},
+    {"field":"price.net_gross_basis","value":null,"source_artifact_id":"A0-DEP-REG-001:DEP-A-006","approval_owner":"Human finance/qualified tax adviser — UNASSIGNED","approval_status":"BLOCKED","effective_version":"0.1.0","dependency_ids":["DEP-A-006"]},
+    {"field":"price.valid_from","value":null,"source_artifact_id":"A0-DEP-REG-001:DEP-A-005","approval_owner":"Human finance owner — UNASSIGNED","approval_status":"BLOCKED","effective_version":"0.1.0","dependency_ids":["DEP-A-005","DEP-A-006"]},
+    {"field":"price.valid_to","value":null,"source_artifact_id":"A0-DEP-REG-001:DEP-A-005","approval_owner":"Human finance owner — UNASSIGNED","approval_status":"BLOCKED","effective_version":"0.1.0","dependency_ids":["DEP-A-005","DEP-A-006"]},
+    {"field":"economics.cost_stack","value":null,"source_artifact_id":"A0-DEP-REG-001:DEP-A-005","approval_owner":"Human finance owner — UNASSIGNED","approval_status":"BLOCKED","effective_version":"0.1.0","dependency_ids":["DEP-A-005"]},
+    {"field":"economics.margin_approval_id","value":null,"source_artifact_id":"A0-DEP-REG-001:DEP-A-005","approval_owner":"Human finance owner — UNASSIGNED","approval_status":"BLOCKED","effective_version":"0.1.0","dependency_ids":["DEP-A-005"]},
+    {"field":"policy.delivery_promise","value":null,"source_artifact_id":"A0-DEP-REG-001:DEP-A-008","approval_owner":"Human operations/legal owner — UNASSIGNED","approval_status":"BLOCKED","effective_version":"0.1.0","dependency_ids":["DEP-A-006","DEP-A-008"]},
+    {"field":"policy.returns","value":null,"source_artifact_id":"A0-DEP-REG-001:DEP-A-008","approval_owner":"Human operations/legal owner — UNASSIGNED","approval_status":"BLOCKED","effective_version":"0.1.0","dependency_ids":["DEP-A-006","DEP-A-008"]},
+    {"field":"policy.warranty","value":null,"source_artifact_id":"A0-DEP-REG-001:DEP-A-006","approval_owner":"Human legal/customer owner — UNASSIGNED","approval_status":"BLOCKED","effective_version":"0.1.0","dependency_ids":["DEP-A-006"]},
+    {"field":"policy.support","value":null,"source_artifact_id":"A0-DEP-REG-001:DEP-A-001","approval_owner":"Human customer operations owner — UNASSIGNED","approval_status":"BLOCKED","effective_version":"0.1.0","dependency_ids":["DEP-A-001","DEP-A-008"]},
+    {"field":"fulfilment.warehouse","value":null,"source_artifact_id":"A0-DEP-REG-001:DEP-A-008","approval_owner":"Human operations owner — UNASSIGNED","approval_status":"BLOCKED","effective_version":"0.1.0","dependency_ids":["DEP-A-006","DEP-A-008"]},
+    {"field":"fulfilment.carrier","value":null,"source_artifact_id":"A0-DEP-REG-001:DEP-A-008","approval_owner":"Human operations owner — UNASSIGNED","approval_status":"BLOCKED","effective_version":"0.1.0","dependency_ids":["DEP-A-008"]},
+    {"field":"fulfilment.return_address","value":null,"source_artifact_id":"A0-DEP-REG-001:DEP-A-008","approval_owner":"Human operations/legal owner — UNASSIGNED","approval_status":"BLOCKED","effective_version":"0.1.0","dependency_ids":["DEP-A-006","DEP-A-008"]},
+    {"field":"fulfilment.cutoff","value":null,"source_artifact_id":"A0-DEP-REG-001:DEP-A-008","approval_owner":"Human operations owner — UNASSIGNED","approval_status":"BLOCKED","effective_version":"0.1.0","dependency_ids":["DEP-A-008"]},
+    {"field":"content.media_assets","value":null,"source_artifact_id":"A0-DEP-REG-001:DEP-A-010","approval_owner":"Human brand/marketing approver — UNASSIGNED","approval_status":"BLOCKED","effective_version":"0.1.0","dependency_ids":["DEP-A-003","DEP-A-010"]},
+    {"field":"brand.tokens","value":null,"source_artifact_id":"A0-DEP-REG-001:DEP-A-012","approval_owner":"Human brand approver — UNASSIGNED","approval_status":"BLOCKED","effective_version":"0.1.0","dependency_ids":["DEP-A-002","DEP-A-010","DEP-A-012"]},
+    {"field":"analytics.business_questions","value":null,"source_artifact_id":"A0-DEP-REG-001:DEP-A-012","approval_owner":"Side A Business and Side B Analytics Owners","approval_status":"BLOCKED","effective_version":"0.1.0","dependency_ids":["DEP-A-002","DEP-A-012"]},
+    {"field":"analytics.kpis","value":null,"source_artifact_id":"A0-DEP-REG-001:DEP-A-012","approval_owner":"Side A Business and Side B Analytics Owners","approval_status":"BLOCKED","effective_version":"0.1.0","dependency_ids":["DEP-A-002","DEP-A-012"]},
+    {"field":"operations.roles","value":null,"source_artifact_id":"A0-DEP-REG-001:DEP-A-001","approval_owner":"Human executive/operations owner — UNASSIGNED","approval_status":"BLOCKED","effective_version":"0.1.0","dependency_ids":["DEP-A-001"]},
+    {"field":"operations.approval_limits","value":null,"source_artifact_id":"A0-DEP-REG-001:DEP-A-001","approval_owner":"Human executive/finance owner — UNASSIGNED","approval_status":"BLOCKED","effective_version":"0.1.0","dependency_ids":["DEP-A-001"]},
+    {"field":"operations.support_hours","value":null,"source_artifact_id":"A0-DEP-REG-001:DEP-A-001","approval_owner":"Human customer operations owner — UNASSIGNED","approval_status":"BLOCKED","effective_version":"0.1.0","dependency_ids":["DEP-A-001","DEP-A-008"]},
+    {"field":"operations.severity_contacts","value":null,"source_artifact_id":"A0-DEP-REG-001:DEP-A-001","approval_owner":"Human executive/operations owner — UNASSIGNED","approval_status":"BLOCKED","effective_version":"0.1.0","dependency_ids":["DEP-A-001"]}
+  ],
+  "activation_controls": {
+    "canonical_business_lifecycle": ["fixture", "candidate", "sample", "approved", "sellable", "retired"],
+    "current_business_lifecycle": "candidate",
+    "public_product_eligible": false,
+    "checkout_eligible": false,
+    "claims_publishable": false,
+    "positive_stock_permitted": false,
+    "technical_active_or_published_implies_sellable": false
+  },
+  "explicitly_rejected_as_truth": [
+    "Origin brand or collection",
+    "PoC product names and descriptions",
+    "cotton or Egyptian-cotton claims",
+    "country-of-origin assertions",
+    "PoC prices",
+    "positive stock",
+    "placeholder product images",
+    "PoC shipping and free-shipping thresholds",
+    "stylist output as customer evidence"
+  ]
+}

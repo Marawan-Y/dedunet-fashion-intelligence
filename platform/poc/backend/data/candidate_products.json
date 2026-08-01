@@ -1,0 +1,51 @@
+[
+  {
+    "schema_version": "0.1.0",
+    "synthetic_fixture": true,
+    "product_id": "VS-TEE-001",
+    "style_code": null,
+    "lifecycle_status": "candidate",
+    "publication_status": "preview",
+    "product_name": "Synthetic candidate T-shirt — not approved for sale",
+    "category_code": "t-shirt",
+    "target_market_codes": ["DE"],
+    "fibre_composition": [],
+    "country_of_origin": null,
+    "care_instructions": [],
+    "approved_claims": [],
+    "fit_summary": "Draft oversized-fit hypothesis; not physically verified",
+    "measurement_set_id": null,
+    "variants": [
+      {
+        "sku": "VS-TEE-001-BLK-S",
+        "size_code": "S",
+        "color_name": "Black",
+        "opening_stock": 0
+      },
+      {
+        "sku": "VS-TEE-001-BLK-M",
+        "size_code": "M",
+        "color_name": "Black",
+        "opening_stock": 0
+      },
+      {
+        "sku": "VS-TEE-001-BLK-L",
+        "size_code": "L",
+        "color_name": "Black",
+        "opening_stock": 0
+      }
+    ],
+    "price": null,
+    "locale_codes": ["de-DE", "en-DE"],
+    "merchant_identity_id": null,
+    "importer_responsible_operator_id": null,
+    "withdrawal_return_policy_id": null,
+    "delivery_promise_id": null,
+    "batch": null,
+    "assets": [],
+    "warehouse_location_id": null,
+    "evidence": [],
+    "field_evidence": {},
+    "approved_by": null
+  }
+]

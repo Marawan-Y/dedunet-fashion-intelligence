@@ -1,0 +1,73 @@
+name: CI
+on:
+  push:
+  pull_request:
+
+# Paths are relative to this PoC package root (the directory containing this
+# .github/ folder), matching the pre-existing workflow convention.
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # 3.12 matches the Dockerfile base image; 3.13/3.14 match versions actually
+        # installed on developer workstations. The divergence is a recorded risk
+        # (SB-RISK-B2-001), so CI must prove the suite on all of them.
+        python-version: ["3.12", "3.13", "3.14"]
+    env:
+      PYTHONDONTWRITEBYTECODE: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install backend dependencies
+        working-directory: backend
+        run: pip install -r requirements.txt
+
+      - name: Byte-compile backend and scripts
+        run: python -m compileall -q backend scripts
+
+      - name: Backend test suite
+        working-directory: backend
+        run: python -m pytest -q -p no:cacheprovider
+
+      - name: Validate product master fixture
+        run: python scripts/validate_product_data.py
+
+      - name: Validate candidate fixture (current state must be valid)
+        run: python scripts/validate_candidate_data.py
+
+      - name: Candidate sellable/public activation must fail closed
+        run: |
+          set +e
+          python scripts/validate_candidate_data.py --assess-sellable
+          status=$?
+          set -e
+          if [ "$status" -eq 0 ]; then
+            echo "FAIL: synthetic candidate was reported eligible for sellable/public activation"
+            exit 1
+          fi
+          echo "OK: activation correctly blocked (exit $status)"
+
+      - name: Guard mutation check (negative tests must actually guard)
+        run: python scripts/mutation_guard_check.py
+
+      - name: Preserved sample fixtures must be unchanged by the run
+        run: |
+          echo "536f91ab8dc4b43af80935696cc5485dd53afdbdd6d6541160fe37c7c59bce8d  backend/data/products.json" | sha256sum -c -
+          echo "7f052e4c8d75302695faa23b44efa7ed4e2f28ad64aaff9746d0109d8dab8323  backend/data/candidate_products.json" | sha256sum -c -
+
+  compose:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Render compose configuration
+        run: |
+          cp .env.example .env
+          docker compose config
+      - name: Build images
+        run: docker compose build

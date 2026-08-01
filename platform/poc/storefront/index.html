@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Synthetic Fashion Candidate PoC</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header>
+    <div>
+      <p class="eyebrow">SYNTHETIC FIXTURES / NON-PUBLIC / LOCAL</p>
+      <h1>Fixture Lab</h1>
+    </div>
+    <a href="#stylist">Deterministic demo</a>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div>
+        <p class="eyebrow">PROOF OF CONCEPT</p>
+        <h2>Candidate schema and channel proof.</h2>
+        <p>This local, non-public vertical slice connects synthetic fixtures to a storefront and a deterministic styling assistant. No displayed claim, price or stock value is approved business truth.</p>
+      </div>
+      <div class="hero-card">
+        <strong>PoC flow</strong>
+        <span>Catalog → Stock → Recommendation → Quote</span>
+      </div>
+    </section>
+
+    <section>
+      <div class="section-title">
+        <h2>Synthetic sample catalog</h2>
+        <span id="status">Loading catalog…</span>
+      </div>
+      <div id="products" class="grid"></div>
+    </section>
+
+    <section id="stylist" class="stylist">
+      <div>
+        <p class="eyebrow">ASSISTED DISCOVERY</p>
+        <h2>Build an outfit</h2>
+        <p>The PoC scores products using catalog tags, colors, category, stock and budget. No biometric or sensitive data is collected.</p>
+      </div>
+      <form id="stylist-form">
+        <label>Occasion<input name="occasion" value="summer dinner in Berlin" required /></label>
+        <label>Preferred colors<input name="colors" value="Black, Off White" /></label>
+        <label>Preferred categories<input name="categories" value="t-shirt, shirt" /></label>
+        <label>Budget EUR<input name="budget" type="number" value="160" min="1" required /></label>
+        <label>Style notes<textarea name="notes">eastern streetwear</textarea></label>
+        <button type="submit">Recommend</button>
+      </form>
+      <div id="recommendation" class="recommendation"></div>
+    </section>
+  </main>
+  <footer>Fashion Commerce Platform PoC — replace placeholder assets and policies before public use.</footer>
+  <script src="app.js"></script>
+</body>
+</html>

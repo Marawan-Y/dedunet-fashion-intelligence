@@ -1,0 +1,24 @@
+name: fashion-commerce-codex-poc
+
+services:
+  api:
+    build: ./backend
+    env_file:
+      - .env
+    volumes:
+      - ./backend/data:/app/data
+    ports:
+      - "${API_PORT:-18000}:8000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  storefront:
+    build: ./storefront
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      - "${STOREFRONT_PORT:-13000}:80"

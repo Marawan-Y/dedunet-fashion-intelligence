@@ -1,0 +1,67 @@
+WORKING DIRECTORY: C:\Users\User\Desktop\Claude\Fashion_Commerce_Codex_Multi_Agent_Pack\platform\poc\backend
+COMMAND: python -m pytest -q -p no:cacheprovider -rA
+
+.....................................................                    [100%]
+============================== warnings summary ===============================
+..\..\..\..\..\..\AppData\Roaming\Python\Python314\site-packages\fastapi\testclient.py:1
+  C:\Users\User\AppData\Roaming\Python\Python314\site-packages\fastapi\testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=================================== PASSES ====================================
+=========================== short test summary info ===========================
+PASSED tests/test_admin_security.py::test_admin_write_without_token_is_rejected
+PASSED tests/test_admin_security.py::test_admin_write_with_wrong_token_is_rejected
+PASSED tests/test_admin_security.py::test_admin_write_with_shipped_placeholder_token_is_rejected
+PASSED tests/test_admin_security.py::test_rejected_admin_write_does_not_persist
+PASSED tests/test_admin_security.py::test_placeholder_token_disables_admin_api_in_every_environment[development]
+PASSED tests/test_admin_security.py::test_placeholder_token_disables_admin_api_in_every_environment[staging]
+PASSED tests/test_admin_security.py::test_placeholder_token_disables_admin_api_in_every_environment[production]
+PASSED tests/test_admin_security.py::test_admin_token_default_detection
+PASSED tests/test_admin_security.py::test_config_module_imports_cleanly
+PASSED tests/test_api.py::test_health
+PASSED tests/test_api.py::test_catalog_returns_products
+PASSED tests/test_api.py::test_stylist_recommendation_respects_budget
+PASSED tests/test_api.py::test_quote_rejects_unknown_sku
+PASSED tests/test_api.py::test_candidate_endpoint_is_synthetic_non_sellable_preview
+PASSED tests/test_api.py::test_candidate_activation_endpoint_fails_closed
+PASSED tests/test_candidate_activation.py::test_duplicate_product_ids_and_skus_are_rejected
+PASSED tests/test_candidate_activation.py::test_duplicate_sku_across_distinct_products_is_rejected
+PASSED tests/test_candidate_activation.py::test_synthetic_fixture_cannot_activate
+PASSED tests/test_candidate_activation.py::test_expired_claim_prevents_publication
+PASSED tests/test_candidate_activation.py::test_missing_required_evidence_prevents_sellable_public_activation
+PASSED tests/test_candidate_activation.py::test_expired_evidence_prevents_activation
+PASSED tests/test_candidate_activation.py::test_unreleased_batch_prevents_activation
+PASSED tests/test_candidate_activation.py::test_missing_responsible_operator_prevents_activation
+PASSED tests/test_candidate_activation.py::test_unapproved_price_prevents_activation
+PASSED tests/test_candidate_activation.py::test_positive_stock_requires_qc_location_and_count_evidence
+PASSED tests/test_candidate_activation.py::test_unsupported_claim_prevents_publication
+PASSED tests/test_candidate_activation.py::test_publication_cannot_bypass_sellable_lifecycle
+PASSED tests/test_candidate_activation.py::test_authoritative_money_rejects_float_minor_units
+PASSED tests/test_candidate_activation.py::test_non_sellable_candidate_with_zero_stock_and_no_claims_is_valid
+PASSED tests/test_money_integrity.py::test_to_minor_units_rejects_binary_float
+PASSED tests/test_money_integrity.py::test_to_minor_units_converts_decimal_and_string_exactly
+PASSED tests/test_money_integrity.py::test_to_minor_units_rejects_excess_fractional_precision
+PASSED tests/test_money_integrity.py::test_to_minor_units_rejects_unknown_currency
+PASSED tests/test_money_integrity.py::test_from_minor_units_round_trips_exactly
+PASSED tests/test_money_integrity.py::test_product_schema_stores_integer_minor_units
+PASSED tests/test_money_integrity.py::test_product_schema_rejects_binary_float_price
+PASSED tests/test_money_integrity.py::test_product_schema_accepts_exact_decimal_legacy_price
+PASSED tests/test_money_integrity.py::test_product_schema_rejects_non_integer_minor_units
+PASSED tests/test_money_integrity.py::test_product_display_price_is_derived_not_authoritative
+PASSED tests/test_money_integrity.py::test_catalog_fixture_never_produces_binary_float
+PASSED tests/test_money_integrity.py::test_preserved_fixture_prices_convert_exactly
+PASSED tests/test_money_integrity.py::test_shipping_configuration_is_integer_minor_units
+PASSED tests/test_money_integrity.py::test_quote_totals_are_exact_in_minor_units
+PASSED tests/test_money_integrity.py::test_quote_free_shipping_threshold_uses_integer_comparison
+PASSED tests/test_money_integrity.py::test_quote_repeated_small_quantities_do_not_accumulate_error
+PASSED tests/test_money_integrity.py::test_quote_rejects_quantity_above_fixture_stock
+PASSED tests/test_money_integrity.py::test_line_total_summation_is_exact_where_a_float_path_drifts
+PASSED tests/test_money_integrity.py::test_line_total_summation_rejects_float_unit_price
+PASSED tests/test_money_integrity.py::test_quote_wire_field_rejects_float_subtotal
+PASSED tests/test_money_integrity.py::test_quote_display_values_are_derived_from_minor_units
+PASSED tests/test_money_integrity.py::test_stylist_total_is_integer_minor_units_and_respects_budget
+PASSED tests/test_money_integrity.py::test_stylist_rejects_excess_precision_budget
+PASSED tests/test_money_integrity.py::test_no_float_money_symbols_remain_in_backend_source
+53 passed, 1 warning in 2.02s
+EXIT_CODE: 0

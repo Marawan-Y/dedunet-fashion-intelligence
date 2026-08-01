@@ -1,0 +1,11 @@
+{
+  "expo": {
+    "name": "Origin Fashion PoC",
+    "slug": "origin-fashion-poc",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "ios": { "supportsTablet": true, "bundleIdentifier": "com.example.originfashionpoc" },
+    "android": { "package": "com.example.originfashionpoc" }
+  }
+}

@@ -1,0 +1,59 @@
+[
+  {
+    "id": "prod-nile-tee-001",
+    "slug": "nile-calligraphy-oversized-tee",
+    "name": "Nile Calligraphy Oversized Tee",
+    "category": "t-shirt",
+    "collection": "Origin 01",
+    "description": "Heavyweight Egyptian cotton oversized T-shirt with a modern calligraphy detail inspired by the Nile.",
+    "fibre_composition": "100% cotton",
+    "made_in": "Egypt",
+    "price_eur": 59.0,
+    "image_url": "https://placehold.co/900x1100?text=Nile+Tee",
+    "style_tags": ["eastern", "streetwear", "summer", "oversized", "calligraphy"],
+    "variants": [
+      {"sku": "ORG01-TEE-NILE-BLK-S", "size": "S", "color": "Black", "stock": 12},
+      {"sku": "ORG01-TEE-NILE-BLK-M", "size": "M", "color": "Black", "stock": 18},
+      {"sku": "ORG01-TEE-NILE-BLK-L", "size": "L", "color": "Black", "stock": 10}
+    ],
+    "active": true
+  },
+  {
+    "id": "prod-desert-abaya-001",
+    "slug": "desert-line-modern-abaya",
+    "name": "Desert Line Modern Abaya",
+    "category": "abaya",
+    "collection": "Origin 01",
+    "description": "Minimal structured abaya with contemporary lines, breathable cotton construction and subtle eastern detailing.",
+    "fibre_composition": "100% cotton",
+    "made_in": "Egypt",
+    "price_eur": 139.0,
+    "image_url": "https://placehold.co/900x1100?text=Modern+Abaya",
+    "style_tags": ["eastern", "minimal", "occasion", "modest", "desert"],
+    "variants": [
+      {"sku": "ORG01-ABY-DSRT-SND-S", "size": "S", "color": "Sand", "stock": 6},
+      {"sku": "ORG01-ABY-DSRT-SND-M", "size": "M", "color": "Sand", "stock": 8},
+      {"sku": "ORG01-ABY-DSRT-SND-L", "size": "L", "color": "Sand", "stock": 7}
+    ],
+    "active": true
+  },
+  {
+    "id": "prod-cairo-shirt-001",
+    "slug": "cairo-grid-relaxed-shirt",
+    "name": "Cairo Grid Relaxed Shirt",
+    "category": "shirt",
+    "collection": "Origin 01",
+    "description": "Relaxed cotton shirt using geometric paneling inspired by Cairo architecture and designed for layered outfits.",
+    "fibre_composition": "100% cotton",
+    "made_in": "Egypt",
+    "price_eur": 89.0,
+    "image_url": "https://placehold.co/900x1100?text=Cairo+Shirt",
+    "style_tags": ["eastern", "architecture", "smart-casual", "layering", "city"],
+    "variants": [
+      {"sku": "ORG01-SHT-CAI-OFF-S", "size": "S", "color": "Off White", "stock": 9},
+      {"sku": "ORG01-SHT-CAI-OFF-M", "size": "M", "color": "Off White", "stock": 11},
+      {"sku": "ORG01-SHT-CAI-OFF-L", "size": "L", "color": "Off White", "stock": 8}
+    ],
+    "active": true
+  }
+]
