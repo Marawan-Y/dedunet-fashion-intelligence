@@ -4,3 +4,7 @@ pydantic==2.13.4
 python-dotenv==1.1.1
 httpx==0.28.1
 pytest==9.0.2
+# Commerce domain persistence and migrations. Pinned to the versions the test suite and
+# the migration up/down/up cycle were actually verified against.
+SQLAlchemy==2.0.51
+alembic==1.18.5

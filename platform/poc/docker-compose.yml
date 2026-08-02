@@ -5,20 +5,39 @@ services:
     build: ./backend
     env_file:
       - .env
+    environment:
+      # Both loopback spellings are distinct origins to a browser. Listing only one
+      # produces a working curl and a broken storefront.
+      CORS_ORIGINS: "http://localhost:${STOREFRONT_PORT:-13000},http://127.0.0.1:${STOREFRONT_PORT:-13000}"
+      COMMERCE_DB_PATH: /app/var/commerce.sqlite3
     volumes:
-      - ./backend/data:/app/data
+      # Sample fixtures are checksum-protected and the container has no reason to write
+      # them, so they are mounted read-only.
+      - ./backend/data:/app/data:ro
+      - commerce-db:/app/var
     ports:
       - "${API_PORT:-18000}:8000"
     healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      # /ready, not /health: readiness proves the database is actually reachable.
+      # /health only proves the process is alive, which would let the storefront start
+      # against an API that cannot serve a single product.
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8000/ready').status==200 else 1)"]
       interval: 10s
       timeout: 3s
       retries: 5
+      start_period: 20s
 
   storefront:
-    build: ./storefront
+    build:
+      # Context is the PoC root so the image can include both browser clients.
+      # .dockerignore keeps backend source and .env out of this context.
+      context: .
+      dockerfile: storefront/Dockerfile
     depends_on:
       api:
         condition: service_healthy
     ports:
       - "${STOREFRONT_PORT:-13000}:80"
+
+volumes:
+  commerce-db:

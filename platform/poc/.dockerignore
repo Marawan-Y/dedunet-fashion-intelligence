@@ -1,0 +1,22 @@
+# Build context hygiene for the web image, whose context is this directory.
+# Anything listed here is never transferred to the Docker daemon.
+
+# Secrets must never enter a build context, even if no COPY references them.
+.env
+.env.*
+!.env.example
+
+# Backend source has its own build context; it must not leak into the nginx image.
+backend/
+scripts/
+docs/
+*.md
+
+# Local artefacts
+**/__pycache__/
+**/*.pyc
+**/.pytest_cache/
+**/*.sqlite3
+**/*.sqlite3-wal
+**/*.sqlite3-shm
+.git/

@@ -29,6 +29,7 @@ Verified by executed tests and by driving both UIs in a browser:
 | AI stylist (deterministic, catalogue-grounded) | VERIFIED |
 | Structured logs, correlation IDs, health and readiness probes | VERIFIED |
 | Migrations (apply and reverse) | VERIFIED |
+| Docker Compose stack (build, migrate, seed, serve, purchase) | VERIFIED |
 | Mobile applications | **BLOCKED** — peer-dependency conflict, never built or run |
 | CI pipeline | **NOT EXECUTED** — no runner available in this environment |
 
@@ -73,7 +74,7 @@ Sandbox payment outcome is chosen at checkout: **succeeds**, **declined**, **pro
 > `CORS_ORIGINS` must list the exact origin you browse from. `localhost` and `127.0.0.1` are
 > different origins to a browser, and the application does not auto-load `.env`.
 
-### Docker alternative
+### Docker alternative (verified)
 
 ```bash
 cp .env.example .env
@@ -81,6 +82,20 @@ cp .env.example .env
 # admin API returns HTTP 503 in every environment.
 docker compose up --build
 ```
+
+The API container applies migrations and seeds the fictional dataset on start, so a plain
+`up` yields a working store. Both steps are idempotent, so restarting neither fails nor
+duplicates data. The database lives in the `commerce-db` volume, not in `backend/data`, so
+it cannot touch the checksum-protected fixtures (which are mounted read-only).
+
+| Surface | URL |
+|---|---|
+| Storefront | <http://localhost:13000/> (redirects to `/storefront/`) |
+| Operations portal | <http://localhost:13000/admin/> |
+| API | <http://localhost:18000/docs> |
+
+The compose healthcheck probes `/ready`, not `/health`, so the storefront will not start
+against an API whose database is unreachable.
 
 If another checkout already holds those host ports, run an isolated instance rather than
 stopping someone else's stack:
