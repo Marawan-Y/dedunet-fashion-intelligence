@@ -25,21 +25,21 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: Install backend dependencies
-        working-directory: backend
+        working-directory: services/commerce-api
         run: pip install -r requirements.txt
 
       - name: Byte-compile backend and scripts
-        run: python -m compileall -q backend scripts
+        run: python -m compileall -q services/commerce-api scripts
 
       - name: Backend test suite
-        working-directory: backend
+        working-directory: services/commerce-api
         env:
           DATABASE_URL: "sqlite+pysqlite:///:memory:"
           APP_ENV: test
         run: python -m pytest -q -p no:cacheprovider
 
       - name: Migrations must apply and reverse
-        working-directory: backend
+        working-directory: services/commerce-api
         env:
           DATABASE_URL: "sqlite+pysqlite:///ci_migration_probe.sqlite3"
         run: |
@@ -49,7 +49,7 @@ jobs:
           rm -f ci_migration_probe.sqlite3
 
       - name: Bootstrap must succeed from a clean database and be idempotent
-        working-directory: backend
+        working-directory: services/commerce-api
         env:
           DATABASE_URL: "sqlite+pysqlite:///ci_bootstrap.sqlite3"
         run: |
@@ -65,11 +65,11 @@ jobs:
           rm -f ci_bootstrap.sqlite3 second-seed.json
 
       - name: Exported API contract must match the application
-        working-directory: backend
+        working-directory: services/commerce-api
         run: |
           python manage.py export-openapi
           # A drifted contract is worse than none: consumers integrate against a lie.
-          git diff --exit-code ../docs/api/openapi.json \
+          git diff --exit-code ../../packages/contracts/openapi/openapi.json \
             || { echo "FAIL: docs/api/openapi.json is stale; run 'python manage.py export-openapi' and commit"; exit 1; }
 
       - name: No secrets committed
@@ -81,15 +81,15 @@ jobs:
           echo "OK: no .env in history"
 
       - name: Validate product master fixture
-        run: python scripts/validate_product_data.py
+        run: python scripts/validation/validate_product_data.py
 
       - name: Validate candidate fixture (current state must be valid)
-        run: python scripts/validate_candidate_data.py
+        run: python scripts/validation/validate_candidate_data.py
 
       - name: Candidate sellable/public activation must fail closed
         run: |
           set +e
-          python scripts/validate_candidate_data.py --assess-sellable
+          python scripts/validation/validate_candidate_data.py --assess-sellable
           status=$?
           set -e
           if [ "$status" -eq 0 ]; then
@@ -99,12 +99,12 @@ jobs:
           echo "OK: activation correctly blocked (exit $status)"
 
       - name: Guard mutation check (negative tests must actually guard)
-        run: python scripts/mutation_guard_check.py
+        run: python scripts/validation/mutation_guard_check.py
 
       - name: Preserved sample fixtures must be unchanged by the run
         run: |
-          echo "536f91ab8dc4b43af80935696cc5485dd53afdbdd6d6541160fe37c7c59bce8d  backend/data/products.json" | sha256sum -c -
-          echo "7f052e4c8d75302695faa23b44efa7ed4e2f28ad64aaff9746d0109d8dab8323  backend/data/candidate_products.json" | sha256sum -c -
+          echo "536f91ab8dc4b43af80935696cc5485dd53afdbdd6d6541160fe37c7c59bce8d  services/commerce-api/data/products.json" | sha256sum -c -
+          echo "7f052e4c8d75302695faa23b44efa7ed4e2f28ad64aaff9746d0109d8dab8323  services/commerce-api/data/candidate_products.json" | sha256sum -c -
 
   compose:
     runs-on: ubuntu-latest

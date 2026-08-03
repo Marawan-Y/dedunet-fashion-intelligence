@@ -40,7 +40,7 @@ Verified by executed tests and by driving both UIs in a browser:
 Requires Python 3.12+ (developed and tested on 3.14). No external services needed.
 
 ```bash
-cd platform/poc/backend
+cd services/commerce-api
 python -m pip install -r requirements.txt
 
 # Apply migrations and load the fictional MERET dataset. Safe to re-run.
@@ -51,14 +51,14 @@ APP_ENV=development \
 CORS_ORIGINS="http://localhost:13000,http://127.0.0.1:13000" \
 python -m uvicorn app.main:app --port 18000
 
-# Terminal 2 — static clients on :13000, served from platform/poc
-cd .. && python -m http.server 13000 --bind 127.0.0.1
+# Terminal 2 — static clients on :13000, served from .
+python -m http.server 13000 --bind 127.0.0.1   # from the repository root
 ```
 
 | Surface | URL |
 |---|---|
-| Storefront | <http://127.0.0.1:13000/storefront/> |
-| Operations portal | <http://127.0.0.1:13000/admin/> |
+| Storefront | <http://127.0.0.1:13000/apps/web/> |
+| Operations portal | <http://127.0.0.1:13000/apps/admin/> |
 | API docs (Swagger) | <http://127.0.0.1:18000/docs> |
 | Readiness probe | <http://127.0.0.1:18000/ready> |
 
@@ -71,6 +71,11 @@ cd .. && python -m http.server 13000 --bind 127.0.0.1
 
 Sandbox payment outcome is chosen at checkout: **succeeds**, **declined**, **provider error**.
 
+> **Local vs container paths differ.** Served from the repository root the clients are at
+> `/apps/web/` and `/apps/admin/`. In Docker, nginx maps them to `/storefront/` and
+> `/admin/` (see `apps/web/Dockerfile`), which is why the Docker table below shows
+> different URLs.
+>
 > `CORS_ORIGINS` must list the exact origin you browse from. `localhost` and `127.0.0.1` are
 > different origins to a browser, and the application does not auto-load `.env`.
 
@@ -85,7 +90,7 @@ docker compose up --build
 
 The API container applies migrations and seeds the fictional dataset on start, so a plain
 `up` yields a working store. Both steps are idempotent, so restarting neither fails nor
-duplicates data. The database lives in the `commerce-db` volume, not in `backend/data`, so
+duplicates data. The database lives in the `commerce-db` volume, not in `services/commerce-api/data`, so
 it cannot touch the checksum-protected fixtures (which are mounted read-only).
 
 | Surface | URL |
@@ -110,8 +115,8 @@ docker compose -p my-isolated-poc down
 ## Repository map
 
 ```
-platform/poc/
-├── backend/
+
+├── services/commerce-api/
 │   ├── app/
 │   │   ├── commerce/          the commerce domain
 │   │   │   ├── db.py          engine, session, declarative base
@@ -129,9 +134,9 @@ platform/poc/
 │   ├── migrations/            Alembic
 │   ├── tests/                 81 tests
 │   └── manage.py              migrate / seed / bootstrap / export-openapi / check
-├── storefront/                customer web client
-├── admin/                     operations portal
-├── docs/api/openapi.json      exported API contract
+├── apps/web/                  customer web client
+├── apps/admin/                operations portal
+├── packages/contracts/openapi/openapi.json   authoritative API contract
 └── scripts/                   validators and the guard-mutation harness
 ```
 
@@ -143,14 +148,14 @@ The rule modules never import `api` or `services`, so each is unit-testable with
 ## Testing
 
 ```bash
-cd backend
+cd services/commerce-api
 PYTHONDONTWRITEBYTECODE=1 python -m pytest -q -p no:cacheprovider   # 81 tests
 
 cd ..
-python scripts/validate_product_data.py                      # exits 0
-python scripts/validate_candidate_data.py                    # exits 0
-python scripts/validate_candidate_data.py --assess-sellable  # exits NON-ZERO by design
-python scripts/mutation_guard_check.py                       # ~8 min
+python scripts/validation/validate_product_data.py                      # exits 0
+python scripts/validation/validate_candidate_data.py                    # exits 0
+python scripts/validation/validate_candidate_data.py --assess-sellable  # exits NON-ZERO by design
+python scripts/validation/mutation_guard_check.py                       # ~8 min
 ```
 
 Those two pytest flags are not cosmetic. Bytecode caches copied between checkouts have
@@ -165,7 +170,7 @@ A guard whose removal nobody notices is not a guard.
 
 ### Preserved sample fixtures
 
-`backend/tests/conftest.py` fails the run if any test changes these:
+`services/commerce-api/tests/conftest.py` fails the run if any test changes these:
 
 ```text
 sha256(products.json)           = 536f91ab8dc4b43af80935696cc5485dd53afdbdd6d6541160fe37c7c59bce8d
@@ -220,7 +225,7 @@ errors.
 | Document | Contents |
 |---|---|
 | `../../docs/architecture/decisions/` | Architecture decision records |
-| `docs/api/openapi.json` | Exported API contract |
+| `packages/contracts/openapi/openapi.json` | Authoritative API contract |
 | `docs/RUNBOOKS.md` | Operational runbooks |
 | `docs/EXTERNAL_SERVICE_ACTIVATION.md` | Activating real providers |
 | `KNOWN_LIMITATIONS.md` | What is deliberately not done, and why |

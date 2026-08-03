@@ -85,9 +85,21 @@ close a risk, or approve a release on an owner's behalf.
 | SB-RISK-005 inventory integrity | Inventory and financial | Ahmed Younis | Closed for the commerce domain by atomic reservation plus a `reserved <= on_hand` constraint, proven by a 20-thread race. The legacy JSON fixture path remains non-transactional |
 | SB-RISK-011 secrets in pack | Secrets and infrastructure | Marawan Younis | `.env` is git-ignored and verified absent from history; the file still exists on disk in the working tree |
 | DEDUNET naming exposure | Brand claims | Aya Ashraf | `DeDeNet` conflict disclosed by Side A as high preliminary risk. `LEGAL_CLEARANCE_PENDING`; public commercial launch blocked |
-| Domain evidence contains personal data | Secrets and infrastructure | Marawan Younis | Registrant home address, phone and email are committed in the ownership letter. See `CONFLICT-003` |
+| Domain evidence contained personal data | Secrets and infrastructure | Marawan Younis | **RESOLVED 2026-08-03.** Unredacted letter removed from the working tree and purged from all Git history and object storage; only a generated redacted copy remains. `.gitignore` blocks re-adding it. See `CONFLICT-003` and `GIT_ROOT_NORMALIZATION.md` |
 
 ## Not owned by any of the above
 
 Legal, tax, customs and trademark **conclusions** require qualified external professionals. No
 person in this register, and no agent, may substitute for that advice.
+
+## Governance follow-up items (manager-required, R0)
+
+| # | Requirement | Gate | Status |
+|---|---|---|---|
+| GOV-1 | Primary-owner acknowledgment from each of the four named humans | Before hosted staging | OPEN |
+| GOV-2 | Backup owner assigned for every risk domain | Before production release | OPEN |
+| GOV-3 | Residual-risk approval authority confirmed per domain | Before accepting any exception | OPEN |
+
+None of these blocks local development, R0 or Workstream A. GOV-1 and GOV-3 must both close
+before any residual risk can be formally accepted — until then an exception has no valid approver
+and cannot be granted, only recorded as outstanding.

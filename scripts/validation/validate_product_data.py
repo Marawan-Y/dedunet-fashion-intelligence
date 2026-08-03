@@ -3,13 +3,15 @@ from pathlib import Path
 import json
 import sys
 
-ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT / "backend"))
+# parents[2] is the repository root: validation/ -> scripts/ -> root
+ROOT = Path(__file__).resolve().parents[2]
+SERVICE = ROOT / "services" / "commerce-api"
+sys.path.insert(0, str(SERVICE))
 
 from app.money import from_minor_units  # noqa: E402
 from app.schemas import Product  # noqa: E402
 
-path = ROOT / "backend" / "data" / "products.json"
+path = SERVICE / "data" / "products.json"
 # parse_float=Decimal keeps fixture money exact; a binary float never enters the path.
 items = json.loads(path.read_text(encoding="utf-8"), parse_float=Decimal)
 products = [Product.model_validate(item) for item in items]

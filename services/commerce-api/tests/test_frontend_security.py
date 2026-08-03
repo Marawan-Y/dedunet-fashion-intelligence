@@ -12,10 +12,11 @@ from pathlib import Path
 
 import pytest
 
-POC_ROOT = Path(__file__).resolve().parents[2]
+# parents[2] is the repository root: tests/ -> commerce-api/ -> services/ -> root
+REPO_ROOT = Path(__file__).resolve().parents[3]
 CLIENT_SCRIPTS = [
-    POC_ROOT / "storefront" / "app.js",
-    POC_ROOT / "admin" / "admin.js",
+    REPO_ROOT / "apps" / "web" / "app.js",
+    REPO_ROOT / "apps" / "admin" / "admin.js",
 ]
 
 # Sinks that interpret a string as markup or code. Assigning attacker-controlled data
@@ -85,12 +86,12 @@ def test_client_scripts_do_not_divide_money(script: Path) -> None:
 def test_storefront_is_marked_noindex() -> None:
     """A fictional demonstration store must never be indexed by a search engine."""
 
-    for page in [POC_ROOT / "storefront" / "index.html", POC_ROOT / "admin" / "index.html"]:
+    for page in [REPO_ROOT / "apps" / "web" / "index.html", REPO_ROOT / "apps" / "admin" / "index.html"]:
         html = page.read_text(encoding="utf-8")
         assert 'name="robots"' in html and "noindex" in html, f"{page.name} lacks a noindex directive"
 
 
 def test_storefront_discloses_fictional_status() -> None:
-    html = (POC_ROOT / "storefront" / "index.html").read_text(encoding="utf-8").lower()
+    html = (REPO_ROOT / "apps" / "web" / "index.html").read_text(encoding="utf-8").lower()
     assert "fictional" in html, "the storefront must disclose that the brand is fictional"
     assert "sandbox" in html, "the storefront must disclose that payments are sandbox only"

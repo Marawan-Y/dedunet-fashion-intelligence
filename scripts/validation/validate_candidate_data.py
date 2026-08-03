@@ -5,8 +5,10 @@ import json
 import sys
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT / "backend"))
+# parents[2] is the repository root: validation/ -> scripts/ -> root
+ROOT = Path(__file__).resolve().parents[2]
+SERVICE = ROOT / "services" / "commerce-api"
+sys.path.insert(0, str(SERVICE))
 
 from app.candidate_activation import (  # noqa: E402
     BusinessLifecycle,
@@ -21,7 +23,7 @@ def main() -> int:
     parser.add_argument(
         "--path",
         type=Path,
-        default=ROOT / "backend" / "data" / "candidate_products.json",
+        default=SERVICE / "data" / "candidate_products.json",
     )
     parser.add_argument(
         "--assess-sellable",

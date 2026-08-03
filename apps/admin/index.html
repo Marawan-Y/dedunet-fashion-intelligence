@@ -5,7 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>MERET Operations</title>
     <meta name="robots" content="noindex, nofollow" />
-    <link rel="stylesheet" href="../storefront/styles.css" />
+    <!-- Own copy of the base tokens. The admin app must not reach into apps/web:
+         a cross-application source dependency prevents either being built, deployed
+         or owned independently. Shipping them in one image is a packaging choice. -->
+    <link rel="stylesheet" href="styles.css" />
     <link rel="stylesheet" href="admin.css" />
   </head>
   <body>

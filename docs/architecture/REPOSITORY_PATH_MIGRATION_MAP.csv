@@ -1,68 +1,68 @@
 source_path,target_path,owning_subsystem,imports_affected,docker_refs_affected,ci_refs_affected,doc_refs_affected,tests_required,migration_status
-platform/poc/.dockerignore,.dockerignore,infrastructure,no,yes,no,no,root command + docker + CI,PENDING
-platform/poc/.env.example,.env.example,infrastructure,no,yes,no,no,root command + docker + CI,PENDING
-platform/poc/.github/workflows/ci.yml,.github/workflows/ci.yml,ci,no,no,yes,no,workflow path resolution,PENDING
-platform/poc/.gitignore,__DELETE__,infrastructure,no,yes,no,no,root command + docker + CI,PENDING
-platform/poc/KNOWN_LIMITATIONS.md,docs/KNOWN_LIMITATIONS.md,documentation,no,no,no,yes,root command + docker + CI,PENDING
-platform/poc/Makefile,Makefile,tooling,no,no,yes,no,root command + docker + CI,PENDING
-platform/poc/README.md,README.md,documentation,no,no,no,yes,root command + docker + CI,PENDING
-platform/poc/admin/admin.css,apps/admin/admin.css,admin,no,yes,no,no,browser load + frontend security test,PENDING
-platform/poc/admin/admin.js,apps/admin/admin.js,admin,yes,yes,no,no,browser load + frontend security test,PENDING
-platform/poc/admin/index.html,apps/admin/index.html,admin,no,yes,no,no,browser load + frontend security test,PENDING
-platform/poc/backend/Dockerfile,services/commerce-api/Dockerfile,commerce-api,no,yes,yes,yes,"pytest, alembic, manage.py",PENDING
-platform/poc/backend/alembic.ini,services/commerce-api/alembic.ini,commerce-api,no,yes,yes,yes,"pytest, alembic, manage.py",PENDING
-platform/poc/backend/app/__init__.py,services/commerce-api/app/__init__.py,commerce-api,yes,yes,yes,yes,"pytest, alembic, manage.py",PENDING
-platform/poc/backend/app/ai_stylist.py,services/commerce-api/app/ai_stylist.py,commerce-api,yes,yes,yes,yes,"pytest, alembic, manage.py",PENDING
-platform/poc/backend/app/candidate_activation.py,services/commerce-api/app/candidate_activation.py,commerce-api,yes,yes,yes,yes,"pytest, alembic, manage.py",PENDING
-platform/poc/backend/app/catalog.py,services/commerce-api/app/catalog.py,commerce-api,yes,yes,yes,yes,"pytest, alembic, manage.py",PENDING
-platform/poc/backend/app/commerce/__init__.py,services/commerce-api/app/commerce/__init__.py,commerce-api,yes,yes,yes,yes,"pytest, alembic, manage.py",PENDING
-platform/poc/backend/app/commerce/api.py,services/commerce-api/app/commerce/api.py,commerce-api,yes,yes,yes,yes,"pytest, alembic, manage.py",PENDING
-platform/poc/backend/app/commerce/db.py,services/commerce-api/app/commerce/db.py,commerce-api,yes,yes,yes,yes,"pytest, alembic, manage.py",PENDING
-platform/poc/backend/app/commerce/inventory.py,services/commerce-api/app/commerce/inventory.py,commerce-api,yes,yes,yes,yes,"pytest, alembic, manage.py",PENDING
-platform/poc/backend/app/commerce/models.py,services/commerce-api/app/commerce/models.py,commerce-api,yes,yes,yes,yes,"pytest, alembic, manage.py",PENDING
-platform/poc/backend/app/commerce/payments.py,services/commerce-api/app/commerce/payments.py,commerce-api,yes,yes,yes,yes,"pytest, alembic, manage.py",PENDING
-platform/poc/backend/app/commerce/pricing.py,services/commerce-api/app/commerce/pricing.py,commerce-api,yes,yes,yes,yes,"pytest, alembic, manage.py",PENDING
-platform/poc/backend/app/commerce/security.py,services/commerce-api/app/commerce/security.py,commerce-api,yes,yes,yes,yes,"pytest, alembic, manage.py",PENDING
-platform/poc/backend/app/commerce/seed.py,services/commerce-api/app/commerce/seed.py,commerce-api,yes,yes,yes,yes,"pytest, alembic, manage.py",PENDING
-platform/poc/backend/app/commerce/services.py,services/commerce-api/app/commerce/services.py,commerce-api,yes,yes,yes,yes,"pytest, alembic, manage.py",PENDING
-platform/poc/backend/app/config.py,services/commerce-api/app/config.py,commerce-api,yes,yes,yes,yes,"pytest, alembic, manage.py",PENDING
-platform/poc/backend/app/main.py,services/commerce-api/app/main.py,commerce-api,yes,yes,yes,yes,"pytest, alembic, manage.py",PENDING
-platform/poc/backend/app/money.py,services/commerce-api/app/money.py,commerce-api,yes,yes,yes,yes,"pytest, alembic, manage.py",PENDING
-platform/poc/backend/app/schemas.py,services/commerce-api/app/schemas.py,commerce-api,yes,yes,yes,yes,"pytest, alembic, manage.py",PENDING
-platform/poc/backend/data/candidate_products.json,services/commerce-api/data/candidate_products.json,commerce-api,no,yes,yes,yes,"pytest, alembic, manage.py",PENDING
-platform/poc/backend/data/products.json,services/commerce-api/data/products.json,commerce-api,no,yes,yes,yes,"pytest, alembic, manage.py",PENDING
-platform/poc/backend/docker-entrypoint.sh,services/commerce-api/docker-entrypoint.sh,commerce-api,no,yes,yes,yes,"pytest, alembic, manage.py",PENDING
-platform/poc/backend/manage.py,services/commerce-api/manage.py,commerce-api,yes,yes,yes,yes,"pytest, alembic, manage.py",PENDING
-platform/poc/backend/migrations/env.py,services/commerce-api/migrations/env.py,commerce-api,yes,yes,yes,yes,"pytest, alembic, manage.py",PENDING
-platform/poc/backend/migrations/script.py.mako,services/commerce-api/migrations/script.py.mako,commerce-api,no,yes,yes,yes,"pytest, alembic, manage.py",PENDING
-platform/poc/backend/migrations/versions/8d2d3d0f9b6f_initial_commerce_schema.py,services/commerce-api/migrations/versions/8d2d3d0f9b6f_initial_commerce_schema.py,commerce-api,yes,yes,yes,yes,"pytest, alembic, manage.py",PENDING
-platform/poc/backend/requirements.txt,services/commerce-api/requirements.txt,commerce-api,no,yes,yes,yes,"pytest, alembic, manage.py",PENDING
-platform/poc/backend/tests/conftest.py,services/commerce-api/tests/conftest.py,commerce-api,yes,yes,yes,yes,"pytest, alembic, manage.py",PENDING
-platform/poc/backend/tests/test_admin_security.py,services/commerce-api/tests/test_admin_security.py,commerce-api,yes,yes,yes,yes,"pytest, alembic, manage.py",PENDING
-platform/poc/backend/tests/test_api.py,services/commerce-api/tests/test_api.py,commerce-api,yes,yes,yes,yes,"pytest, alembic, manage.py",PENDING
-platform/poc/backend/tests/test_candidate_activation.py,services/commerce-api/tests/test_candidate_activation.py,commerce-api,yes,yes,yes,yes,"pytest, alembic, manage.py",PENDING
-platform/poc/backend/tests/test_commerce_e2e.py,services/commerce-api/tests/test_commerce_e2e.py,commerce-api,yes,yes,yes,yes,"pytest, alembic, manage.py",PENDING
-platform/poc/backend/tests/test_dependency_declaration.py,services/commerce-api/tests/test_dependency_declaration.py,commerce-api,yes,yes,yes,yes,"pytest, alembic, manage.py",PENDING
-platform/poc/backend/tests/test_frontend_security.py,services/commerce-api/tests/test_frontend_security.py,commerce-api,yes,yes,yes,yes,"pytest, alembic, manage.py",PENDING
-platform/poc/backend/tests/test_money_integrity.py,services/commerce-api/tests/test_money_integrity.py,commerce-api,yes,yes,yes,yes,"pytest, alembic, manage.py",PENDING
-platform/poc/docker-compose.yml,docker-compose.yml,infrastructure,no,yes,no,no,root command + docker + CI,PENDING
-platform/poc/docs/EXTERNAL_SERVICE_ACTIVATION.md,docs/operations/EXTERNAL_SERVICE_ACTIVATION.md,documentation,no,no,no,yes,link check,PENDING
-platform/poc/docs/RUNBOOKS.md,docs/operations/RUNBOOKS.md,documentation,no,no,no,yes,link check,PENDING
-platform/poc/docs/api/openapi.json,packages/contracts/openapi/openapi.json,contracts,no,no,yes,no,openapi export drift,PENDING
-platform/poc/docs/brand_asset_manifest.csv,docs/operations/brand_asset_manifest.csv,documentation,no,no,no,yes,link check,PENDING
-platform/poc/docs/cross_team_handoff_checklist.md,docs/operations/cross_team_handoff_checklist.md,documentation,no,no,no,yes,link check,PENDING
-platform/poc/docs/decision_log.md,docs/operations/decision_log.md,documentation,no,no,no,yes,link check,PENDING
-platform/poc/docs/product_master_template.csv,docs/operations/product_master_template.csv,documentation,no,no,no,yes,link check,PENDING
-platform/poc/docs/variant_master_template.csv,docs/operations/variant_master_template.csv,documentation,no,no,no,yes,link check,PENDING
-platform/poc/mobile/App.tsx,apps/mobile/App.tsx,mobile,yes,no,no,no,tsc --noEmit (blocked),PENDING
-platform/poc/mobile/README.md,apps/mobile/README.md,mobile,no,no,no,no,tsc --noEmit (blocked),PENDING
-platform/poc/mobile/app.json,apps/mobile/app.json,mobile,no,no,no,no,tsc --noEmit (blocked),PENDING
-platform/poc/mobile/package.json,apps/mobile/package.json,mobile,no,no,no,no,tsc --noEmit (blocked),PENDING
-platform/poc/scripts/mutation_guard_check.py,scripts/validation/mutation_guard_check.py,tooling,yes,no,yes,no,validators + mutation harness,PENDING
-platform/poc/scripts/validate_candidate_data.py,scripts/validation/validate_candidate_data.py,tooling,yes,no,yes,no,validators + mutation harness,PENDING
-platform/poc/scripts/validate_product_data.py,scripts/validation/validate_product_data.py,tooling,yes,no,yes,no,validators + mutation harness,PENDING
-platform/poc/storefront/Dockerfile,apps/web/Dockerfile,web,no,yes,no,no,browser load + frontend security test,PENDING
-platform/poc/storefront/app.js,apps/web/app.js,web,yes,yes,no,no,browser load + frontend security test,PENDING
-platform/poc/storefront/index.html,apps/web/index.html,web,no,yes,no,no,browser load + frontend security test,PENDING
-platform/poc/storefront/nginx.conf,apps/web/nginx.conf,web,no,yes,no,no,browser load + frontend security test,PENDING
-platform/poc/storefront/styles.css,apps/web/styles.css,web,no,yes,no,no,browser load + frontend security test,PENDING
+platform/poc/.dockerignore,.dockerignore,infrastructure,no,yes,no,no,root command + docker + CI,DONE
+platform/poc/.env.example,.env.example,infrastructure,no,yes,no,no,root command + docker + CI,DONE
+platform/poc/.github/workflows/ci.yml,.github/workflows/ci.yml,ci,no,no,yes,no,workflow path resolution,DONE
+platform/poc/.gitignore,__DELETE__,infrastructure,no,yes,no,no,root command + docker + CI,DONE
+platform/poc/KNOWN_LIMITATIONS.md,docs/KNOWN_LIMITATIONS.md,documentation,no,no,no,yes,root command + docker + CI,DONE
+platform/poc/Makefile,Makefile,tooling,no,no,yes,no,root command + docker + CI,DONE
+platform/poc/README.md,README.md,documentation,no,no,no,yes,root command + docker + CI,DONE
+platform/poc/admin/admin.css,apps/admin/admin.css,admin,no,yes,no,no,browser load + frontend security test,DONE
+platform/poc/admin/admin.js,apps/admin/admin.js,admin,yes,yes,no,no,browser load + frontend security test,DONE
+platform/poc/admin/index.html,apps/admin/index.html,admin,no,yes,no,no,browser load + frontend security test,DONE
+platform/poc/backend/Dockerfile,services/commerce-api/Dockerfile,commerce-api,no,yes,yes,yes,"pytest, alembic, manage.py",DONE
+platform/poc/backend/alembic.ini,services/commerce-api/alembic.ini,commerce-api,no,yes,yes,yes,"pytest, alembic, manage.py",DONE
+platform/poc/backend/app/__init__.py,services/commerce-api/app/__init__.py,commerce-api,yes,yes,yes,yes,"pytest, alembic, manage.py",DONE
+platform/poc/backend/app/ai_stylist.py,services/commerce-api/app/ai_stylist.py,commerce-api,yes,yes,yes,yes,"pytest, alembic, manage.py",DONE
+platform/poc/backend/app/candidate_activation.py,services/commerce-api/app/candidate_activation.py,commerce-api,yes,yes,yes,yes,"pytest, alembic, manage.py",DONE
+platform/poc/backend/app/catalog.py,services/commerce-api/app/catalog.py,commerce-api,yes,yes,yes,yes,"pytest, alembic, manage.py",DONE
+platform/poc/backend/app/commerce/__init__.py,services/commerce-api/app/commerce/__init__.py,commerce-api,yes,yes,yes,yes,"pytest, alembic, manage.py",DONE
+platform/poc/backend/app/commerce/api.py,services/commerce-api/app/commerce/api.py,commerce-api,yes,yes,yes,yes,"pytest, alembic, manage.py",DONE
+platform/poc/backend/app/commerce/db.py,services/commerce-api/app/commerce/db.py,commerce-api,yes,yes,yes,yes,"pytest, alembic, manage.py",DONE
+platform/poc/backend/app/commerce/inventory.py,services/commerce-api/app/commerce/inventory.py,commerce-api,yes,yes,yes,yes,"pytest, alembic, manage.py",DONE
+platform/poc/backend/app/commerce/models.py,services/commerce-api/app/commerce/models.py,commerce-api,yes,yes,yes,yes,"pytest, alembic, manage.py",DONE
+platform/poc/backend/app/commerce/payments.py,services/commerce-api/app/commerce/payments.py,commerce-api,yes,yes,yes,yes,"pytest, alembic, manage.py",DONE
+platform/poc/backend/app/commerce/pricing.py,services/commerce-api/app/commerce/pricing.py,commerce-api,yes,yes,yes,yes,"pytest, alembic, manage.py",DONE
+platform/poc/backend/app/commerce/security.py,services/commerce-api/app/commerce/security.py,commerce-api,yes,yes,yes,yes,"pytest, alembic, manage.py",DONE
+platform/poc/backend/app/commerce/seed.py,services/commerce-api/app/commerce/seed.py,commerce-api,yes,yes,yes,yes,"pytest, alembic, manage.py",DONE
+platform/poc/backend/app/commerce/services.py,services/commerce-api/app/commerce/services.py,commerce-api,yes,yes,yes,yes,"pytest, alembic, manage.py",DONE
+platform/poc/backend/app/config.py,services/commerce-api/app/config.py,commerce-api,yes,yes,yes,yes,"pytest, alembic, manage.py",DONE
+platform/poc/backend/app/main.py,services/commerce-api/app/main.py,commerce-api,yes,yes,yes,yes,"pytest, alembic, manage.py",DONE
+platform/poc/backend/app/money.py,services/commerce-api/app/money.py,commerce-api,yes,yes,yes,yes,"pytest, alembic, manage.py",DONE
+platform/poc/backend/app/schemas.py,services/commerce-api/app/schemas.py,commerce-api,yes,yes,yes,yes,"pytest, alembic, manage.py",DONE
+platform/poc/backend/data/candidate_products.json,services/commerce-api/data/candidate_products.json,commerce-api,no,yes,yes,yes,"pytest, alembic, manage.py",DONE
+platform/poc/backend/data/products.json,services/commerce-api/data/products.json,commerce-api,no,yes,yes,yes,"pytest, alembic, manage.py",DONE
+platform/poc/backend/docker-entrypoint.sh,services/commerce-api/docker-entrypoint.sh,commerce-api,no,yes,yes,yes,"pytest, alembic, manage.py",DONE
+platform/poc/backend/manage.py,services/commerce-api/manage.py,commerce-api,yes,yes,yes,yes,"pytest, alembic, manage.py",DONE
+platform/poc/backend/migrations/env.py,services/commerce-api/migrations/env.py,commerce-api,yes,yes,yes,yes,"pytest, alembic, manage.py",DONE
+platform/poc/backend/migrations/script.py.mako,services/commerce-api/migrations/script.py.mako,commerce-api,no,yes,yes,yes,"pytest, alembic, manage.py",DONE
+platform/poc/backend/migrations/versions/8d2d3d0f9b6f_initial_commerce_schema.py,services/commerce-api/migrations/versions/8d2d3d0f9b6f_initial_commerce_schema.py,commerce-api,yes,yes,yes,yes,"pytest, alembic, manage.py",DONE
+platform/poc/backend/requirements.txt,services/commerce-api/requirements.txt,commerce-api,no,yes,yes,yes,"pytest, alembic, manage.py",DONE
+platform/poc/backend/tests/conftest.py,services/commerce-api/tests/conftest.py,commerce-api,yes,yes,yes,yes,"pytest, alembic, manage.py",DONE
+platform/poc/backend/tests/test_admin_security.py,services/commerce-api/tests/test_admin_security.py,commerce-api,yes,yes,yes,yes,"pytest, alembic, manage.py",DONE
+platform/poc/backend/tests/test_api.py,services/commerce-api/tests/test_api.py,commerce-api,yes,yes,yes,yes,"pytest, alembic, manage.py",DONE
+platform/poc/backend/tests/test_candidate_activation.py,services/commerce-api/tests/test_candidate_activation.py,commerce-api,yes,yes,yes,yes,"pytest, alembic, manage.py",DONE
+platform/poc/backend/tests/test_commerce_e2e.py,services/commerce-api/tests/test_commerce_e2e.py,commerce-api,yes,yes,yes,yes,"pytest, alembic, manage.py",DONE
+platform/poc/backend/tests/test_dependency_declaration.py,services/commerce-api/tests/test_dependency_declaration.py,commerce-api,yes,yes,yes,yes,"pytest, alembic, manage.py",DONE
+platform/poc/backend/tests/test_frontend_security.py,services/commerce-api/tests/test_frontend_security.py,commerce-api,yes,yes,yes,yes,"pytest, alembic, manage.py",DONE
+platform/poc/backend/tests/test_money_integrity.py,services/commerce-api/tests/test_money_integrity.py,commerce-api,yes,yes,yes,yes,"pytest, alembic, manage.py",DONE
+platform/poc/docker-compose.yml,docker-compose.yml,infrastructure,no,yes,no,no,root command + docker + CI,DONE
+platform/poc/docs/EXTERNAL_SERVICE_ACTIVATION.md,docs/operations/EXTERNAL_SERVICE_ACTIVATION.md,documentation,no,no,no,yes,link check,DONE
+platform/poc/docs/RUNBOOKS.md,docs/operations/RUNBOOKS.md,documentation,no,no,no,yes,link check,DONE
+platform/poc/docs/api/openapi.json,packages/contracts/openapi/openapi.json,contracts,no,no,yes,no,openapi export drift,DONE
+platform/poc/docs/brand_asset_manifest.csv,docs/operations/brand_asset_manifest.csv,documentation,no,no,no,yes,link check,DONE
+platform/poc/docs/cross_team_handoff_checklist.md,docs/operations/cross_team_handoff_checklist.md,documentation,no,no,no,yes,link check,DONE
+platform/poc/docs/decision_log.md,docs/operations/decision_log.md,documentation,no,no,no,yes,link check,DONE
+platform/poc/docs/product_master_template.csv,docs/operations/product_master_template.csv,documentation,no,no,no,yes,link check,DONE
+platform/poc/docs/variant_master_template.csv,docs/operations/variant_master_template.csv,documentation,no,no,no,yes,link check,DONE
+platform/poc/mobile/App.tsx,apps/mobile/App.tsx,mobile,yes,no,no,no,tsc --noEmit (blocked),DONE
+platform/poc/mobile/README.md,apps/mobile/README.md,mobile,no,no,no,no,tsc --noEmit (blocked),DONE
+platform/poc/mobile/app.json,apps/mobile/app.json,mobile,no,no,no,no,tsc --noEmit (blocked),DONE
+platform/poc/mobile/package.json,apps/mobile/package.json,mobile,no,no,no,no,tsc --noEmit (blocked),DONE
+platform/poc/scripts/mutation_guard_check.py,scripts/validation/mutation_guard_check.py,tooling,yes,no,yes,no,validators + mutation harness,DONE
+platform/poc/scripts/validate_candidate_data.py,scripts/validation/validate_candidate_data.py,tooling,yes,no,yes,no,validators + mutation harness,DONE
+platform/poc/scripts/validate_product_data.py,scripts/validation/validate_product_data.py,tooling,yes,no,yes,no,validators + mutation harness,DONE
+platform/poc/storefront/Dockerfile,apps/web/Dockerfile,web,no,yes,no,no,browser load + frontend security test,DONE
+platform/poc/storefront/app.js,apps/web/app.js,web,yes,yes,no,no,browser load + frontend security test,DONE
+platform/poc/storefront/index.html,apps/web/index.html,web,no,yes,no,no,browser load + frontend security test,DONE
+platform/poc/storefront/nginx.conf,apps/web/nginx.conf,web,no,yes,no,no,browser load + frontend security test,DONE
+platform/poc/storefront/styles.css,apps/web/styles.css,web,no,yes,no,no,browser load + frontend security test,DONE

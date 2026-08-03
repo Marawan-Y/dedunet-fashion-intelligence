@@ -21,7 +21,26 @@ from pathlib import Path
 BACKEND_DIR = Path(__file__).resolve().parent
 sys.path.insert(0, str(BACKEND_DIR))
 
-CONTRACT_PATH = BACKEND_DIR.parent / "docs" / "api" / "openapi.json"
+def contract_path() -> Path:
+    """Locate the authoritative API contract.
+
+    Resolved lazily, and only by ``export-openapi``. In the container this file lives at
+    ``/app/manage.py``, so there is no repository root above it and computing this at
+    import time raised IndexError, taking every other command down with it — including
+    the ``seed`` the entrypoint runs on startup.
+
+    Walks upward for the real ``packages/`` directory rather than assuming a fixed depth,
+    so it survives the service moving again.
+    """
+
+    for candidate in (BACKEND_DIR, *BACKEND_DIR.parents):
+        contract_dir = candidate / "packages" / "contracts" / "openapi"
+        if contract_dir.is_dir():
+            return contract_dir / "openapi.json"
+    raise SystemExit(
+        "cannot locate packages/contracts/openapi/ above "
+        f"{BACKEND_DIR}; run export-openapi from a full checkout"
+    )
 
 
 def cmd_migrate(_args: argparse.Namespace) -> int:
@@ -54,10 +73,11 @@ def cmd_bootstrap(args: argparse.Namespace) -> int:
 def cmd_export_openapi(_args: argparse.Namespace) -> int:
     from app.main import app
 
-    CONTRACT_PATH.parent.mkdir(parents=True, exist_ok=True)
+    destination = contract_path()
+    destination.parent.mkdir(parents=True, exist_ok=True)
     spec = app.openapi()
-    CONTRACT_PATH.write_text(json.dumps(spec, indent=2, sort_keys=True), encoding="utf-8")
-    print(f"wrote {CONTRACT_PATH} ({len(spec.get('paths', {}))} paths)")
+    destination.write_text(json.dumps(spec, indent=2, sort_keys=True), encoding="utf-8")
+    print(f"wrote {destination} ({len(spec.get('paths', {}))} paths)")
     return 0
 
 

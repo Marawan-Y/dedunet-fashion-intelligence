@@ -8,7 +8,7 @@ This is a Codex-native version of the two-agent project pack. It adds:
 - two project-scoped custom agents under `.codex/agents/`;
 - an ExecPlan standard under `.agent/PLANS.md`;
 - machine-readable Markdown copies of both execution books;
-- the extracted PoC under `platform/poc/`;
+- the extracted PoC under ``;
 - controller, continuation and gate-review prompts;
 - separate ownership directories for each side and a shared system of record.
 

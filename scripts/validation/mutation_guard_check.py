@@ -33,8 +33,9 @@ import tempfile
 from dataclasses import dataclass, field
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[1]
-BACKEND = ROOT / "backend"
+# parents[2] is the repository root: validation/ -> scripts/ -> root
+ROOT = Path(__file__).resolve().parents[2]
+BACKEND = ROOT / "services" / "commerce-api"
 
 
 @dataclass(frozen=True)

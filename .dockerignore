@@ -7,9 +7,12 @@
 !.env.example
 
 # Backend source has its own build context; it must not leak into the nginx image.
-backend/
+services/
 scripts/
 docs/
+evidence/
+handoffs/
+packages/
 *.md
 
 # Local artefacts

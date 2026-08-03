@@ -15,7 +15,7 @@ Before proposing or changing anything, read:
 2. The relevant side's system prompt in `docs/source/`
 3. The relevant side's full execution book in Markdown in `docs/source/`
 4. `.agent/PLANS.md`
-5. `platform/poc/README.md` for software work
+5. `README.md` for software work
 
 PDF and DOCX files are retained as human references. Use the Markdown books as the machine-readable source.
 

@@ -2,7 +2,7 @@ name: fashion-commerce-codex-poc
 
 services:
   api:
-    build: ./backend
+    build: ./services/commerce-api
     env_file:
       - .env
     environment:
@@ -13,7 +13,7 @@ services:
     volumes:
       # Sample fixtures are checksum-protected and the container has no reason to write
       # them, so they are mounted read-only.
-      - ./backend/data:/app/data:ro
+      - ./services/commerce-api/data:/app/data:ro
       - commerce-db:/app/var
     ports:
       - "${API_PORT:-18000}:8000"
@@ -32,7 +32,7 @@ services:
       # Context is the PoC root so the image can include both browser clients.
       # .dockerignore keeps backend source and .env out of this context.
       context: .
-      dockerfile: storefront/Dockerfile
+      dockerfile: apps/web/Dockerfile
     depends_on:
       api:
         condition: service_healthy
