@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="240" height="240" viewBox="0 0 240 240" role="img">
+  <title>DEDUNET compact D/N passage mark</title>
+  <desc>Prototype D/N passage monogram with Resin source point.</desc>
+  <rect width="240" height="240" fill="none"/>
+  <path d="M52 44 V196 H94 C140 196 160 164 160 120 C160 76 140 44 94 44 Z" fill="none" stroke="#14120F" stroke-width="16" stroke-linejoin="round"/>
+  <path d="M112 196 V44 L188 196 V44" fill="none" stroke="#14120F" stroke-width="16" stroke-linecap="square" stroke-linejoin="round"/>
+  <circle cx="120" cy="120" r="12" fill="#A95122"/>
+</svg>

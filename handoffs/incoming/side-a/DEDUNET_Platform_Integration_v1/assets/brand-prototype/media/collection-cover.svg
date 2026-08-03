@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1500" height="1000" viewBox="0 0 1500 1000" role="img">
+  <title>First Passage — concept image</title>
+  <desc>Fictional DEDUNET concept media. Not a photograph of a manufactured product.</desc>
+  <rect width="1500" height="1000" fill="#F6F1E7"/>
+  <rect x="0" y="0" width="630" height="1000" fill="#14120F"/><path d="M630 0 L1500 420 V1000 H630 Z" fill="#D8C3A3"/><circle cx="630" cy="560" r="60" fill="#A95122"/>
+  <line x1="120" y1="180" x2="780" y2="180" stroke="#14120F" stroke-width="6"/>
+  <circle cx="450" cy="180" r="12" fill="#A95122"/>
+  <text x="120" y="780" fill="#F6F1E7" font-family="Bodoni Moda, Didot, Georgia, serif" font-size="85" font-weight="600">First Passage</text>
+  <text x="120" y="860" fill="#D8C3A3" font-family="Manrope, Arial, sans-serif" font-size="27" letter-spacing="3">FIVE CONNECTED PIECES</text>
+  <text x="120" y="950" fill="#D8C3A3" font-family="Manrope, Arial, sans-serif" font-size="18">CONCEPT IMAGE — NOT A MANUFACTURED PRODUCT PHOTOGRAPH</text>
+</svg>

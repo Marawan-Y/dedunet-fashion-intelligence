@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1500" viewBox="0 0 1200 1500" role="img">
+  <title>The Measure Trouser detail concept</title>
+  <desc>Concept image, not manufactured product photography.</desc>
+  <rect width="1200" height="1500" fill="#F6F1E7"/>
+  <path d="M410 250 H790 L830 1180 H650 L600 660 L550 1180 H370 Z" fill="#5D564E" stroke="#14120F" stroke-width="10" stroke-linejoin="round"/>
+  <line x1="690" y1="290" x2="690" y2="1120" stroke="#A95122" stroke-width="5" stroke-dasharray="16 20" opacity=".74"/>
+  <circle cx="690" cy="820" r="16" fill="#A95122"/>
+  <circle cx="690" cy="720" r="92" fill="none" stroke="#A95122" stroke-width="10"/><path d="M520 720 H860" stroke="#14120F" stroke-width="8"/>
+  <text x="90" y="1240" fill="#14120F" font-family="Bodoni Moda, Didot, Georgia, serif" font-size="78">The Measure Trouser</text>
+  <text x="90" y="1325" fill="#625B51" font-family="Manrope, Arial, sans-serif" font-size="30" letter-spacing="4">DETAIL / PROTOTYPE SILHOUETTE</text>
+  <text x="90" y="1430" fill="#A23B32" font-family="Manrope, Arial, sans-serif" font-size="24">CONCEPT IMAGE — NOT A MANUFACTURED PRODUCT</text>
+</svg>

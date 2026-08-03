@@ -1,0 +1,61 @@
+{
+  "version": "1.0.0",
+  "fonts": [
+    {
+      "role": "display",
+      "family": "Bodoni Moda",
+      "source": "Google Fonts",
+      "license": "SIL Open Font License",
+      "weights": [
+        500,
+        600
+      ],
+      "styles": [
+        "normal",
+        "italic"
+      ],
+      "fallback": "Didot, Georgia, serif",
+      "url": "https://fonts.google.com/specimen/Bodoni+Moda"
+    },
+    {
+      "role": "body-interface",
+      "family": "Manrope",
+      "source": "Google Fonts",
+      "license": "SIL Open Font License",
+      "weights": [
+        400,
+        500,
+        600,
+        700
+      ],
+      "styles": [
+        "normal"
+      ],
+      "fallback": "Arial, Helvetica, sans-serif",
+      "url": "https://fonts.google.com/specimen/Manrope"
+    },
+    {
+      "role": "arabic",
+      "family": "IBM Plex Sans Arabic",
+      "source": "Google Fonts / IBM",
+      "license": "SIL Open Font License",
+      "weights": [
+        400,
+        500,
+        600
+      ],
+      "styles": [
+        "normal"
+      ],
+      "fallback": "Noto Sans Arabic, Arial, sans-serif",
+      "url": "https://fonts.google.com/specimen/IBM+Plex+Sans+Arabic"
+    }
+  ],
+  "rules": {
+    "selfHostForProduction": true,
+    "subset": "latin, latin-ext, arabic as required",
+    "fontDisplay": "swap",
+    "noUnlicensedMandatoryFonts": true,
+    "wordmarkMustBeOutlinedBeforeProduction": true
+  }
+}

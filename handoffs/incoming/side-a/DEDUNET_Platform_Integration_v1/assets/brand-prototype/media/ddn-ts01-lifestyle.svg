@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1500" viewBox="0 0 1200 1500" role="img">
+  <title>The Source Tee — concept image</title>
+  <desc>Fictional DEDUNET concept media. Not a photograph of a manufactured product.</desc>
+  <rect width="1200" height="1500" fill="#F6F1E7"/>
+  <path d="M0 1080 C300 720, 696 1350, 1200 780 L1200 1500 H0 Z" fill="#14120F" opacity="0.96"/><rect x="744" y="180" width="264" height="630" fill="#33475B"/><circle cx="876" cy="405" r="108" fill="#A95122" opacity="0.94"/>
+  <line x1="96" y1="270" x2="624" y2="270" stroke="#14120F" stroke-width="4"/>
+  <circle cx="360" cy="270" r="9" fill="#A95122"/>
+  <text x="96" y="1170" fill="#F6F1E7" font-family="Bodoni Moda, Didot, Georgia, serif" font-size="102" font-weight="600">The Source Tee</text>
+  <text x="96" y="1290" fill="#D8C3A3" font-family="Manrope, Arial, sans-serif" font-size="32" letter-spacing="3">LIFESTYLE CONCEPT / FIRST PASSAGE</text>
+  <text x="96" y="1425" fill="#D8C3A3" font-family="Manrope, Arial, sans-serif" font-size="21">CONCEPT IMAGE — NOT A MANUFACTURED PRODUCT PHOTOGRAPH</text>
+</svg>

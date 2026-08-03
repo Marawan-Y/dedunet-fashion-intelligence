@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024" role="img">
+  <title>DEDUNET app icon</title>
+  <desc>Carbon app icon with Sandstone D/N monogram and Resin source point.</desc>
+  <rect width="1024" height="1024" rx="112" fill="#14120F"/>
+  <path d="M238 180 V844 H420 C606 844 688 704 688 512 C688 320 606 180 420 180 Z" fill="none" stroke="#D8C3A3" stroke-width="62" stroke-linejoin="round"/>
+  <path d="M448 844 V180 L782 844 V180" fill="none" stroke="#D8C3A3" stroke-width="62" stroke-linecap="square" stroke-linejoin="round"/>
+  <circle cx="512" cy="512" r="52" fill="#A95122"/>
+</svg>

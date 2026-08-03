@@ -1,0 +1,205 @@
+{
+  "meta": {
+    "version": "1.0.0",
+    "status": "PROTOTYPE",
+    "locale": "en-DE",
+    "evidenceSafe": true,
+    "brand": "DEDUNET",
+    "legalClearance": false
+  },
+  "announcement": {
+    "primary": "Prototype access to DEDUNET — join the first release.",
+    "postLaunchFallback": "EU delivery terms will be confirmed before launch."
+  },
+  "home": {
+    "hero": {
+      "eyebrow": "DEDUNET / FIRST PASSAGE",
+      "headline": "Worth, worn.",
+      "support": "Modern unisex essentials built around material, proportion and meaning.",
+      "primaryCta": {
+        "label": "Explore First Passage",
+        "href": "/collections/first-passage"
+      },
+      "secondaryCta": {
+        "label": "Read the origin",
+        "href": "/about"
+      },
+      "assetId": "MEDIA-HERO-001"
+    },
+    "featured": {
+      "title": "First Passage",
+      "copy": "Five pieces. One controlled wardrobe. Designed through clean proportion, useful layering and material-led detail.",
+      "cta": "View the collection"
+    },
+    "story": {
+      "title": "Value begins with substance.",
+      "copy": "DEDUNET is a contemporary name inspired by Dedun/Dedwen, a Nubian deity documented in Egyptian sources and associated with incense and valuable resources. We do not turn that history into costume. We translate one modern idea: worth should be carried through material, form and use."
+    },
+    "materials": {
+      "title": "Specification before story.",
+      "copy": "The first capsule uses intended cotton-led specifications. Fibre origin, composition, factory, performance and certification claims remain subject to supplier documents, testing and sample approval. Final product pages must show only verified information.",
+      "badge": "Prototype specification — verification pending"
+    },
+    "editorial": {
+      "title": "The passage of a piece.",
+      "copy": "From material choice to repeated wear, each decision should add useful value—not decorative noise.",
+      "cta": "Read the journal"
+    },
+    "newsletter": {
+      "headline": "Follow the passage.",
+      "copy": "Receive collection notes, product releases and the decisions behind each piece.",
+      "field": "Email address",
+      "button": "Join first access",
+      "consent": "By subscribing, you agree to receive DEDUNET updates. You can unsubscribe at any time."
+    }
+  },
+  "collection": {
+    "title": "First Passage",
+    "intro": "A compact unisex wardrobe designed around material, proportion and repeat combinations. All material and origin statements in this prototype are intended specifications pending verification.",
+    "filters": [
+      "Category",
+      "Colour",
+      "Size",
+      "Availability"
+    ],
+    "sort": [
+      "Featured",
+      "Newest",
+      "Price: low to high",
+      "Price: high to low"
+    ],
+    "empty": "No pieces match these filters. Clear one or return to the full passage.",
+    "clear": "Clear filters"
+  },
+  "product": {
+    "evidenceBadge": "Intended specification — verification pending",
+    "selectColour": "Select colour",
+    "selectSize": "Select size",
+    "sizeGuide": "View unisex size guide",
+    "fitHelp": "Compare the garment measurements with a piece you already own.",
+    "add": "Add to bag",
+    "notify": "Tell me when it returns",
+    "recommendations": "Pieces in the same passage",
+    "outOfStock": "This piece is not available in your selected size.",
+    "shipping": "Delivery timing and fees will be confirmed before public launch.",
+    "returns": "Prototype policy only. Final returns terms require legal and operational approval.",
+    "careHeading": "Care guidance",
+    "originHeading": "Origin status"
+  },
+  "cart": {
+    "title": "Your bag",
+    "empty": "Your bag is open. Begin with First Passage.",
+    "cta": "Explore the collection",
+    "notice": "Checkout is a prototype. No real payment or order is created.",
+    "checkout": "Continue to checkout",
+    "remove": "Remove",
+    "subtotal": "Subtotal",
+    "delivery": "Delivery calculated at checkout"
+  },
+  "checkout": {
+    "steps": [
+      "Contact",
+      "Delivery",
+      "Payment",
+      "Review"
+    ],
+    "submit": "Place prototype order",
+    "paymentError": "We could not authorise this payment. Check the details or use another method.",
+    "addressError": "Review the highlighted address fields before continuing.",
+    "orderSummary": "Order summary",
+    "discount": "Access code",
+    "apply": "Apply"
+  },
+  "account": {
+    "welcome": "Your DEDUNET space",
+    "sections": [
+      "Orders",
+      "Saved pieces",
+      "Profile",
+      "Addresses",
+      "Preferences"
+    ],
+    "noOrders": "No orders yet. Your first passage is still open.",
+    "noSaved": "Save pieces to return to them here."
+  },
+  "about": {
+    "headline": "Material carries more than weight.",
+    "short": "DEDUNET creates contemporary unisex forms built around material intelligence, cultural credit and useful wear.",
+    "narrative": [
+      "DEDUNET begins with a question: what gives an object real worth?",
+      "The name is a contemporary construction inspired by Dedun or Dedwen, a Nubian deity documented in Egyptian sources and associated with incense and valuable resources moving through the Nile region. The historical reference is credited carefully. DEDUNET does not claim to be an ancient textile-goddess name, and it does not reproduce religious imagery as fashion decoration.",
+      "Our modern interpretation is material worth. A garment becomes valuable through the way material, proportion, construction and use meet. That value is quiet. It appears in how a shirt layers, how a trouser moves, how a surface changes with wear and how clearly the product is described.",
+      "The brand is Egyptian-origin in its business ambition and North African in its cultural field, while recognising the Nubian source behind the name. Our work must be developed through contemporary collaboration, accurate attribution and product evidence—not mythology cosplay or borrowed sacred symbols.",
+      "First Passage is the prototype expression of that idea: five connected pieces designed as a controlled unisex wardrobe. Materials, origin and manufacturing remain intended specifications until supplier documents, samples and testing confirm them."
+    ],
+    "cta": "Explore First Passage"
+  },
+  "emails": {
+    "welcome": {
+      "subject": "Welcome to DEDUNET",
+      "preheader": "Follow First Passage from idea to release.",
+      "headline": "You are at the beginning.",
+      "body": "Thank you for joining DEDUNET. We will share new pieces, collection notes and the product decisions behind them—without noise.",
+      "cta": "Discover the origin"
+    },
+    "abandonedCart": {
+      "subject": "A piece is still in your bag",
+      "preheader": "Return when it has earned its place.",
+      "headline": "Still considering it?",
+      "body": "Your selection is waiting. Review the fit, intended material and pieces designed to work with it.",
+      "cta": "Return to your bag"
+    },
+    "orderConfirmation": {
+      "subject": "DEDUNET order {order_number}",
+      "preheader": "We received your selection.",
+      "headline": "Your order is received.",
+      "body": "We will confirm each next step by email. Review your order details below.",
+      "cta": "View order"
+    },
+    "shipping": {
+      "subject": "Your DEDUNET order is moving",
+      "preheader": "Tracking details are now available.",
+      "headline": "In passage.",
+      "body": "Your order has left our fulfilment location. Use the tracking link for the latest carrier status.",
+      "cta": "Track order"
+    }
+  },
+  "app": {
+    "name": "DEDUNET",
+    "assistant": "DEDUNET Guide",
+    "onboarding": [
+      {
+        "title": "Worth, worn.",
+        "body": "Explore modern unisex pieces designed as one controlled wardrobe.",
+        "cta": "Continue"
+      },
+      {
+        "title": "Find your measure.",
+        "body": "Compare fits, save measurements and understand how each piece is intended to sit.",
+        "cta": "Continue"
+      },
+      {
+        "title": "Follow the passage.",
+        "body": "Save pieces, receive relevant restocks and understand the decisions behind each collection.",
+        "cta": "Enter DEDUNET"
+      }
+    ],
+    "bottomNavigation": [
+      "Discover",
+      "Shop",
+      "Saved",
+      "Bag",
+      "Account"
+    ]
+  },
+  "social": {
+    "bio": "Modern unisex forms. Material worth. Germany-first prototype. Product claims verified before launch.",
+    "launchPost": "DEDUNET begins with First Passage: five connected pieces built around material, proportion and useful wear. Prototype access is now open."
+  },
+  "errors": {
+    "searchEmpty": "No piece found for that search.",
+    "network": "The connection broke. Try again.",
+    "invalidCode": "That access code is not recognised.",
+    "generic": "Something did not carry through. Try again or contact care."
+  }
+}

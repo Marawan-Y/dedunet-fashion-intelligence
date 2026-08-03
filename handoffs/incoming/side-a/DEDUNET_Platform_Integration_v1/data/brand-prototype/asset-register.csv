@@ -1,0 +1,32 @@
+asset_id,path,purpose,ratio,status,ownership_status,alt_text,human_review_required
+LOGO-PRIMARY-001,assets/brand-prototype/logos/logo-primary.svg,Primary wordmark,25:6,PROTOTYPE_VECTOR,ORIGINAL_PROTOTYPE_ASSET,DEDUNET primary wordmark with passage line and Resin source point,yes
+LOGO-COMPACT-001,assets/brand-prototype/logos/logo-compact.svg,Compact D/N mark,1:1,PROTOTYPE_VECTOR,ORIGINAL_PROTOTYPE_ASSET,DEDUNET D/N passage monogram,yes
+LOGO-MONO-001,assets/brand-prototype/logos/logo-monochrome.svg,Monochrome logo,25:5,PROTOTYPE_VECTOR,ORIGINAL_PROTOTYPE_ASSET,Black DEDUNET wordmark,yes
+LOGO-REVERSED-001,assets/brand-prototype/logos/logo-reversed.svg,Reversed logo,25:5,PROTOTYPE_VECTOR,ORIGINAL_PROTOTYPE_ASSET,Sandstone DEDUNET wordmark on Carbon,yes
+FAVICON-001,assets/brand-prototype/logos/favicon.svg,Browser favicon,1:1,PROTOTYPE_VECTOR,ORIGINAL_PROTOTYPE_ASSET,DEDUNET compact D/N favicon,yes
+APP-ICON-001,assets/brand-prototype/logos/app-icon.png,Mobile app icon,1:1,PROTOTYPE_RASTER,ORIGINAL_PROTOTYPE_ASSET,DEDUNET D/N icon on Carbon,yes
+PATTERN-001,assets/brand-prototype/patterns/passage-lines.svg,Passage Lines pattern,3:2,PROTOTYPE_VECTOR,ORIGINAL_PROTOTYPE_ASSET,Sparse parallel-line pattern with Resin points,yes
+MEDIA-HERO-001,assets/brand-prototype/media/homepage-hero.svg,Homepage hero,16:9,PROTOTYPE_CONCEPT,ORIGINAL_PROTOTYPE_ASSET,Abstract DEDUNET First Passage campaign concept,yes
+MEDIA-COLLECTION-001,assets/brand-prototype/media/collection-cover.svg,Collection cover,3:2,PROTOTYPE_CONCEPT,ORIGINAL_PROTOTYPE_ASSET,Abstract First Passage collection cover,yes
+MEDIA-ABOUT-001,assets/brand-prototype/media/about-image.svg,About page image,3:2,PROTOTYPE_CONCEPT,ORIGINAL_PROTOTYPE_ASSET,Abstract material-worth brand story concept,yes
+MEDIA-EMAIL-001,assets/brand-prototype/media/email-banner.svg,Email banner,3:1,PROTOTYPE_CONCEPT,ORIGINAL_PROTOTYPE_ASSET,DEDUNET Follow the Passage email banner,yes
+MEDIA-APP-001,assets/brand-prototype/media/app-splash.svg,App splash,9:16,PROTOTYPE_CONCEPT,ORIGINAL_PROTOTYPE_ASSET,DEDUNET Material Worth app splash,yes
+MEDIA-SOCIAL-001,assets/brand-prototype/media/social-avatar.svg,Social avatar,1:1,PROTOTYPE_CONCEPT,ORIGINAL_PROTOTYPE_ASSET,DEDUNET D/N passage mark,yes
+DDN-TS01-FRONT,assets/brand-prototype/products/ddn-ts01-front.svg,The Source Tee front concept,4:5,PROTOTYPE_CONCEPT,ORIGINAL_PROTOTYPE_ASSET,Concept front view of The Source Tee,yes
+DDN-TS01-BACK,assets/brand-prototype/products/ddn-ts01-back.svg,The Source Tee back concept,4:5,PROTOTYPE_CONCEPT,ORIGINAL_PROTOTYPE_ASSET,Concept back view of The Source Tee,yes
+DDN-TS01-DETAIL,assets/brand-prototype/products/ddn-ts01-detail.svg,The Source Tee detail concept,4:5,PROTOTYPE_CONCEPT,ORIGINAL_PROTOTYPE_ASSET,Concept detail view of The Source Tee,yes
+DDN-SH01-FRONT,assets/brand-prototype/products/ddn-sh01-front.svg,The Passage Shirt front concept,4:5,PROTOTYPE_CONCEPT,ORIGINAL_PROTOTYPE_ASSET,Concept front view of The Passage Shirt,yes
+DDN-SH01-BACK,assets/brand-prototype/products/ddn-sh01-back.svg,The Passage Shirt back concept,4:5,PROTOTYPE_CONCEPT,ORIGINAL_PROTOTYPE_ASSET,Concept back view of The Passage Shirt,yes
+DDN-SH01-DETAIL,assets/brand-prototype/products/ddn-sh01-detail.svg,The Passage Shirt detail concept,4:5,PROTOTYPE_CONCEPT,ORIGINAL_PROTOTYPE_ASSET,Concept detail view of The Passage Shirt,yes
+DDN-TR01-FRONT,assets/brand-prototype/products/ddn-tr01-front.svg,The Measure Trouser front concept,4:5,PROTOTYPE_CONCEPT,ORIGINAL_PROTOTYPE_ASSET,Concept front view of The Measure Trouser,yes
+DDN-TR01-BACK,assets/brand-prototype/products/ddn-tr01-back.svg,The Measure Trouser back concept,4:5,PROTOTYPE_CONCEPT,ORIGINAL_PROTOTYPE_ASSET,Concept back view of The Measure Trouser,yes
+DDN-TR01-DETAIL,assets/brand-prototype/products/ddn-tr01-detail.svg,The Measure Trouser detail concept,4:5,PROTOTYPE_CONCEPT,ORIGINAL_PROTOTYPE_ASSET,Concept detail view of The Measure Trouser,yes
+DDN-OS01-FRONT,assets/brand-prototype/products/ddn-os01-front.svg,The Structure Overshirt front concept,4:5,PROTOTYPE_CONCEPT,ORIGINAL_PROTOTYPE_ASSET,Concept front view of The Structure Overshirt,yes
+DDN-OS01-BACK,assets/brand-prototype/products/ddn-os01-back.svg,The Structure Overshirt back concept,4:5,PROTOTYPE_CONCEPT,ORIGINAL_PROTOTYPE_ASSET,Concept back view of The Structure Overshirt,yes
+DDN-OS01-DETAIL,assets/brand-prototype/products/ddn-os01-detail.svg,The Structure Overshirt detail concept,4:5,PROTOTYPE_CONCEPT,ORIGINAL_PROTOTYPE_ASSET,Concept detail view of The Structure Overshirt,yes
+DDN-SC01-FRONT,assets/brand-prototype/products/ddn-sc01-front.svg,The Trace Scarf front concept,4:5,PROTOTYPE_CONCEPT,ORIGINAL_PROTOTYPE_ASSET,Concept front view of The Trace Scarf,yes
+DDN-SC01-BACK,assets/brand-prototype/products/ddn-sc01-back.svg,The Trace Scarf back concept,4:5,PROTOTYPE_CONCEPT,ORIGINAL_PROTOTYPE_ASSET,Concept back view of The Trace Scarf,yes
+DDN-SC01-DETAIL,assets/brand-prototype/products/ddn-sc01-detail.svg,The Trace Scarf detail concept,4:5,PROTOTYPE_CONCEPT,ORIGINAL_PROTOTYPE_ASSET,Concept detail view of The Trace Scarf,yes
+DDN-TS01-LIFESTYLE,assets/brand-prototype/media/ddn-ts01-lifestyle.svg,The Source Tee lifestyle concept,4:5,PROTOTYPE_CONCEPT,ORIGINAL_PROTOTYPE_ASSET,Abstract lifestyle concept for The Source Tee,yes
+DDN-TR01-LIFESTYLE,assets/brand-prototype/media/ddn-tr01-lifestyle.svg,The Measure Trouser lifestyle concept,4:5,PROTOTYPE_CONCEPT,ORIGINAL_PROTOTYPE_ASSET,Abstract lifestyle concept for The Measure Trouser,yes
+DDN-OS01-LIFESTYLE,assets/brand-prototype/media/ddn-os01-lifestyle.svg,The Structure Overshirt lifestyle concept,4:5,PROTOTYPE_CONCEPT,ORIGINAL_PROTOTYPE_ASSET,Abstract lifestyle concept for The Structure Overshirt,yes

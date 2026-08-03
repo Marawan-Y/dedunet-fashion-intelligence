@@ -1,0 +1,303 @@
+{
+  "version": "1.0.0",
+  "status": "PROTOTYPE",
+  "products": [
+    {
+      "product_id": "DDN-TS01",
+      "slug": "the-source-tee",
+      "name": "The Source Tee",
+      "category": "T-Shirts",
+      "collection": "FIRST PASSAGE / 01",
+      "short_description": "A heavyweight relaxed tee defined by a controlled shoulder and clean neckline.",
+      "long_description": "The Source Tee establishes the capsule's base proportion: relaxed through the body, deliberate at the shoulder and compact at the neck. A restrained back-neck passage stitch becomes the only identity detail.",
+      "intended_customer": "Unisex adults 22–35",
+      "silhouette": "Relaxed box fit",
+      "fit": "Unisex relaxed; slightly shortened body; dropped shoulder",
+      "intended_material": "Heavyweight combed cotton jersey",
+      "intended_composition": "100% cotton intended; fibre origin unverified",
+      "evidence_status": "DRAFT — supplier documents, sample and tests pending",
+      "colorways": [
+        "Carbon",
+        "Chalk",
+        "Resin"
+      ],
+      "sizes": [
+        "XS",
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+      ],
+      "prototype_price_eur": 72,
+      "compare_at_price_eur": "",
+      "sku_prefix": "DDN-SRC",
+      "care": "Prototype guidance: wash at 30°C with similar colours; reshape while damp; do not tumble dry. Final care label requires material and test approval.",
+      "origin": "Intended Egypt production; factory and country-of-origin evidence pending.",
+      "badges": [
+        "Prototype",
+        "New Passage"
+      ],
+      "imagery": [
+        "DDN-TS01-FRONT",
+        "DDN-TS01-BACK",
+        "DDN-TS01-DETAIL",
+        "DDN-TS01-LIFESTYLE"
+      ],
+      "search_terms": [
+        "unisex heavyweight t-shirt",
+        "relaxed tee",
+        "minimal t-shirt"
+      ],
+      "related_products": [
+        "DDN-OS01",
+        "DDN-TR01"
+      ],
+      "recommendation_metadata": {
+        "layer": "base",
+        "weather": "mild,warm",
+        "formality": "casual",
+        "compatibility": [
+          "DDN-OS01",
+          "DDN-TR01"
+        ]
+      }
+    },
+    {
+      "product_id": "DDN-SH01",
+      "slug": "the-passage-shirt",
+      "name": "The Passage Shirt",
+      "category": "Shirts",
+      "collection": "FIRST PASSAGE / 01",
+      "short_description": "An elongated shirt with a straight front, low side splits and soft structure.",
+      "long_description": "The Passage Shirt uses length, movement and negative space rather than applied decoration. Wear it closed, open as a light layer or partially tucked with The Measure Trouser.",
+      "intended_customer": "Unisex adults 22–35",
+      "silhouette": "Long relaxed shirt",
+      "fit": "Unisex oversize; long body; broad sleeve",
+      "intended_material": "Light cotton poplin",
+      "intended_composition": "100% cotton intended; fibre origin unverified",
+      "evidence_status": "DRAFT — supplier documents, sample and tests pending",
+      "colorways": [
+        "Chalk",
+        "Carbon",
+        "Silt"
+      ],
+      "sizes": [
+        "XS",
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+      ],
+      "prototype_price_eur": 122,
+      "compare_at_price_eur": "",
+      "sku_prefix": "DDN-PSG",
+      "care": "Prototype guidance: wash at 30°C; warm iron; line dry. Final care label requires material and test approval.",
+      "origin": "Intended Egypt production; factory and country-of-origin evidence pending.",
+      "badges": [
+        "Prototype",
+        "New Passage"
+      ],
+      "imagery": [
+        "DDN-SH01-FRONT",
+        "DDN-SH01-BACK",
+        "DDN-SH01-DETAIL"
+      ],
+      "search_terms": [
+        "unisex oversized shirt",
+        "long cotton shirt",
+        "minimal shirt"
+      ],
+      "related_products": [
+        "DDN-TR01",
+        "DDN-SC01"
+      ],
+      "recommendation_metadata": {
+        "layer": "mid",
+        "weather": "mild,warm",
+        "formality": "smart-casual",
+        "compatibility": [
+          "DDN-TR01",
+          "DDN-SC01"
+        ]
+      }
+    },
+    {
+      "product_id": "DDN-TR01",
+      "slug": "the-measure-trouser",
+      "name": "The Measure Trouser",
+      "category": "Trousers",
+      "collection": "FIRST PASSAGE / 01",
+      "short_description": "A relaxed straight trouser with one controlled front fold and adjustable waist tabs.",
+      "long_description": "The Measure Trouser balances volume with a clear vertical line. Adjustable waist tabs support flexible unisex fit while the leg remains straight and easy to combine across the capsule.",
+      "intended_customer": "Unisex adults 22–35",
+      "silhouette": "Relaxed straight leg",
+      "fit": "Mid rise; adjustable waist; full length",
+      "intended_material": "Midweight cotton twill",
+      "intended_composition": "98% cotton / 2% elastane intended; unverified",
+      "evidence_status": "DRAFT — supplier documents, sample and tests pending",
+      "colorways": [
+        "Carbon",
+        "Silt"
+      ],
+      "sizes": [
+        "XS",
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+      ],
+      "prototype_price_eur": 142,
+      "compare_at_price_eur": "",
+      "sku_prefix": "DDN-MSR",
+      "care": "Prototype guidance: wash at 30°C; wash inside out; line dry. Final care label requires material and test approval.",
+      "origin": "Intended Egypt production; factory and country-of-origin evidence pending.",
+      "badges": [
+        "Prototype",
+        "Hero Passage"
+      ],
+      "imagery": [
+        "DDN-TR01-FRONT",
+        "DDN-TR01-BACK",
+        "DDN-TR01-DETAIL",
+        "DDN-TR01-LIFESTYLE"
+      ],
+      "search_terms": [
+        "unisex relaxed trousers",
+        "straight cotton trouser",
+        "adjustable waist trouser"
+      ],
+      "related_products": [
+        "DDN-TS01",
+        "DDN-SH01",
+        "DDN-OS01"
+      ],
+      "recommendation_metadata": {
+        "layer": "bottom",
+        "weather": "mild,cool",
+        "formality": "smart-casual",
+        "compatibility": [
+          "DDN-TS01",
+          "DDN-SH01",
+          "DDN-OS01"
+        ]
+      }
+    },
+    {
+      "product_id": "DDN-OS01",
+      "slug": "the-structure-overshirt",
+      "name": "The Structure Overshirt",
+      "category": "Outerwear",
+      "collection": "FIRST PASSAGE / 01",
+      "short_description": "A structured overshirt with a straight hem, concealed fastening and offset seam.",
+      "long_description": "The Structure Overshirt is the capsule's architectural piece. A clean outer surface keeps attention on proportion while one offset seam introduces DEDUNET's passage-line logic.",
+      "intended_customer": "Unisex adults 22–35",
+      "silhouette": "Structured box layer",
+      "fit": "Relaxed unisex; room for shirt or tee underneath",
+      "intended_material": "Cotton canvas",
+      "intended_composition": "100% cotton intended; fibre origin unverified",
+      "evidence_status": "DRAFT — supplier documents, sample and tests pending",
+      "colorways": [
+        "Carbon",
+        "Sandstone"
+      ],
+      "sizes": [
+        "XS",
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+      ],
+      "prototype_price_eur": 192,
+      "compare_at_price_eur": "",
+      "sku_prefix": "DDN-STR",
+      "care": "Prototype guidance: gentle wash at 30°C or professional clean depending on final fabric tests. Final care label pending.",
+      "origin": "Intended Egypt production; factory and country-of-origin evidence pending.",
+      "badges": [
+        "Prototype",
+        "Hero Passage"
+      ],
+      "imagery": [
+        "DDN-OS01-FRONT",
+        "DDN-OS01-BACK",
+        "DDN-OS01-DETAIL",
+        "DDN-OS01-LIFESTYLE"
+      ],
+      "search_terms": [
+        "unisex overshirt",
+        "minimal cotton jacket",
+        "structured shirt jacket"
+      ],
+      "related_products": [
+        "DDN-TS01",
+        "DDN-TR01"
+      ],
+      "recommendation_metadata": {
+        "layer": "outer",
+        "weather": "mild,cool",
+        "formality": "smart-casual",
+        "compatibility": [
+          "DDN-TS01",
+          "DDN-TR01"
+        ]
+      }
+    },
+    {
+      "product_id": "DDN-SC01",
+      "slug": "the-trace-scarf",
+      "name": "The Trace Scarf",
+      "category": "Accessories",
+      "collection": "FIRST PASSAGE / 01",
+      "short_description": "A light rectangular scarf carrying the sparse Passage Lines motif.",
+      "long_description": "The Trace Scarf translates the graphic system into textile form. Parallel lines are interrupted by small Resin points, creating a pattern that changes when folded or wrapped.",
+      "intended_customer": "Unisex adults 22–35",
+      "silhouette": "Long rectangular scarf",
+      "fit": "One size",
+      "intended_material": "Light cotton voile",
+      "intended_composition": "100% cotton intended; fibre origin unverified",
+      "evidence_status": "DRAFT — supplier documents, sample and tests pending",
+      "colorways": [
+        "Sandstone / Resin",
+        "Indigo / Chalk"
+      ],
+      "sizes": [
+        "ONE"
+      ],
+      "prototype_price_eur": 74,
+      "compare_at_price_eur": "",
+      "sku_prefix": "DDN-TRC",
+      "care": "Prototype guidance: hand wash cool; dry flat; cool iron. Final care label requires material and print tests.",
+      "origin": "Intended Egypt production; factory and country-of-origin evidence pending.",
+      "badges": [
+        "Prototype",
+        "Textile Passage"
+      ],
+      "imagery": [
+        "DDN-SC01-FRONT",
+        "DDN-SC01-BACK",
+        "DDN-SC01-DETAIL"
+      ],
+      "search_terms": [
+        "unisex cotton scarf",
+        "minimal patterned scarf",
+        "North African inspired textile"
+      ],
+      "related_products": [
+        "DDN-SH01",
+        "DDN-OS01"
+      ],
+      "recommendation_metadata": {
+        "layer": "accessory",
+        "weather": "all",
+        "formality": "all",
+        "compatibility": [
+          "DDN-SH01",
+          "DDN-OS01"
+        ]
+      }
+    }
+  ]
+}

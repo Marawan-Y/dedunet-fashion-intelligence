@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1500" height="360" viewBox="0 0 1500 360" role="img">
+  <title>DEDUNET primary prototype wordmark</title>
+  <desc>Uppercase DEDUNET wordmark with passage line and Resin source point.</desc>
+  <rect width="1500" height="360" fill="none"/>
+  <text x="750" y="190" text-anchor="middle" fill="#14120F" font-family="Bodoni Moda, Didot, Georgia, serif" font-size="152" font-weight="600" letter-spacing="24">DEDUNET</text>
+  <line x1="398" y1="235" x2="1102" y2="235" stroke="#14120F" stroke-width="4"/>
+  <circle cx="750" cy="235" r="12" fill="#A95122"/>
+  <text x="750" y="302" text-anchor="middle" fill="#625B51" font-family="Manrope, Arial, sans-serif" font-size="21" font-weight="600" letter-spacing="8">WORTH, WORN.</text>
+</svg>

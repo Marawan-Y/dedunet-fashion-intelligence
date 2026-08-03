@@ -1,0 +1,46 @@
+:root {
+  --brand-name: "DEDUNET";
+  --brand-primary: #14120F;
+  --brand-primary-hover: #29251F;
+  --brand-secondary: #D8C3A3;
+  --brand-accent: #A95122;
+  --brand-background: #F6F1E7;
+  --brand-surface: #FFFFFF;
+  --brand-surface-elevated: #ECE3D5;
+  --brand-text-primary: #14120F;
+  --brand-text-secondary: #625B51;
+  --brand-border: #D5CABC;
+  --brand-dark-surface: #24201B;
+  --brand-indigo: #33475B;
+  --brand-clay: #A36256;
+  --brand-palm: #5F705E;
+  --brand-success: #2F6B4F;
+  --brand-warning: #9B641B;
+  --brand-error: #A23B32;
+  --brand-info: #3C6280;
+
+  --font-display: "Bodoni Moda", Didot, Georgia, serif;
+  --font-body: "Manrope", Arial, Helvetica, sans-serif;
+  --font-arabic: "IBM Plex Sans Arabic", "Noto Sans Arabic", Arial, sans-serif;
+
+  --radius-button: 0px;
+  --radius-card: 0px;
+  --radius-input: 0px;
+  --content-max-width: 1280px;
+  --editorial-max-width: 700px;
+  --section-gap: 112px;
+  --section-gap-mobile: 72px;
+  --card-gap: 24px;
+  --motion-fast: 160ms;
+  --motion-base: 260ms;
+  --motion-ease: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1500" height="320" viewBox="0 0 1500 320" role="img">
+  <title>DEDUNET reversed prototype logo</title>
+  <desc>Sandstone DEDUNET wordmark on Carbon.</desc>
+  <rect width="1500" height="320" fill="#14120F"/>
+  <text x="750" y="195" text-anchor="middle" fill="#D8C3A3" font-family="Bodoni Moda, Didot, Georgia, serif" font-size="152" font-weight="600" letter-spacing="24">DEDUNET</text>
+  <line x1="398" y1="238" x2="1102" y2="238" stroke="#D8C3A3" stroke-width="4"/>
+  <circle cx="750" cy="238" r="12" fill="#A95122"/>
+</svg>
