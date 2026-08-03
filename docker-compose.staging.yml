@@ -1,0 +1,129 @@
+# Staging topology — LOCAL_STAGING_CONFIGURATION only.
+#
+# This is a STANDALONE file, not an override of docker-compose.yml. An override silently
+# inherits the base entrypoint and environment, which is exactly how a staging stack ends
+# up shipping demo credentials. Nothing here is inherited; everything is stated.
+#
+# Running this locally does NOT constitute hosted staging. It is a production-SHAPED
+# configuration validated on a developer machine.
+#
+#   docker compose -f docker-compose.staging.yml --env-file .env.staging up -d --build
+#
+# SINGLE PROCESS ONLY. The rate limiter (Workstream C) keeps its buckets in process
+# memory, so N workers means N times the effective limit.
+# MULTI_REPLICA_DEPLOYMENT_BLOCKED_PENDING_SHARED_OR_GATEWAY_RATE_LIMITING
+
+name: dedunet-staging
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:?POSTGRES_USER must be set}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set}
+      POSTGRES_DB: ${POSTGRES_DB:?POSTGRES_DB must be set}
+    volumes:
+      - staging-pgdata:/var/lib/postgresql/data
+    # NO published port. The database is reachable only on the compose network. Its
+    # absence here is the control; adding "ports:" would silently expose staging data.
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    deploy:
+      resources:
+        limits:
+          # PostgreSQL needs headroom for shared_buffers, work_mem and connections.
+          # 1 GiB is comfortable for a staging dataset and small enough to surface a
+          # runaway query rather than consuming the host.
+          memory: 1G
+          cpus: "1.0"
+
+  api:
+    build:
+      context: ./services/commerce-api
+    env_file:
+      - .env.staging
+    environment:
+      APP_ENV: staging
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+      # No demo customer, administrator, product or order. The administrator is created
+      # manually with `manage.py create-admin`, never by the entrypoint.
+      SEED_DEMO_DATA: "0"
+      # Rate limiting is ON. RATE_LIMIT_ENABLED=0 exists only as an emergency
+      # troubleshooting switch and must not appear in a normal staging configuration.
+      RATE_LIMIT_ENABLED: "1"
+      # Local staging has no trusted proxy in front of it. Raising this without a real,
+      # tested proxy chain would let any client spoof its bucket key.
+      RATE_LIMIT_TRUSTED_PROXY_COUNT: "0"
+      # Writes no .pyc, which is what makes read_only viable below.
+      PYTHONDONTWRITEBYTECODE: "1"
+      PYTHONUNBUFFERED: "1"
+    depends_on:
+      db:
+        condition: service_healthy
+    # Exactly ONE uvicorn process and ONE worker. Stated explicitly rather than relying
+    # on the image default, so the constraint is visible in the deployed configuration.
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "1"]
+    ports:
+      - "${API_PORT:-18080}:8000"
+    volumes:
+      # Fixtures are checksum-protected and the API has no reason to write them.
+      - ./services/commerce-api/data:/app/data:ro
+    # The image filesystem is immutable at runtime. Verified, not assumed: logs go to
+    # stdout, PYTHONDONTWRITEBYTECODE stops .pyc writes, migrations touch only the
+    # database, and the API writes no uploads or backups.
+    read_only: true
+    tmpfs:
+      # Only paths that genuinely need to be writable.
+      - /tmp:size=64m,mode=1777
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      # /ready, not /health: readiness proves the database is actually reachable.
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8000/ready').status==200 else 1)"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
+    deploy:
+      # NOTE: replicas is deliberately absent. See the multi-replica block above.
+      resources:
+        limits:
+          # The API is a single uvicorn process serving a modest staging load. 512 MiB
+          # leaves room for SQLAlchemy pools and PBKDF2 hashing without hiding a leak.
+          memory: 512M
+          cpus: "1.0"
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      - "${WEB_PORT:-13080}:80"
+    read_only: true
+    tmpfs:
+      # nginx needs these writable even when serving purely static content.
+      - /var/cache/nginx:size=16m
+      - /var/run:size=1m
+      - /tmp:size=16m
+    security_opt:
+      - no-new-privileges:true
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+          cpus: "0.5"
+
+volumes:
+  staging-pgdata:

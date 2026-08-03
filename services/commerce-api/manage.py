@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -81,10 +82,97 @@ def cmd_export_openapi(_args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_create_admin(_args: argparse.Namespace) -> int:
+    """Create the staging administrator from the environment. Idempotent.
+
+    Deliberately MANUAL. The container entrypoint must never run this: an entrypoint that
+    provisions a privileged account creates one automatically on every fresh volume, and
+    the credentials would have to live in the compose environment to do it.
+
+    The password is read from the environment, never from an argument (arguments appear
+    in shell history and in `ps`), and is never printed or logged.
+    """
+
+    from app.commerce.db import SessionLocal, create_all
+    from app.commerce.models import Customer
+    from app.commerce.security import hash_password
+    from sqlalchemy import select
+
+    email = os.getenv("ADMIN_BOOTSTRAP_EMAIL", "").strip().lower()
+    password = os.getenv("ADMIN_BOOTSTRAP_PASSWORD", "")
+
+    if not email:
+        print("ERROR: ADMIN_BOOTSTRAP_EMAIL is not set", file=sys.stderr)
+        return 2
+    if "@" not in email:
+        print("ERROR: ADMIN_BOOTSTRAP_EMAIL is not a valid address", file=sys.stderr)
+        return 2
+    if not password:
+        print("ERROR: ADMIN_BOOTSTRAP_PASSWORD is not set", file=sys.stderr)
+        return 2
+    if len(password) < 12:
+        # Length only. The value itself is never echoed.
+        print(
+            f"ERROR: ADMIN_BOOTSTRAP_PASSWORD is {len(password)} characters; "
+            "at least 12 are required",
+            file=sys.stderr,
+        )
+        return 2
+
+    create_all()
+    with SessionLocal() as session:
+        existing = session.scalar(select(Customer).where(Customer.email == email))
+        if existing is not None:
+            role = existing.role
+            print(json.dumps({"created": False, "email": email, "role": role,
+                              "detail": "account already exists; no change made"}))
+            return 0
+
+        session.add(Customer(
+            email=email,
+            password_hash=hash_password(password),
+            full_name=os.getenv("ADMIN_BOOTSTRAP_NAME", "Administrator"),
+            role="admin",
+        ))
+        session.commit()
+
+    print(json.dumps({"created": True, "email": email, "role": "admin"}))
+    return 0
+
+
+def cmd_check_config(_args: argparse.Namespace) -> int:
+    """Validate security configuration only. Touches no database.
+
+    Separate from ``check`` so the entrypoint can distinguish two very different
+    failures. A database that is not up yet is TRANSIENT and worth retrying; a blank
+    SESSION_SECRET is PERMANENT and retrying it thirty times only delays a clear error
+    behind sixty seconds of misleading "waiting for database" output.
+    """
+
+    from app.commerce.security import assert_configured
+
+    try:
+        assert_configured()
+    except RuntimeError as exc:
+        print(json.dumps({"configuration": "invalid", "error": str(exc)}), file=sys.stderr)
+        return 1
+    print(json.dumps({"configuration": "valid"}))
+    return 0
+
+
 def cmd_check(_args: argparse.Namespace) -> int:
     from sqlalchemy import text
 
     from app.commerce.db import DATABASE_URL, engine
+    from app.commerce.security import assert_configured
+
+    # Security configuration first: a container with a blank SESSION_SECRET must die at
+    # boot, not on the first customer login.
+    try:
+        assert_configured()
+    except RuntimeError as exc:
+        print(json.dumps({"configuration": "invalid", "error": str(exc)}), file=sys.stderr)
+        return 1
 
     # Never print the full URL: it may carry a password in a real deployment.
     scheme = DATABASE_URL.split("://", 1)[0]
@@ -104,6 +192,8 @@ COMMANDS = {
     "bootstrap": cmd_bootstrap,
     "export-openapi": cmd_export_openapi,
     "check": cmd_check,
+    "create-admin": cmd_create_admin,
+    "check-config": cmd_check_config,
 }
 
 

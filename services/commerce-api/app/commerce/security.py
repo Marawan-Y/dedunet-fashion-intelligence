@@ -131,3 +131,38 @@ def verify_token(token: str) -> dict:
     if int(payload.get("exp", 0)) < int(time.time()):
         raise InvalidToken("expired")
     return payload
+
+def assert_configured() -> None:
+    """Fail fast when security configuration is missing.
+
+    ``_session_secret`` only raises when a token is first SIGNED, so a container with a
+    blank ``SESSION_SECRET`` would start, migrate, pass its health check and then 500 on
+    the first customer login. That is late failure at the worst possible moment.
+
+    ``manage.py check`` calls this, and the container entrypoint runs ``manage.py check``
+    in its wait loop, so a misconfigured deployment now dies at boot with a clear message
+    instead of silently accepting traffic it cannot serve.
+
+    The secret's VALUE is never printed - only whether it is acceptable.
+    """
+
+    app_env = os.getenv("APP_ENV", "development").strip().lower()
+    if app_env in {"development", "test"}:
+        return
+
+    secret = os.getenv("SESSION_SECRET", "").strip()
+    if not secret:
+        raise RuntimeError(
+            f"SESSION_SECRET is empty and APP_ENV={app_env!r}. Sessions cannot be signed. "
+            "Generate one with: python -c \"import secrets; print(secrets.token_urlsafe(48))\""
+        )
+    if secret == _DEV_SECRET:
+        raise RuntimeError(
+            f"SESSION_SECRET is the publicly known development value and APP_ENV={app_env!r}. "
+            "Anyone could forge an administrator session. Generate a unique secret."
+        )
+    if len(secret) < 32:
+        raise RuntimeError(
+            f"SESSION_SECRET is {len(secret)} characters; at least 32 are required outside "
+            "development. Value not shown."
+        )
