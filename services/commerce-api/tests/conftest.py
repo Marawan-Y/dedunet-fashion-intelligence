@@ -163,3 +163,22 @@ def reset_rate_limiter():
     rate_limit.reset_limiter()
     yield
     rate_limit.reset_limiter()
+
+@pytest.fixture(autouse=True)
+def reset_notification_sender():
+    """Clear the cached sender and any SMTP configuration before every test.
+
+    Without this a developer with SMTP_* exported in their shell would have the suite
+    attempt real deliveries. The channel is forced back to the safe default.
+    """
+
+    import os
+
+    from app.commerce import notifications
+
+    for key in ("NOTIFICATION_CHANNEL", "SMTP_HOST", "SMTP_PORT", "SMTP_USERNAME",
+                "SMTP_PASSWORD", "SMTP_FROM", "SMTP_USE_TLS"):
+        os.environ.pop(key, None)
+    notifications.reset_sender()
+    yield
+    notifications.reset_sender()

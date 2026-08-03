@@ -140,6 +140,28 @@ def cmd_create_admin(_args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_dispatch_notifications(args: argparse.Namespace) -> int:
+    """Run ONE bounded dispatch cycle and exit.
+
+    Deliberately not a loop and never a thread inside the API process. A background
+    delivery thread would make /ready lie about a subsystem it does not check, would
+    fight the per-request session model, and two API replicas would double-send every
+    message. Scheduling belongs to the worker (notification_worker.py) or to an external
+    scheduler, not to the web process.
+    """
+
+    from app.commerce.db import SessionLocal, create_all
+    from app.commerce.services import dispatch_pending_notifications
+
+    create_all()
+    with SessionLocal() as session:
+        counts = dispatch_pending_notifications(
+            session, limit=args.limit, max_attempts=args.max_attempts
+        )
+    print(json.dumps({"dispatched": counts}))
+    return 0
+
+
 def cmd_check_config(_args: argparse.Namespace) -> int:
     """Validate security configuration only. Touches no database.
 
@@ -194,12 +216,16 @@ COMMANDS = {
     "check": cmd_check,
     "create-admin": cmd_create_admin,
     "check-config": cmd_check_config,
+    "dispatch-notifications": cmd_dispatch_notifications,
 }
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("command", choices=sorted(COMMANDS))
+    # Only dispatch-notifications reads these; harmless for the other commands.
+    parser.add_argument("--limit", type=int, default=None, help="max rows per cycle")
+    parser.add_argument("--max-attempts", type=int, default=None, dest="max_attempts")
     args = parser.parse_args()
     return COMMANDS[args.command](args)
 

@@ -11,6 +11,9 @@ COPY data ./data
 # and then fails on the first database query.
 COPY migrations ./migrations
 COPY alembic.ini manage.py ./
+# The notification worker runs from this same image as a SEPARATE container, so the
+# API and the dispatcher can never drift apart in version.
+COPY notification_worker.py ./
 COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 

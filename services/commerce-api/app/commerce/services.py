@@ -20,11 +20,13 @@ import json
 import secrets
 from dataclasses import dataclass
 
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from . import inventory, payments, pricing
+import os
+
+from . import inventory, notifications, payments, pricing
 from .models import (
     AnalyticsEvent,
     AuditLog,
@@ -47,6 +49,7 @@ from .models import (
     ShipmentStatus,
     Variant,
     as_utc,
+    utcnow,
 )
 from .security import hash_password, verify_password
 
@@ -104,6 +107,144 @@ def queue_notification(
     )
     session.add(note)
     return note
+
+
+# ------------------------------------------------------------- notification dispatch
+
+# Conservative default. No authoritative specification fixes this value, so it is
+# configurable and documented rather than invented silently. Five attempts across worker
+# cycles is enough to ride out a short provider outage without hammering a broken one.
+DEFAULT_MAX_ATTEMPTS = int(os.getenv("NOTIFICATION_MAX_ATTEMPTS", "5"))
+DEFAULT_BATCH_SIZE = int(os.getenv("NOTIFICATION_BATCH_SIZE", "50"))
+
+# Terminal states. A row in one of these is never claimed again.
+TERMINAL_STATUSES = frozenset({"sent", "failed", "suppressed"})
+
+
+def dispatch_pending_notifications(
+    session: Session,
+    *,
+    limit: int | None = None,
+    max_attempts: int | None = None,
+) -> dict[str, int]:
+    """Dispatch queued notifications. Returns per-outcome counts.
+
+    Transaction boundaries
+    ----------------------
+    ONE transaction per notification. A poison row must not roll back the deliveries that
+    already succeeded in the same batch.
+
+    Attempt accounting
+    ------------------
+    ``attempts`` is incremented and COMMITTED before the sender is invoked. A crash
+    mid-send therefore burns an attempt instead of leaving the row eligible forever. The
+    cost is the honest one: delivery is AT LEAST ONCE. If the provider accepts the message
+    and the process dies before ``sent_at`` commits, a later cycle re-sends it. The
+    outgoing message carries ``X-Notification-Key`` so a duplicate can be traced to the row
+    that produced it.
+
+    Claiming
+    --------
+    ``FOR UPDATE SKIP LOCKED`` on PostgreSQL, so two workers never claim the same row.
+    SQLAlchemy silently omits it on SQLite, which has no such syntax and no concurrent
+    writers to protect against, so the same code is correct on both.
+
+    Rows are NEVER deleted, on any path.
+    """
+
+    limit = DEFAULT_BATCH_SIZE if limit is None else limit
+    max_attempts = DEFAULT_MAX_ATTEMPTS if max_attempts is None else max_attempts
+    counts = {"sent": 0, "failed": 0, "retried": 0, "suppressed": 0, "claimed": 0}
+
+    # Claim ATOMICALLY, in one statement, and commit before doing any work.
+    #
+    # An earlier version held the batch with SELECT ... FOR UPDATE SKIP LOCKED and then
+    # committed inside the loop. That commit released the locks on every row still
+    # waiting in the batch, so a second worker immediately claimed them: a 4-worker race
+    # over 10 rows produced 19 sends. Row locks last only until the transaction ends,
+    # which makes them useless for a loop that must commit per row.
+    #
+    # Moving each row to an intermediate 'sending' state makes the claim DURABLE: it
+    # survives the commit, and the eligibility filter (status == 'queued') excludes it
+    # from every other worker permanently, not just for the life of a transaction.
+    eligible = (
+        select(Notification.id)
+        .where(Notification.status == "queued", Notification.attempts < max_attempts)
+        .order_by(Notification.id)
+        .limit(limit)
+        .with_for_update(skip_locked=True)
+        .scalar_subquery()
+    )
+    claimed_ids = list(
+        session.scalars(
+            update(Notification)
+            .where(Notification.id.in_(eligible))
+            .values(status="sending", attempts=Notification.attempts + 1)
+            .returning(Notification.id)
+            .execution_options(synchronize_session=False)
+        ).all()
+    )
+    session.commit()          # attempts persisted BEFORE any external call
+
+    pending = (
+        list(session.scalars(select(Notification).where(Notification.id.in_(claimed_ids))).all())
+        if claimed_ids
+        else []
+    )
+    counts["claimed"] = len(pending)
+
+    for note in pending:
+
+        customer = session.get(Customer, note.customer_id)
+        if customer is None or customer.deleted_at is not None:
+            # Erasure must not be undone by a queued email. Terminal, never retried,
+            # and the sender is never invoked.
+            note.status = "suppressed"
+            note.last_error = "recipient erased or missing; delivery suppressed"
+            session.commit()
+            counts["suppressed"] += 1
+            continue
+
+        try:
+            sender = notifications.get_sender()
+            result = sender.send(
+                recipient=customer.email,
+                subject=note.subject,
+                body=note.body,
+                idempotency_key=f"notification-{note.id}",
+            )
+        except notifications.NotificationRejected as exc:
+            note.status = "failed"
+            note.last_error = f"terminal: {exc}"
+            session.commit()
+            counts["failed"] += 1
+            continue
+        except notifications.NotificationError as exc:
+            # Retryable. Stays queued until the attempt ceiling, then becomes terminal so
+            # a permanently broken provider cannot produce an infinite retry loop.
+            note.last_error = f"retryable: {exc}"
+            # Back to 'queued' so a later cycle can retry it; a row left in 'sending'
+            # would be invisible to every future claim and silently stuck forever.
+            note.status = "queued"
+            if note.attempts >= max_attempts:
+                note.status = "failed"
+                note.last_error = (
+                    f"retryable failure persisted after {note.attempts} attempts: {exc}"
+                )
+                counts["failed"] += 1
+            else:
+                counts["retried"] += 1
+            session.commit()
+            continue
+
+        note.status = "sent"
+        note.sent_at = utcnow()
+        note.provider_reference = result.provider_reference
+        note.last_error = ""
+        session.commit()
+        counts["sent"] += 1
+
+    return counts
 
 
 # ---------------------------------------------------------------------------- identity

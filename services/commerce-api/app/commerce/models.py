@@ -374,8 +374,30 @@ class Notification(Base):
     template: Mapped[str] = mapped_column(String(60))
     subject: Mapped[str] = mapped_column(String(200))
     body: Mapped[str] = mapped_column(Text)
-    status: Mapped[str] = mapped_column(String(20), default="queued")
+    status: Mapped[str] = mapped_column(
+        String(20), default="queued", server_default="queued", index=True
+    )
+    # Persisted BEFORE the external send, so a crash mid-send burns an attempt rather
+    # than looping forever on a poison row.
+    attempts: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
+    sent_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    # Text, NOT String(n). PostgreSQL enforces declared lengths; a long provider error
+    # would raise StringDataRightTruncation there while passing silently on SQLite.
+    last_error: Mapped[str] = mapped_column(Text, default="", server_default="")
+    provider_reference: Mapped[str] = mapped_column(String(120), default="", server_default="")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+    __table_args__ = (
+        # A CHECK rather than a database enum: converting the column type would turn an
+        # ADD COLUMN migration into a type migration, and would silently change
+        # `notification.status` from a str into an enum member, breaking every
+        # `== "sent"` comparison. The constraint gives the integrity benefit at a
+        # fraction of the risk.
+        CheckConstraint(
+            "status IN ('queued', 'sending', 'sent', 'failed', 'suppressed')",
+            name="ck_notification_status",
+        ),
+    )
 
 
 class AnalyticsEvent(Base):

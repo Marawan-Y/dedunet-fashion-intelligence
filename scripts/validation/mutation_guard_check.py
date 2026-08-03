@@ -57,11 +57,15 @@ SCHEMAS = BACKEND / "app" / "schemas.py"
 MONEY = BACKEND / "app" / "money.py"
 RATE_LIMIT = BACKEND / "app" / "rate_limit.py"
 MAIN = BACKEND / "app" / "main.py"
+NOTIFICATIONS = BACKEND / "app" / "commerce" / "notifications.py"
+SERVICES = BACKEND / "app" / "commerce" / "services.py"
+WORKER = BACKEND / "notification_worker.py"
 
 TEST_CANDIDATE = "tests/test_candidate_activation.py"
 TEST_API = "tests/test_api.py"
 TEST_MONEY = "tests/test_money_integrity.py"
 TEST_RATE = "tests/test_rate_limit.py"
+TEST_NOTIFY = "tests/test_notifications.py"
 
 
 MUTATIONS: tuple[Mutation, ...] = (
@@ -393,6 +397,82 @@ MUTATIONS: tuple[Mutation, ...] = (
         covers=(
             "headers sent but not exposed are unreadable cross-origin, so a browser "
             "cannot honour Retry-After",
+        ),
+    ),
+    # ---- Workstream B: notification dispatch ----------------------------------
+    Mutation(
+        mutation_id="M24_notification_row_never_deleted",
+        guard="terminal rejection retains the row",
+        target=SERVICES,
+        original='            note.status = "failed"\n            note.last_error = f"terminal: {exc}"\n',
+        mutated='            session.delete(note)  # MUTATED: row deleted on rejection\n',
+        tests=(f"{TEST_NOTIFY}::test_recipient_rejection_is_terminal",),
+        covers=("an outbox that deletes rows destroys the delivery audit trail",),
+    ),
+    Mutation(
+        mutation_id="M25_claim_status_eligibility_gate",
+        guard="claim query filters on status == queued",
+        target=SERVICES,
+        original='        .where(Notification.status == "queued", Notification.attempts < max_attempts)',
+        mutated="        .where(Notification.attempts < max_attempts)  # MUTATED: status gate removed",
+        tests=(f"{TEST_NOTIFY}::test_claim_query_only_selects_eligible_statuses",),
+        covers=("without the status gate a sent notification is delivered again",),
+    ),
+    Mutation(
+        mutation_id="M26_attempts_increment_before_send",
+        guard="attempts incremented during the atomic claim",
+        target=SERVICES,
+        original='            .values(status="sending", attempts=Notification.attempts + 1)',
+        mutated='            .values(status="sending")  # MUTATED: attempt not counted',
+        tests=(f"{TEST_NOTIFY}::test_max_attempts_prevents_an_infinite_retry_loop",),
+        covers=("without an attempt counter a poison row retries forever",),
+    ),
+    Mutation(
+        mutation_id="M27_unknown_channel_raises",
+        guard="unknown NOTIFICATION_CHANNEL fails closed",
+        target=NOTIFICATIONS,
+        original="        raise NotificationError(\n            f\"notification channel {channel!r} is configured but no adapter implements it; \"\n            \"implement NotificationSender for it before enabling\"\n        )",
+        mutated="        _sender = ConsoleSender()  # MUTATED: silent fallback to console",
+        tests=(f"{TEST_NOTIFY}::test_unknown_channel_raises_rather_than_falling_back",),
+        covers=("a silent fallback logs 'sent' while nothing leaves the building",),
+    ),
+    Mutation(
+        mutation_id="M28_erased_customer_never_emailed",
+        guard="erased recipients are suppressed before the sender is invoked",
+        target=SERVICES,
+        original="        if customer is None or customer.deleted_at is not None:",
+        mutated="        if customer is None:  # MUTATED: erasure check removed",
+        tests=(f"{TEST_NOTIFY}::test_erased_customer_is_never_emailed",),
+        covers=("a queued email must never undo a completed erasure",),
+    ),
+    Mutation(
+        mutation_id="M29_sent_notification_not_resent",
+        guard="a delivered notification reaches a terminal status",
+        target=SERVICES,
+        original='        note.status = "sent"\n        note.sent_at = utcnow()',
+        mutated='        note.sent_at = utcnow()  # MUTATED: status left queued after delivery',
+        tests=(f"{TEST_NOTIFY}::test_rerun_is_idempotent_and_does_not_resend",),
+        covers=("a row left queued after delivery is re-sent on every later cycle",),
+    ),
+    Mutation(
+        mutation_id="M30_max_attempts_terminal_behaviour",
+        guard="attempt ceiling makes a failing row terminal",
+        target=SERVICES,
+        original='            if note.attempts >= max_attempts:\n                note.status = "failed"',
+        mutated='            if False:  # MUTATED: ceiling never reached\n                note.status = "failed"',
+        tests=(f"{TEST_NOTIFY}::test_max_attempts_prevents_an_infinite_retry_loop",),
+        covers=("without a terminal ceiling a broken provider is retried forever",),
+    ),
+    Mutation(
+        mutation_id="M31_worker_runs_outside_the_api",
+        guard="dispatch is not started from the API process",
+        target=WORKER,
+        original='if __name__ == "__main__":\n    raise SystemExit(main())',
+        mutated='if False:\n    raise SystemExit(main())',
+        tests=(f"{TEST_NOTIFY}::test_worker_starts_runs_and_stops_cleanly",),
+        covers=(
+            "the worker must be an independently runnable process, not a thread the API "
+            "starts",
         ),
     ),
 )

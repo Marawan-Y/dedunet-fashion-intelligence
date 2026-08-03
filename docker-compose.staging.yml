@@ -101,6 +101,46 @@ services:
           memory: 512M
           cpus: "1.0"
 
+  notification-worker:
+    # A SEPARATE PROCESS, not a thread in the API. A delivery thread inside the web
+    # process would make /ready lie about a subsystem it does not check, and two API
+    # replicas would double-send every message.
+    build:
+      context: ./services/commerce-api
+    env_file:
+      - .env.staging
+    environment:
+      APP_ENV: staging
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+      # Console until a real SMTP account exists. An unconfigured deployment must never
+      # attempt to send real mail. EXTERNAL_SMTP_DELIVERY_PENDING.
+      NOTIFICATION_CHANNEL: ${NOTIFICATION_CHANNEL:-console}
+      NOTIFICATION_WORKER_INTERVAL_SECONDS: "15"
+      NOTIFICATION_BATCH_SIZE: "50"
+      NOTIFICATION_MAX_ATTEMPTS: "5"
+      PYTHONDONTWRITEBYTECODE: "1"
+      PYTHONUNBUFFERED: "1"
+    depends_on:
+      db:
+        condition: service_healthy
+    # Bypasses the API entrypoint: the worker needs no migration, no seed and no
+    # HTTP server. It runs one bounded dispatch cycle per interval.
+    entrypoint: ["python", "-B", "notification_worker.py"]
+    # NO ports. Nothing needs to reach the worker.
+    read_only: true
+    tmpfs:
+      - /tmp:size=32m,mode=1777
+    security_opt:
+      - no-new-privileges:true
+    restart: unless-stopped
+    # SIGTERM is handled: the cycle in flight finishes, then the process exits 0.
+    stop_grace_period: 30s
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: "0.5"
+
   web:
     build:
       context: .
