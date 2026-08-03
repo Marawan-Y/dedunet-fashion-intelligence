@@ -3,30 +3,59 @@
 | Control | Value |
 |---|---|
 | Artifact ID | SOR-GOV-001 |
-| Version | 1.0 |
+| Version | 2.0 |
 | Owner | Technical lead (maintains the register; does not assign owners) |
-| Status | HUMAN-VERIFIED |
-| Source | Human manager approval, 2026-08-03 |
+| **Overall status** | **`ASSIGNMENT_RECORDED — HUMAN ACCEPTANCE PENDING`** |
+| Assignment source | Human manager approval, 2026-08-03 |
 | Acceptance criteria | Every risk domain names a real, accountable human being |
 | Consumer | Gate reviews, release decisions, incident response |
 
 Assignments below were made by the human manager. **The agent must not alter them.** Any change
 requires explicit human approval and a new version of this file.
 
+## Status of acceptance — read this before citing the register
+
+The four names were **assigned** by the human manager. The agent holds **no evidence that any
+named person has personally acknowledged their assignment.** No signature, reply, ticket or
+acknowledgement exists in this repository.
+
+Therefore every acceptance date below is recorded as `PENDING`, not as a date. The agent will not
+invent an acceptance it did not observe — an owner who has not accepted cannot be relied on in an
+incident, and a fabricated acceptance date would make the register actively dangerous.
+
+To move an entry to `ACCEPTED`, the named person must confirm, and the confirmation must be
+recorded here with its real date and where the confirmation is held.
+
 ## Accountable owners
 
-| Risk domain | Accountable human | Scope |
-|---|---|---|
-| Application security and stored XSS | **Marawan Younis** | Browser client safety, injection defences, session and authentication handling, security regressions |
-| Inventory and financial integrity | **Ahmed Younis** | Stock correctness, overselling, money representation, order and payment reconciliation, refunds |
-| Secrets and infrastructure | **Marawan Younis** | Credential handling, environment configuration, deployment topology, backups, access control |
-| Brand claims and naming risk | **Aya Ashraf** | DEDUNET naming exposure, trademark and historical-claim risk, material, origin and sustainability wording |
+| Risk domain | Accountable human | Approval authority | Backup owner | Acceptance |
+|---|---|---|---|---|
+| Application security and stored XSS | **Marawan Younis** | May block or approve a release on security grounds; may accept residual security risk | **None named** — single point of failure, see below | `PENDING` |
+| Inventory and financial integrity | **Ahmed Younis** | May block or approve a release affecting stock, money or reconciliation | **None named** | `PENDING` |
+| Secrets and infrastructure | **Marawan Younis** | May approve credential handling, deployment topology and access model | **None named** | `PENDING` |
+| Brand claims and naming risk | **Aya Ashraf** | May block publication of any brand, material, origin or sustainability claim | **None named** | `PENDING` |
+
+### Scope of each domain
+
+- **Application security** — browser client safety, injection defences, session and authentication
+  handling, security regressions.
+- **Inventory and financial integrity** — stock correctness, overselling, money representation,
+  order and payment reconciliation, refunds.
+- **Secrets and infrastructure** — credential handling, environment configuration, deployment
+  topology, backups, access control.
+- **Brand claims and naming** — DEDUNET naming exposure, trademark and historical-claim risk,
+  material, origin and sustainability wording.
 
 All four are named natural persons. No entry is an agent, a company, a team label or a
 placeholder — the register is invalid if any becomes so.
 
 One human may hold more than one domain; Marawan Younis currently holds two. That is permitted
 and recorded deliberately rather than disguised by inventing a second name.
+
+**No backup owner is named for any domain.** Every domain is therefore a single point of failure:
+if the named owner is unavailable, work in that domain stops, because the escalation rule below
+forbids proceeding on an assumed approval. Naming deputies is a cheap, unblocked improvement the
+manager may make at any time.
 
 ## Responsibilities of an owner
 
