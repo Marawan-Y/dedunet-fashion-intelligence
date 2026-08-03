@@ -55,10 +55,13 @@ class Mutation:
 CANDIDATE_ACTIVATION = BACKEND / "app" / "candidate_activation.py"
 SCHEMAS = BACKEND / "app" / "schemas.py"
 MONEY = BACKEND / "app" / "money.py"
+RATE_LIMIT = BACKEND / "app" / "rate_limit.py"
+MAIN = BACKEND / "app" / "main.py"
 
 TEST_CANDIDATE = "tests/test_candidate_activation.py"
 TEST_API = "tests/test_api.py"
 TEST_MONEY = "tests/test_money_integrity.py"
+TEST_RATE = "tests/test_rate_limit.py"
 
 
 MUTATIONS: tuple[Mutation, ...] = (
@@ -346,6 +349,51 @@ MUTATIONS: tuple[Mutation, ...] = (
         mutated="    subtotal_minor_units: int = Field(ge=0)  # MUTATED: strict integer removed\n",
         tests=(f"{TEST_MONEY}::test_quote_wire_field_rejects_float_subtotal",),
         covers=("a float can never be serialized onto the authoritative quote wire",),
+    ),
+    # ---- Workstream C: rate limiting -----------------------------------------
+    Mutation(
+        mutation_id="M20_rate_limit_enabled_by_default",
+        guard="RATE_LIMIT_ENABLED default is on",
+        target=RATE_LIMIT,
+        original='    return os.getenv("RATE_LIMIT_ENABLED", "1").strip().lower() not in {"0", "false", "no"}',
+        mutated='    return os.getenv("RATE_LIMIT_ENABLED", "0").strip().lower() not in {"0", "false", "no"}',
+        tests=(f"{TEST_RATE}::test_limiter_is_enabled_when_the_variable_is_absent",),
+        covers=("an unset variable must never silently disable rate limiting",),
+    ),
+    Mutation(
+        mutation_id="M21_health_ready_exemption",
+        guard="EXEMPT_PATHS covers /health and /ready",
+        target=RATE_LIMIT,
+        original='EXEMPT_PATHS = frozenset({"/health", "/ready"})',
+        mutated="EXEMPT_PATHS = frozenset()  # MUTATED: probe exemption removed",
+        tests=(f"{TEST_RATE}::test_health_and_ready_are_never_limited_even_when_hammered",),
+        covers=("throttling readiness makes an orchestrator restart a healthy API",),
+    ),
+    Mutation(
+        mutation_id="M22_xff_not_trusted_by_default",
+        guard="X-Forwarded-For ignored unless a proxy count is configured",
+        target=RATE_LIMIT,
+        original="    if trusted_proxy_count <= 0:\n        return direct\n",
+        mutated="    if False:  # MUTATED: XFF trusted unconditionally\n        return direct\n",
+        tests=(f"{TEST_RATE}::test_spoofed_forwarded_for_does_not_mint_a_fresh_bucket",),
+        covers=("trusting XFF unconditionally makes the limiter trivially bypassable",),
+    ),
+    Mutation(
+        mutation_id="M23_rate_limit_headers_exposed",
+        guard="CORS exposes the rate-limit headers",
+        target=MAIN,
+        original=(
+            '        "Retry-After",\n'
+            '        "X-RateLimit-Limit",\n'
+            '        "X-RateLimit-Remaining",\n'
+            '        "X-RateLimit-Reset",\n'
+        ),
+        mutated="        # MUTATED: rate-limit headers no longer exposed\n",
+        tests=(f"{TEST_RATE}::test_first_429_is_fully_formed",),
+        covers=(
+            "headers sent but not exposed are unreadable cross-origin, so a browser "
+            "cannot honour Retry-After",
+        ),
     ),
 )
 

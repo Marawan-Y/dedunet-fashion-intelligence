@@ -10,6 +10,7 @@ from pathlib import Path
 
 from fastapi import Depends, FastAPI, Header, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
 from .ai_stylist import recommend_products
 from .candidate_activation import (
@@ -19,6 +20,7 @@ from .candidate_activation import (
     validate_candidate_collection,
 )
 from .catalog import CatalogRepository
+from .rate_limit import client_key, get_limiter, limit_for, rate_limiting_enabled
 from .config import settings
 from .money import sum_line_totals
 from .schemas import OrderQuote, OrderQuoteRequest, Product, StylistRecommendation, StylistRequest
@@ -28,6 +30,50 @@ app = FastAPI(
     version="0.1.0",
     description="Vertical-slice API for catalog, inventory visibility, quote and AI stylist demo.",
 )
+@app.middleware("http")
+async def rate_limit_middleware(request: Request, call_next):
+    """Reject over-limit requests before they reach a route handler.
+
+    Registered FIRST so it ends up INNERMOST (Starlette applies middleware in reverse
+    registration order). The chain is correlation -> CORS -> limiter -> routes, so a 429
+    still gets CORS headers and a correlation ID on the way out. Registering it last
+    would place it outside CORS, and the browser would see an opaque network error
+    instead of a readable 429.
+    """
+
+    if not rate_limiting_enabled():
+        return await call_next(request)
+
+    rule = limit_for(request.method, request.url.path,
+                     has_cart_token=bool(request.headers.get("x-cart-token")))
+    if rule is None:
+        return await call_next(request)
+
+    decision = get_limiter().check(f"{rule.name}:{client_key(request)}", rule)
+    headers = {
+        "X-RateLimit-Limit": str(decision.limit),
+        "X-RateLimit-Remaining": str(decision.remaining),
+        "X-RateLimit-Reset": str(decision.reset_after),
+    }
+    if not decision.allowed:
+        headers["Retry-After"] = str(decision.retry_after)
+        return JSONResponse(
+            status_code=429,
+            content={
+                "detail": "rate limit exceeded",
+                "reason": "RATE_LIMIT_EXCEEDED",
+                "scope": rule.name,
+                "retry_after_seconds": decision.retry_after,
+            },
+            headers=headers,
+        )
+
+    response = await call_next(request)
+    for key, value in headers.items():
+        response.headers[key] = value
+    return response
+
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=list(settings.cors_origins),
@@ -40,7 +86,13 @@ app.add_middleware(
         "X-Cart-Token",
         "X-Correlation-ID",
     ],
-    expose_headers=["X-Correlation-ID"],
+    expose_headers=[
+        "X-Correlation-ID",
+        "Retry-After",
+        "X-RateLimit-Limit",
+        "X-RateLimit-Remaining",
+        "X-RateLimit-Reset",
+    ],
 )
 
 repo = CatalogRepository(Path(__file__).resolve().parents[1] / "data" / "products.json")

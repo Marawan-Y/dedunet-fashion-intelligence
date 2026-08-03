@@ -139,3 +139,27 @@ def auth(client):
         "admin": _login(DEMO_ADMIN_EMAIL),
         "customer": _login(DEMO_CUSTOMER_EMAIL),
     }
+
+@pytest.fixture(autouse=True)
+def reset_rate_limiter():
+    """Clear limiter buckets before EVERY test.
+
+    Autouse, not a line inside the `client` fixture: test_admin_security.py,
+    test_api.py and test_money_integrity.py each build a module-level TestClient(app)
+    and never touch that fixture, so they would run against a shared, never-reset
+    bucket.
+
+    This matters because the `auth` fixture performs TWO logins before every test body
+    that uses it. The suite finishes in seconds, so a monotonic clock barely advances
+    and no refill occurs; without a reset the login bucket (10/min) would be exhausted
+    part-way through the run and most of the suite would 429.
+
+    It resets STATE. It does not disable enforcement - the whole suite runs with the
+    limiter fully enabled.
+    """
+
+    from app import rate_limit
+
+    rate_limit.reset_limiter()
+    yield
+    rate_limit.reset_limiter()
