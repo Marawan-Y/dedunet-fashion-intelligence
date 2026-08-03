@@ -1,6 +1,24 @@
 name: fashion-commerce-codex-poc
 
 services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-commerce}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set}
+      POSTGRES_DB: ${POSTGRES_DB:-commerce}
+    volumes:
+      - commerce-pgdata:/var/lib/postgresql/data
+    # No published port. The database is reachable only on the compose network; exposing
+    # 5432 on the host is how a development database ends up addressable from elsewhere.
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-commerce} -d ${POSTGRES_DB:-commerce}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
+    restart: unless-stopped
+
   api:
     build: ./services/commerce-api
     env_file:
@@ -9,12 +27,14 @@ services:
       # Both loopback spellings are distinct origins to a browser. Listing only one
       # produces a working curl and a broken storefront.
       CORS_ORIGINS: "http://localhost:${STOREFRONT_PORT:-13000},http://127.0.0.1:${STOREFRONT_PORT:-13000}"
-      COMMERCE_DB_PATH: /app/var/commerce.sqlite3
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-commerce}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set}@db:5432/${POSTGRES_DB:-commerce}
+    depends_on:
+      db:
+        condition: service_healthy
     volumes:
       # Sample fixtures are checksum-protected and the container has no reason to write
       # them, so they are mounted read-only.
       - ./services/commerce-api/data:/app/data:ro
-      - commerce-db:/app/var
     ports:
       - "${API_PORT:-18000}:8000"
     healthcheck:
@@ -40,4 +60,4 @@ services:
       - "${STOREFRONT_PORT:-13000}:80"
 
 volumes:
-  commerce-db:
+  commerce-pgdata:

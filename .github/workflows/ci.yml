@@ -116,3 +116,79 @@ jobs:
           docker compose config
       - name: Build images
         run: docker compose build
+
+  postgres:
+    # Parity job. The suite runs on in-memory SQLite everywhere else for speed; this job
+    # is the only thing that proves the schema, the migrations and the timezone contract
+    # behave identically on the engine that actually runs in Docker and staging.
+    runs-on: ubuntu-latest
+    services:
+      db:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: commerce
+          POSTGRES_PASSWORD: ci-only-not-a-secret
+          POSTGRES_DB: commerce
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U commerce -d commerce"
+          --health-interval 5s --health-timeout 3s --health-retries 10
+    env:
+      PYTHONDONTWRITEBYTECODE: "1"
+      DATABASE_URL: postgresql+psycopg://commerce:ci-only-not-a-secret@localhost:5432/commerce
+      COMMERCE_TEST_DATABASE_URL: postgresql+psycopg://commerce:ci-only-not-a-secret@localhost:5432/commerce
+      APP_ENV: test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        working-directory: services/commerce-api
+        run: pip install -r requirements.txt
+
+      - name: Migrations must apply, reverse and re-apply on PostgreSQL
+        working-directory: services/commerce-api
+        run: |
+          python -m alembic upgrade head
+          python -m alembic downgrade base
+          python -m alembic upgrade head
+
+      - name: Schema must contain every expected table
+        working-directory: services/commerce-api
+        run: |
+          python - <<'PY'
+          import os
+          from sqlalchemy import create_engine, inspect
+          tables = set(inspect(create_engine(os.environ["DATABASE_URL"])).get_table_names())
+          expected = {
+              "addresses", "analytics_events", "audit_logs", "cart_lines", "carts",
+              "customers", "inventory_items", "notifications", "order_lines", "orders",
+              "payments", "products", "promotions", "reservations", "return_requests",
+              "shipments", "variants",
+          }
+          missing = expected - tables
+          assert not missing, f"missing tables on PostgreSQL: {sorted(missing)}"
+          print(f"OK: {len(expected)} expected tables present")
+          PY
+
+      - name: Bootstrap must be idempotent on PostgreSQL
+        working-directory: services/commerce-api
+        run: |
+          python manage.py bootstrap
+          python manage.py seed | tee second-seed.json
+          python - <<'PY'
+          import json
+          created = json.load(open("second-seed.json"))["seeded"]
+          assert all(v == 0 for v in created.values()), f"seed is not idempotent: {created}"
+          print("OK: seed is idempotent")
+          PY
+          rm -f second-seed.json
+
+      - name: Full suite against PostgreSQL
+        working-directory: services/commerce-api
+        # pytest.ini promotes warnings to errors, so an unhandled thread exception in the
+        # 20-thread concurrency test fails this job rather than printing and passing.
+        run: python -m pytest -q

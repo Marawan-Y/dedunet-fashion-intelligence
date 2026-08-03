@@ -36,6 +36,19 @@ if _is_memory:
     _engine_kwargs["connect_args"] = {"check_same_thread": False}
     _engine_kwargs["poolclass"] = StaticPool
 
+if not _is_sqlite:
+    # A networked database drops idle connections: container restarts, proxy idle
+    # timeouts, failovers. Without pre-ping the first request after such a drop fails
+    # with a stale-connection OperationalError - the classic "works, then 500s after
+    # lunch". pre_ping costs one cheap round trip and removes that whole failure class.
+    _engine_kwargs["pool_pre_ping"] = True
+    _engine_kwargs["pool_recycle"] = 1800
+    # The concurrency test runs 20 simultaneous reservations; the default pool of
+    # 5 + 10 overflow would make five of them queue on checkout rather than exercise
+    # the database-level guard the test exists to prove.
+    _engine_kwargs["pool_size"] = int(os.getenv("DB_POOL_SIZE", "10"))
+    _engine_kwargs["max_overflow"] = int(os.getenv("DB_MAX_OVERFLOW", "20"))
+
 engine = create_engine(DATABASE_URL, **_engine_kwargs)
 
 

@@ -46,6 +46,7 @@ from .models import (
     Shipment,
     ShipmentStatus,
     Variant,
+    as_utc,
 )
 from .security import hash_password, verify_password
 
@@ -514,7 +515,7 @@ def export_customer_data(session: Session, customer: Customer) -> dict:
         "customer": {
             "email": customer.email,
             "full_name": customer.full_name,
-            "created_at": customer.created_at.isoformat() if customer.created_at else None,
+            "created_at": as_utc(customer.created_at).isoformat() if customer.created_at else None,
             "marketing_consent": customer.marketing_consent,
         },
         "addresses": [
@@ -532,7 +533,7 @@ def export_customer_data(session: Session, customer: Customer) -> dict:
                 "status": o.status.value,
                 "total_minor_units": o.total_minor_units,
                 "currency": o.currency,
-                "placed_at": o.placed_at.isoformat() if o.placed_at else None,
+                "placed_at": as_utc(o.placed_at).isoformat() if o.placed_at else None,
                 "lines": [
                     {
                         "sku": line.sku,

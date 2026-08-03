@@ -36,6 +36,29 @@ def utcnow() -> datetime:
     return datetime.now(timezone.utc)
 
 
+def as_utc(value: datetime | None) -> datetime | None:
+    """Normalise a timestamp read back from the database to an aware UTC value.
+
+    SQLite has no timestamp type: it ignores ``DateTime(timezone=True)`` and returns a
+    NAIVE datetime. PostgreSQL stores TIMESTAMPTZ and returns an AWARE one. The same
+    row therefore serialises differently depending on the engine, and comparing or
+    subtracting two such values raises ``TypeError: can't subtract offset-naive and
+    offset-aware datetimes`` on one backend while silently working on the other.
+
+    Writes are already safe because ``utcnow()`` produces aware values. This closes the
+    read side so one wire format and one comparison semantics hold on both engines.
+
+    A naive value is ASSUMED to be UTC, which is true here because every write goes
+    through ``utcnow()``. It is not a safe assumption for arbitrary external input.
+    """
+
+    if value is None:
+        return None
+    if value.tzinfo is None:
+        return value.replace(tzinfo=timezone.utc)
+    return value.astimezone(timezone.utc)
+
+
 class OrderStatus(str, enum.Enum):
     PENDING_PAYMENT = "pending_payment"
     PAID = "paid"

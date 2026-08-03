@@ -18,8 +18,17 @@ import pytest
 # Point the commerce domain at a private in-memory database BEFORE any application
 # module is imported. Without this the suite would open (and write to) the developer's
 # real commerce.sqlite3 file.
-os.environ.setdefault("DATABASE_URL", "sqlite+pysqlite:///:memory:")
+# EXPLICIT, not setdefault. With DATABASE_URL documented in .env.example a developer
+# may well have it exported; setdefault would then silently point the whole suite at a
+# real database - including the db_session fixture's drop_all. The test database is
+# chosen only by COMMERCE_TEST_DATABASE_URL, which nothing else sets.
+os.environ["DATABASE_URL"] = os.environ.get(
+    "COMMERCE_TEST_DATABASE_URL", "sqlite+pysqlite:///:memory:"
+)
 os.environ.setdefault("APP_ENV", "test")
+
+if "COMMERCE_TEST_DATABASE_URL" not in os.environ and "postgres" in os.environ["DATABASE_URL"]:
+    raise RuntimeError("refusing to run the suite against a PostgreSQL URL without an explicit opt-in")
 
 DATA_DIR = Path(__file__).resolve().parents[1] / "data"
 PROTECTED_FIXTURES = ("products.json", "candidate_products.json")

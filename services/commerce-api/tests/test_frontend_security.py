@@ -12,8 +12,22 @@ from pathlib import Path
 
 import pytest
 
-# parents[2] is the repository root: tests/ -> commerce-api/ -> services/ -> root
-REPO_ROOT = Path(__file__).resolve().parents[3]
+def _repo_root() -> Path:
+    """Find the repository root by looking for apps/, not by counting directories.
+
+    A fixed parents[N] breaks the moment the service moves or the tests run from a
+    mount where the tree above is absent — which is exactly what happened when this
+    suite was first run inside a container against PostgreSQL.
+    """
+
+    here = Path(__file__).resolve()
+    for candidate in here.parents:
+        if (candidate / "apps").is_dir():
+            return candidate
+    raise RuntimeError(f"no apps/ directory above {here}; run from a full checkout")
+
+
+REPO_ROOT = _repo_root()
 CLIENT_SCRIPTS = [
     REPO_ROOT / "apps" / "web" / "app.js",
     REPO_ROOT / "apps" / "admin" / "admin.js",

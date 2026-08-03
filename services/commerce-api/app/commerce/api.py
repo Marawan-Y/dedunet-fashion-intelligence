@@ -16,7 +16,7 @@ from sqlalchemy.orm import Session
 
 from . import payments, services
 from .db import get_session
-from .models import Customer, Order, Product, ReturnRequest, Variant
+from .models import Customer, Order, Product, ReturnRequest, Variant, as_utc
 from .security import InvalidToken, issue_token, verify_token
 
 router = APIRouter(prefix="/api/v1", tags=["commerce"])
@@ -348,7 +348,7 @@ def _order_payload(order: Order) -> dict:
         "tax_minor_units": order.tax_minor_units,
         "total_minor_units": order.total_minor_units,
         "promotion_code": order.promotion_code,
-        "placed_at": order.placed_at.isoformat() if order.placed_at else None,
+        "placed_at": as_utc(order.placed_at).isoformat() if order.placed_at else None,
         "lines": [
             {
                 "sku": line.sku,

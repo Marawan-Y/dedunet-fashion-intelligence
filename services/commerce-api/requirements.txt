@@ -8,3 +8,6 @@ pytest==9.0.2
 # the migration up/down/up cycle were actually verified against.
 SQLAlchemy==2.0.51
 alembic==1.18.5
+# PostgreSQL driver. cp312/cp313/cp314 manylinux wheels verified present for the CI
+# matrix before pinning, so no job falls back to a source build.
+psycopg[binary]==3.3.4
