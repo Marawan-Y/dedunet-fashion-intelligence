@@ -1,0 +1,243 @@
+current_path,file_type,owning_subsystem,runtime_status,generated_or_source,proposed_target_path,migration_risk,required_validation
+.agent/PLANS.md,markdown,root,build-time,source,.agent/PLANS.md,none,unchanged
+.codex/agents/side-a-business.toml,toml,root,build-time,source,.codex/agents/side-a-business.toml,none,unchanged
+.codex/agents/side-b-platform.toml,toml,root,build-time,source,.codex/agents/side-b-platform.toml,none,unchanged
+.codex/config.toml,toml,root,build-time,source,.codex/config.toml,none,unchanged
+.gitattributes,other,root,build-time,source,.gitattributes,none,unchanged
+.gitignore,other,root,build-time,source,.gitignore,none,unchanged
+AGENTS.md,markdown,root,build-time,source,AGENTS.md,none,unchanged
+README_CODEX_SETUP.md,markdown,root,build-time,source,README_CODEX_SETUP.md,none,unchanged
+docs/architecture/GIT_ROOT_NORMALIZATION.md,markdown,governance,build-time,source,docs/architecture/GIT_ROOT_NORMALIZATION.md,none,unchanged
+docs/architecture/decisions/ADR-0001-scope-contradiction-and-baseline.md,markdown,governance,build-time,source,docs/architecture/decisions/ADR-0001-scope-contradiction-and-baseline.md,none,unchanged
+docs/side-a/ARTIFACT_CATALOG.md,markdown,governance,build-time,source,docs/side-a/ARTIFACT_CATALOG.md,none,unchanged
+docs/side-a/ASSUMPTION_REGISTER.csv,csv,governance,build-time,source,docs/side-a/ASSUMPTION_REGISTER.csv,none,unchanged
+docs/side-a/DECISION_LOG.md,markdown,governance,build-time,source,docs/side-a/DECISION_LOG.md,none,unchanged
+docs/side-a/EVIDENCE_INDEX.csv,csv,governance,build-time,source,docs/side-a/EVIDENCE_INDEX.csv,none,unchanged
+docs/side-a/PROGRAM_CHARTER.md,markdown,governance,build-time,source,docs/side-a/PROGRAM_CHARTER.md,none,unchanged
+docs/side-a/SB_HO_B0_001_ATOMIC_DISPOSITION_MATRIX.csv,csv,governance,build-time,source,docs/side-a/SB_HO_B0_001_ATOMIC_DISPOSITION_MATRIX.csv,none,unchanged
+docs/side-a/SB_HO_B0_001_VARIANT_INSTANCE_DISPOSITIONS.csv,csv,governance,build-time,source,docs/side-a/SB_HO_B0_001_VARIANT_INSTANCE_DISPOSITIONS.csv,none,unchanged
+docs/side-a/SIDE_A_BUSINESS_PLATFORM_CONTRACT.csv,csv,governance,build-time,source,docs/side-a/SIDE_A_BUSINESS_PLATFORM_CONTRACT.csv,none,unchanged
+docs/side-a/SIDE_A_DELIVERABLE_REGISTER.csv,csv,governance,build-time,source,docs/side-a/SIDE_A_DELIVERABLE_REGISTER.csv,none,unchanged
+docs/side-a/SIDE_A_DEPENDENCY_REGISTER.csv,csv,governance,build-time,source,docs/side-a/SIDE_A_DEPENDENCY_REGISTER.csv,none,unchanged
+docs/side-a/SIDE_A_EXECPLAN_G0.md,markdown,governance,build-time,source,docs/side-a/SIDE_A_EXECPLAN_G0.md,none,unchanged
+docs/side-a/SIDE_A_FACT_ASSUMPTION_MATRIX.csv,csv,governance,build-time,source,docs/side-a/SIDE_A_FACT_ASSUMPTION_MATRIX.csv,none,unchanged
+docs/side-a/SIDE_A_FIRST_2_WEEK_BACKLOG.md,markdown,governance,build-time,source,docs/side-a/SIDE_A_FIRST_2_WEEK_BACKLOG.md,none,unchanged
+docs/side-a/SIDE_A_G0_ASSESSMENT.md,markdown,governance,build-time,source,docs/side-a/SIDE_A_G0_ASSESSMENT.md,none,unchanged
+docs/side-a/SIDE_A_GATE_ROADMAP.md,markdown,governance,build-time,source,docs/side-a/SIDE_A_GATE_ROADMAP.md,none,unchanged
+docs/side-a/SIDE_A_INTAKE_REPORT.md,markdown,governance,build-time,source,docs/side-a/SIDE_A_INTAKE_REPORT.md,none,unchanged
+docs/side-a/SIDE_A_RISK_REGISTER.csv,csv,governance,build-time,source,docs/side-a/SIDE_A_RISK_REGISTER.csv,none,unchanged
+docs/side-a/SIDE_A_VERTICAL_SLICE_RECOMMENDATION.md,markdown,governance,build-time,source,docs/side-a/SIDE_A_VERTICAL_SLICE_RECOMMENDATION.md,none,unchanged
+docs/side-a/STATUS_REPORT.md,markdown,governance,build-time,source,docs/side-a/STATUS_REPORT.md,none,unchanged
+docs/side-a/STATUS_REPORT_G0_v1.md,markdown,governance,build-time,source,docs/side-a/STATUS_REPORT_G0_v1.md,none,unchanged
+docs/side-a/VS_TEE_001_CANDIDATE_PAYLOAD_v0_1.json,json,governance,build-time,source,docs/side-a/VS_TEE_001_CANDIDATE_PAYLOAD_v0_1.json,none,unchanged
+docs/side-a/work_packages/side_a/EXTERNAL_ACTION_DOSSIERS.md,markdown,governance,build-time,source,docs/side-a/work_packages/side_a/EXTERNAL_ACTION_DOSSIERS.md,none,unchanged
+docs/side-b/ASSUMPTION_REGISTER.csv,csv,governance,build-time,source,docs/side-b/ASSUMPTION_REGISTER.csv,none,unchanged
+docs/side-b/DECISION_LOG.md,markdown,governance,build-time,source,docs/side-b/DECISION_LOG.md,none,unchanged
+docs/side-b/EVIDENCE_INDEX.csv,csv,governance,build-time,source,docs/side-b/EVIDENCE_INDEX.csv,none,unchanged
+docs/side-b/EVIDENCE_INDEX_v2_0_0.csv,csv,governance,build-time,source,docs/side-b/EVIDENCE_INDEX_v2_0_0.csv,none,unchanged
+docs/side-b/PROGRAM_CHARTER.md,markdown,governance,build-time,source,docs/side-b/PROGRAM_CHARTER.md,none,unchanged
+docs/side-b/SIDE_B_BPC_FIELD_DISPOSITION.csv,csv,governance,build-time,source,docs/side-b/SIDE_B_BPC_FIELD_DISPOSITION.csv,none,unchanged
+docs/side-b/SIDE_B_BPC_FIELD_DISPOSITION_v1_0_0.csv,csv,governance,build-time,source,docs/side-b/SIDE_B_BPC_FIELD_DISPOSITION_v1_0_0.csv,none,unchanged
+docs/side-b/SIDE_B_DELIVERABLE_REGISTER.csv,csv,governance,build-time,source,docs/side-b/SIDE_B_DELIVERABLE_REGISTER.csv,none,unchanged
+docs/side-b/SIDE_B_DEPENDENCY_REGISTER.csv,csv,governance,build-time,source,docs/side-b/SIDE_B_DEPENDENCY_REGISTER.csv,none,unchanged
+docs/side-b/SIDE_B_FACT_ASSUMPTION_MATRIX.csv,csv,governance,build-time,source,docs/side-b/SIDE_B_FACT_ASSUMPTION_MATRIX.csv,none,unchanged
+docs/side-b/SIDE_B_FIRST_2_WEEK_BACKLOG.md,markdown,governance,build-time,source,docs/side-b/SIDE_B_FIRST_2_WEEK_BACKLOG.md,none,unchanged
+docs/side-b/SIDE_B_G0_ASSESSMENT.md,markdown,governance,build-time,source,docs/side-b/SIDE_B_G0_ASSESSMENT.md,none,unchanged
+docs/side-b/SIDE_B_INTAKE_REPORT.md,markdown,governance,build-time,source,docs/side-b/SIDE_B_INTAKE_REPORT.md,none,unchanged
+docs/side-b/SIDE_B_LAUNCH_BLOCKER_AUDIT.md,markdown,governance,build-time,source,docs/side-b/SIDE_B_LAUNCH_BLOCKER_AUDIT.md,none,unchanged
+docs/side-b/SIDE_B_LIFECYCLE_PUBLICATION_CONTRACT.md,markdown,governance,build-time,source,docs/side-b/SIDE_B_LIFECYCLE_PUBLICATION_CONTRACT.md,none,unchanged
+docs/side-b/SIDE_B_MONEY_CONTRACT.md,markdown,governance,build-time,source,docs/side-b/SIDE_B_MONEY_CONTRACT.md,none,unchanged
+docs/side-b/SIDE_B_REPOSITORY_AND_POC_AUDIT.md,markdown,governance,build-time,source,docs/side-b/SIDE_B_REPOSITORY_AND_POC_AUDIT.md,none,unchanged
+docs/side-b/SIDE_B_RISK_REGISTER.csv,csv,governance,build-time,source,docs/side-b/SIDE_B_RISK_REGISTER.csv,none,unchanged
+docs/side-b/SIDE_B_RISK_REGISTER_v1_0_0.csv,csv,governance,build-time,source,docs/side-b/SIDE_B_RISK_REGISTER_v1_0_0.csv,none,unchanged
+docs/side-b/STATUS_REPORT.md,markdown,governance,build-time,source,docs/side-b/STATUS_REPORT.md,none,unchanged
+docs/side-b/STATUS_REPORT_G0_v1_0_0.md,markdown,governance,build-time,source,docs/side-b/STATUS_REPORT_G0_v1_0_0.md,none,unchanged
+docs/side-b/contracts/ONE_PRODUCT_VERTICAL_SLICE_INPUT_CONTRACT_V0_1.md,markdown,governance,build-time,source,docs/side-b/contracts/ONE_PRODUCT_VERTICAL_SLICE_INPUT_CONTRACT_V0_1.md,none,unchanged
+docs/side-b/work_packages/side_b/SIDE_B_G0_EXECPLAN.md,markdown,governance,build-time,source,docs/side-b/work_packages/side_b/SIDE_B_G0_EXECPLAN.md,none,unchanged
+docs/source/Shared_Cross_Team_Agent_Interface_Contract.md,markdown,governance,build-time,source,docs/source/Shared_Cross_Team_Agent_Interface_Contract.md,none,unchanged
+docs/source/Side_A_Business_Product_Brand_Marketing_Agent_Execution_Book.docx,docx,governance,build-time,source,docs/source/Side_A_Business_Product_Brand_Marketing_Agent_Execution_Book.docx,none,unchanged
+docs/source/Side_A_Business_Product_Brand_Marketing_Agent_Execution_Book.pdf,pdf,governance,build-time,source,docs/source/Side_A_Business_Product_Brand_Marketing_Agent_Execution_Book.pdf,none,unchanged
+docs/source/Side_A_Business_Product_Brand_Marketing_Agent_System_Prompt.md,markdown,governance,build-time,source,docs/source/Side_A_Business_Product_Brand_Marketing_Agent_System_Prompt.md,none,unchanged
+docs/source/Side_A_Execution_Book.md,markdown,governance,build-time,source,docs/source/Side_A_Execution_Book.md,none,unchanged
+docs/source/Side_B_Execution_Book.md,markdown,governance,build-time,source,docs/source/Side_B_Execution_Book.md,none,unchanged
+docs/source/Side_B_Platform_Software_AI_Apps_Agent_Execution_Book.docx,docx,governance,build-time,source,docs/source/Side_B_Platform_Software_AI_Apps_Agent_Execution_Book.docx,none,unchanged
+docs/source/Side_B_Platform_Software_AI_Apps_Agent_Execution_Book.pdf,pdf,governance,build-time,source,docs/source/Side_B_Platform_Software_AI_Apps_Agent_Execution_Book.pdf,none,unchanged
+docs/source/Side_B_Platform_Software_AI_Apps_Agent_System_Prompt.md,markdown,governance,build-time,source,docs/source/Side_B_Platform_Software_AI_Apps_Agent_System_Prompt.md,none,unchanged
+docs/system-of-record/CONFLICT_AND_RESOLUTION_REGISTER.md,markdown,governance,build-time,source,docs/system-of-record/CONFLICT_AND_RESOLUTION_REGISTER.md,none,unchanged
+docs/system-of-record/CONTROLLER_ACTION_DOSSIERS.md,markdown,governance,build-time,source,docs/system-of-record/CONTROLLER_ACTION_DOSSIERS.md,none,unchanged
+docs/system-of-record/CONTROLLER_VALIDATION_G1_M1.md,markdown,governance,build-time,source,docs/system-of-record/CONTROLLER_VALIDATION_G1_M1.md,none,unchanged
+docs/system-of-record/CROSS_AGENT_HANDOFF_STATUS.md,markdown,governance,build-time,source,docs/system-of-record/CROSS_AGENT_HANDOFF_STATUS.md,none,unchanged
+docs/system-of-record/DECISION_LOG.md,markdown,governance,build-time,source,docs/system-of-record/DECISION_LOG.md,none,unchanged
+docs/system-of-record/GATE_REGISTER.md,markdown,governance,build-time,source,docs/system-of-record/GATE_REGISTER.md,none,unchanged
+docs/system-of-record/MASTER_DELIVERABLE_REGISTER.csv,csv,governance,build-time,source,docs/system-of-record/MASTER_DELIVERABLE_REGISTER.csv,none,unchanged
+docs/system-of-record/MASTER_DEPENDENCY_REGISTER.csv,csv,governance,build-time,source,docs/system-of-record/MASTER_DEPENDENCY_REGISTER.csv,none,unchanged
+docs/system-of-record/MASTER_EXECUTION_PLAN.md,markdown,governance,build-time,source,docs/system-of-record/MASTER_EXECUTION_PLAN.md,none,unchanged
+docs/system-of-record/MASTER_FACT_ASSUMPTION_MATRIX.csv,csv,governance,build-time,source,docs/system-of-record/MASTER_FACT_ASSUMPTION_MATRIX.csv,none,unchanged
+docs/system-of-record/MASTER_RISK_REGISTER.csv,csv,governance,build-time,source,docs/system-of-record/MASTER_RISK_REGISTER.csv,none,unchanged
+docs/system-of-record/ONE_PRODUCT_VERTICAL_SLICE.md,markdown,governance,build-time,source,docs/system-of-record/ONE_PRODUCT_VERTICAL_SLICE.md,none,unchanged
+docs/system-of-record/PROGRAM_CHARTER.md,markdown,governance,build-time,source,docs/system-of-record/PROGRAM_CHARTER.md,none,unchanged
+docs/system-of-record/README.md,markdown,governance,build-time,source,docs/system-of-record/README.md,none,unchanged
+docs/system-of-record/REPOSITORY_INVENTORY.md,markdown,governance,build-time,source,docs/system-of-record/REPOSITORY_INVENTORY.md,none,unchanged
+docs/system-of-record/RISK_OWNER_REGISTER.md,markdown,governance,build-time,source,docs/system-of-record/RISK_OWNER_REGISTER.md,none,unchanged
+docs/system-of-record/controller_validate.py,python,governance,build-time,source,docs/system-of-record/controller_validate.py,none,unchanged
+docs/system-of-record/handoff_envelope_check.py,python,governance,build-time,source,docs/system-of-record/handoff_envelope_check.py,none,unchanged
+evidence/governance/domain/README.md,markdown,governance,build-time,source,evidence/governance/domain/README.md,none,unchanged
+evidence/governance/domain/dedunet.com_ownership_letter_redacted.pdf,pdf,governance,build-time,source,evidence/governance/domain/dedunet.com_ownership_letter_redacted.pdf,none,unchanged
+evidence/restructuring/BASELINE_BEFORE_RESTRUCTURE.md,markdown,governance,build-time,source,evidence/restructuring/BASELINE_BEFORE_RESTRUCTURE.md,none,unchanged
+evidence/side-a/bootstrap/SIDE_A_G0_CONSISTENCY_REVIEW.md,markdown,governance,build-time,source,evidence/side-a/bootstrap/SIDE_A_G0_CONSISTENCY_REVIEW.md,none,unchanged
+evidence/side-a/bootstrap/SIDE_A_REPOSITORY_INVENTORY.txt,text,governance,build-time,source,evidence/side-a/bootstrap/SIDE_A_REPOSITORY_INVENTORY.txt,none,unchanged
+evidence/side-a/g1/EV_A1_001_M1_CONSISTENCY_VALIDATION.md,markdown,governance,build-time,source,evidence/side-a/g1/EV_A1_001_M1_CONSISTENCY_VALIDATION.md,none,unchanged
+evidence/side-a/g1/EV_A1_002_M1_CONDITION_CLOSURE_VALIDATION.md,markdown,governance,build-time,source,evidence/side-a/g1/EV_A1_002_M1_CONDITION_CLOSURE_VALIDATION.md,none,unchanged
+evidence/side-a/g1/side_a_m1_validation.py,python,governance,build-time,source,evidence/side-a/g1/side_a_m1_validation.py,none,unchanged
+evidence/side-b/EVIDENCE_ATTRIBUTION_AND_SUPERSESSION.md,markdown,governance,build-time,source,evidence/side-b/EVIDENCE_ATTRIBUTION_AND_SUPERSESSION.md,none,unchanged
+evidence/side-b/bootstrap/SB-EV-BOOT-001_environment_and_setup.md,markdown,governance,build-time,source,evidence/side-b/bootstrap/SB-EV-BOOT-001_environment_and_setup.md,none,unchanged
+evidence/side-b/bootstrap/SB-EV-BOOT-002_backend_checks.md,markdown,governance,build-time,source,evidence/side-b/bootstrap/SB-EV-BOOT-002_backend_checks.md,none,unchanged
+evidence/side-b/bootstrap/SB-EV-BOOT-003_mobile_checks.md,markdown,governance,build-time,source,evidence/side-b/bootstrap/SB-EV-BOOT-003_mobile_checks.md,none,unchanged
+evidence/side-b/bootstrap/SB-EV-BOOT-004_docker_checks.md,markdown,governance,build-time,source,evidence/side-b/bootstrap/SB-EV-BOOT-004_docker_checks.md,none,unchanged
+evidence/side-b/bootstrap/SB-EV-BOOT-005_intake_validation.md,markdown,governance,build-time,source,evidence/side-b/bootstrap/SB-EV-BOOT-005_intake_validation.md,none,unchanged
+evidence/side-b/g1/SB-EV-G1-001_regression_red.md,markdown,governance,build-time,source,evidence/side-b/g1/SB-EV-G1-001_regression_red.md,none,unchanged
+evidence/side-b/g1/SB-EV-G1-002_candidate_green.md,markdown,governance,build-time,source,evidence/side-b/g1/SB-EV-G1-002_candidate_green.md,none,unchanged
+evidence/side-b/g1/SB-EV-G1-002_green_pytest_transcript.txt,text,governance,build-time,source,evidence/side-b/g1/SB-EV-G1-002_green_pytest_transcript.txt,none,unchanged
+evidence/side-b/g1/SB-EV-G1-003_guard_mutation_matrix.md,markdown,governance,build-time,source,evidence/side-b/g1/SB-EV-G1-003_guard_mutation_matrix.md,none,unchanged
+evidence/side-b/g1/SB-EV-G1-003_mutation_transcript.txt,text,governance,build-time,source,evidence/side-b/g1/SB-EV-G1-003_mutation_transcript.txt,none,unchanged
+evidence/side-b/g1/SB-EV-G1-004_artifact_validation.md,markdown,governance,build-time,source,evidence/side-b/g1/SB-EV-G1-004_artifact_validation.md,none,unchanged
+evidence/side-b/g1/SB-EV-G1-005_attributed_baseline_rerun_v2.md,markdown,governance,build-time,source,evidence/side-b/g1/SB-EV-G1-005_attributed_baseline_rerun_v2.md,none,unchanged
+evidence/side-b/g1/SB-EV-G1-006_money_integrity_red_green.md,markdown,governance,build-time,source,evidence/side-b/g1/SB-EV-G1-006_money_integrity_red_green.md,none,unchanged
+evidence/side-b/g1/SB-EV-G1-007_launch_blocker_audit.md,markdown,governance,build-time,source,evidence/side-b/g1/SB-EV-G1-007_launch_blocker_audit.md,none,unchanged
+handoffs/incoming/side-a/DEDUNET_Platform_Integration_v1/CHECKSUMS_SHA256.txt,text,governance,build-time,source,handoffs/incoming/side-a/DEDUNET_Platform_Integration_v1/CHECKSUMS_SHA256.txt,none,unchanged
+handoffs/incoming/side-a/DEDUNET_Platform_Integration_v1/README.md,markdown,governance,build-time,source,handoffs/incoming/side-a/DEDUNET_Platform_Integration_v1/README.md,none,unchanged
+handoffs/incoming/side-a/DEDUNET_Platform_Integration_v1/VALIDATION_REPORT.md,markdown,governance,build-time,source,handoffs/incoming/side-a/DEDUNET_Platform_Integration_v1/VALIDATION_REPORT.md,none,unchanged
+handoffs/incoming/side-a/DEDUNET_Platform_Integration_v1/assets/brand-prototype/logos/app-icon.png,image,governance,build-time,source,handoffs/incoming/side-a/DEDUNET_Platform_Integration_v1/assets/brand-prototype/logos/app-icon.png,none,unchanged
+handoffs/incoming/side-a/DEDUNET_Platform_Integration_v1/assets/brand-prototype/logos/app-icon.svg,svg,governance,build-time,source,handoffs/incoming/side-a/DEDUNET_Platform_Integration_v1/assets/brand-prototype/logos/app-icon.svg,none,unchanged
+handoffs/incoming/side-a/DEDUNET_Platform_Integration_v1/assets/brand-prototype/logos/favicon.svg,svg,governance,build-time,source,handoffs/incoming/side-a/DEDUNET_Platform_Integration_v1/assets/brand-prototype/logos/favicon.svg,none,unchanged
+handoffs/incoming/side-a/DEDUNET_Platform_Integration_v1/assets/brand-prototype/logos/logo-compact.svg,svg,governance,build-time,source,handoffs/incoming/side-a/DEDUNET_Platform_Integration_v1/assets/brand-prototype/logos/logo-compact.svg,none,unchanged
+handoffs/incoming/side-a/DEDUNET_Platform_Integration_v1/assets/brand-prototype/logos/logo-monochrome.svg,svg,governance,build-time,source,handoffs/incoming/side-a/DEDUNET_Platform_Integration_v1/assets/brand-prototype/logos/logo-monochrome.svg,none,unchanged
+handoffs/incoming/side-a/DEDUNET_Platform_Integration_v1/assets/brand-prototype/logos/logo-primary.svg,svg,governance,build-time,source,handoffs/incoming/side-a/DEDUNET_Platform_Integration_v1/assets/brand-prototype/logos/logo-primary.svg,none,unchanged
+handoffs/incoming/side-a/DEDUNET_Platform_Integration_v1/assets/brand-prototype/logos/logo-reversed.svg,svg,governance,build-time,source,handoffs/incoming/side-a/DEDUNET_Platform_Integration_v1/assets/brand-prototype/logos/logo-reversed.svg,none,unchanged
+handoffs/incoming/side-a/DEDUNET_Platform_Integration_v1/assets/brand-prototype/media/about-image.svg,svg,governance,build-time,source,handoffs/incoming/side-a/DEDUNET_Platform_Integration_v1/assets/brand-prototype/media/about-image.svg,none,unchanged
+handoffs/incoming/side-a/DEDUNET_Platform_Integration_v1/assets/brand-prototype/media/app-splash.svg,svg,governance,build-time,source,handoffs/incoming/side-a/DEDUNET_Platform_Integration_v1/assets/brand-prototype/media/app-splash.svg,none,unchanged
+handoffs/incoming/side-a/DEDUNET_Platform_Integration_v1/assets/brand-prototype/media/collection-cover.svg,svg,governance,build-time,source,handoffs/incoming/side-a/DEDUNET_Platform_Integration_v1/assets/brand-prototype/media/collection-cover.svg,none,unchanged
+handoffs/incoming/side-a/DEDUNET_Platform_Integration_v1/assets/brand-prototype/media/ddn-os01-lifestyle.svg,svg,governance,build-time,source,handoffs/incoming/side-a/DEDUNET_Platform_Integration_v1/assets/brand-prototype/media/ddn-os01-lifestyle.svg,none,unchanged
+handoffs/incoming/side-a/DEDUNET_Platform_Integration_v1/assets/brand-prototype/media/ddn-tr01-lifestyle.svg,svg,governance,build-time,source,handoffs/incoming/side-a/DEDUNET_Platform_Integration_v1/assets/brand-prototype/media/ddn-tr01-lifestyle.svg,none,unchanged
+handoffs/incoming/side-a/DEDUNET_Platform_Integration_v1/assets/brand-prototype/media/ddn-ts01-lifestyle.svg,svg,governance,build-time,source,handoffs/incoming/side-a/DEDUNET_Platform_Integration_v1/assets/brand-prototype/media/ddn-ts01-lifestyle.svg,none,unchanged
+handoffs/incoming/side-a/DEDUNET_Platform_Integration_v1/assets/brand-prototype/media/email-banner.svg,svg,governance,build-time,source,handoffs/incoming/side-a/DEDUNET_Platform_Integration_v1/assets/brand-prototype/media/email-banner.svg,none,unchanged
+handoffs/incoming/side-a/DEDUNET_Platform_Integration_v1/assets/brand-prototype/media/homepage-hero.svg,svg,governance,build-time,source,handoffs/incoming/side-a/DEDUNET_Platform_Integration_v1/assets/brand-prototype/media/homepage-hero.svg,none,unchanged
+handoffs/incoming/side-a/DEDUNET_Platform_Integration_v1/assets/brand-prototype/media/social-avatar.svg,svg,governance,build-time,source,handoffs/incoming/side-a/DEDUNET_Platform_Integration_v1/assets/brand-prototype/media/social-avatar.svg,none,unchanged
+handoffs/incoming/side-a/DEDUNET_Platform_Integration_v1/assets/brand-prototype/patterns/passage-lines.svg,svg,governance,build-time,source,handoffs/incoming/side-a/DEDUNET_Platform_Integration_v1/assets/brand-prototype/patterns/passage-lines.svg,none,unchanged
+handoffs/incoming/side-a/DEDUNET_Platform_Integration_v1/assets/brand-prototype/products/ddn-os01-back.svg,svg,governance,build-time,source,handoffs/incoming/side-a/DEDUNET_Platform_Integration_v1/assets/brand-prototype/products/ddn-os01-back.svg,none,unchanged
+handoffs/incoming/side-a/DEDUNET_Platform_Integration_v1/assets/brand-prototype/products/ddn-os01-detail.svg,svg,governance,build-time,source,handoffs/incoming/side-a/DEDUNET_Platform_Integration_v1/assets/brand-prototype/products/ddn-os01-detail.svg,none,unchanged
+handoffs/incoming/side-a/DEDUNET_Platform_Integration_v1/assets/brand-prototype/products/ddn-os01-front.svg,svg,governance,build-time,source,handoffs/incoming/side-a/DEDUNET_Platform_Integration_v1/assets/brand-prototype/products/ddn-os01-front.svg,none,unchanged
+handoffs/incoming/side-a/DEDUNET_Platform_Integration_v1/assets/brand-prototype/products/ddn-sc01-back.svg,svg,governance,build-time,source,handoffs/incoming/side-a/DEDUNET_Platform_Integration_v1/assets/brand-prototype/products/ddn-sc01-back.svg,none,unchanged
+handoffs/incoming/side-a/DEDUNET_Platform_Integration_v1/assets/brand-prototype/products/ddn-sc01-detail.svg,svg,governance,build-time,source,handoffs/incoming/side-a/DEDUNET_Platform_Integration_v1/assets/brand-prototype/products/ddn-sc01-detail.svg,none,unchanged
+handoffs/incoming/side-a/DEDUNET_Platform_Integration_v1/assets/brand-prototype/products/ddn-sc01-front.svg,svg,governance,build-time,source,handoffs/incoming/side-a/DEDUNET_Platform_Integration_v1/assets/brand-prototype/products/ddn-sc01-front.svg,none,unchanged
+handoffs/incoming/side-a/DEDUNET_Platform_Integration_v1/assets/brand-prototype/products/ddn-sh01-back.svg,svg,governance,build-time,source,handoffs/incoming/side-a/DEDUNET_Platform_Integration_v1/assets/brand-prototype/products/ddn-sh01-back.svg,none,unchanged
+handoffs/incoming/side-a/DEDUNET_Platform_Integration_v1/assets/brand-prototype/products/ddn-sh01-detail.svg,svg,governance,build-time,source,handoffs/incoming/side-a/DEDUNET_Platform_Integration_v1/assets/brand-prototype/products/ddn-sh01-detail.svg,none,unchanged
+handoffs/incoming/side-a/DEDUNET_Platform_Integration_v1/assets/brand-prototype/products/ddn-sh01-front.svg,svg,governance,build-time,source,handoffs/incoming/side-a/DEDUNET_Platform_Integration_v1/assets/brand-prototype/products/ddn-sh01-front.svg,none,unchanged
+handoffs/incoming/side-a/DEDUNET_Platform_Integration_v1/assets/brand-prototype/products/ddn-tr01-back.svg,svg,governance,build-time,source,handoffs/incoming/side-a/DEDUNET_Platform_Integration_v1/assets/brand-prototype/products/ddn-tr01-back.svg,none,unchanged
+handoffs/incoming/side-a/DEDUNET_Platform_Integration_v1/assets/brand-prototype/products/ddn-tr01-detail.svg,svg,governance,build-time,source,handoffs/incoming/side-a/DEDUNET_Platform_Integration_v1/assets/brand-prototype/products/ddn-tr01-detail.svg,none,unchanged
+handoffs/incoming/side-a/DEDUNET_Platform_Integration_v1/assets/brand-prototype/products/ddn-tr01-front.svg,svg,governance,build-time,source,handoffs/incoming/side-a/DEDUNET_Platform_Integration_v1/assets/brand-prototype/products/ddn-tr01-front.svg,none,unchanged
+handoffs/incoming/side-a/DEDUNET_Platform_Integration_v1/assets/brand-prototype/products/ddn-ts01-back.svg,svg,governance,build-time,source,handoffs/incoming/side-a/DEDUNET_Platform_Integration_v1/assets/brand-prototype/products/ddn-ts01-back.svg,none,unchanged
+handoffs/incoming/side-a/DEDUNET_Platform_Integration_v1/assets/brand-prototype/products/ddn-ts01-detail.svg,svg,governance,build-time,source,handoffs/incoming/side-a/DEDUNET_Platform_Integration_v1/assets/brand-prototype/products/ddn-ts01-detail.svg,none,unchanged
+handoffs/incoming/side-a/DEDUNET_Platform_Integration_v1/assets/brand-prototype/products/ddn-ts01-front.svg,svg,governance,build-time,source,handoffs/incoming/side-a/DEDUNET_Platform_Integration_v1/assets/brand-prototype/products/ddn-ts01-front.svg,none,unchanged
+handoffs/incoming/side-a/DEDUNET_Platform_Integration_v1/data/brand-prototype/asset-register.csv,csv,governance,build-time,source,handoffs/incoming/side-a/DEDUNET_Platform_Integration_v1/data/brand-prototype/asset-register.csv,none,unchanged
+handoffs/incoming/side-a/DEDUNET_Platform_Integration_v1/data/brand-prototype/brand-tokens.css,css,governance,build-time,source,handoffs/incoming/side-a/DEDUNET_Platform_Integration_v1/data/brand-prototype/brand-tokens.css,none,unchanged
+handoffs/incoming/side-a/DEDUNET_Platform_Integration_v1/data/brand-prototype/brand-tokens.json,json,governance,build-time,source,handoffs/incoming/side-a/DEDUNET_Platform_Integration_v1/data/brand-prototype/brand-tokens.json,none,unchanged
+handoffs/incoming/side-a/DEDUNET_Platform_Integration_v1/data/brand-prototype/collection-master.csv,csv,governance,build-time,source,handoffs/incoming/side-a/DEDUNET_Platform_Integration_v1/data/brand-prototype/collection-master.csv,none,unchanged
+handoffs/incoming/side-a/DEDUNET_Platform_Integration_v1/data/brand-prototype/content-copy.json,json,governance,build-time,source,handoffs/incoming/side-a/DEDUNET_Platform_Integration_v1/data/brand-prototype/content-copy.json,none,unchanged
+handoffs/incoming/side-a/DEDUNET_Platform_Integration_v1/data/brand-prototype/font-manifest.json,json,governance,build-time,source,handoffs/incoming/side-a/DEDUNET_Platform_Integration_v1/data/brand-prototype/font-manifest.json,none,unchanged
+handoffs/incoming/side-a/DEDUNET_Platform_Integration_v1/data/brand-prototype/navigation.json,json,governance,build-time,source,handoffs/incoming/side-a/DEDUNET_Platform_Integration_v1/data/brand-prototype/navigation.json,none,unchanged
+handoffs/incoming/side-a/DEDUNET_Platform_Integration_v1/data/brand-prototype/product-master.csv,csv,governance,build-time,source,handoffs/incoming/side-a/DEDUNET_Platform_Integration_v1/data/brand-prototype/product-master.csv,none,unchanged
+handoffs/incoming/side-a/DEDUNET_Platform_Integration_v1/data/brand-prototype/product-master.json,json,governance,build-time,source,handoffs/incoming/side-a/DEDUNET_Platform_Integration_v1/data/brand-prototype/product-master.json,none,unchanged
+handoffs/incoming/side-a/DEDUNET_Platform_Integration_v1/data/brand-prototype/variant-master.csv,csv,governance,build-time,source,handoffs/incoming/side-a/DEDUNET_Platform_Integration_v1/data/brand-prototype/variant-master.csv,none,unchanged
+handoffs/incoming/side-a/DEDUNET_Platform_Integration_v1/docs/brand-prototype/00_DEDUNET_FOUNDATION_LOCK.md,markdown,governance,build-time,source,handoffs/incoming/side-a/DEDUNET_Platform_Integration_v1/docs/brand-prototype/00_DEDUNET_FOUNDATION_LOCK.md,none,unchanged
+handoffs/incoming/side-a/DEDUNET_Platform_Integration_v1/docs/brand-prototype/01_DEDUNET_TRADEMARK_AND_NAMING_PRECHECK.md,markdown,governance,build-time,source,handoffs/incoming/side-a/DEDUNET_Platform_Integration_v1/docs/brand-prototype/01_DEDUNET_TRADEMARK_AND_NAMING_PRECHECK.md,none,unchanged
+handoffs/incoming/side-a/DEDUNET_Platform_Integration_v1/docs/brand-prototype/02_DEDUNET_IDENTITY_PROTOTYPE.md,markdown,governance,build-time,source,handoffs/incoming/side-a/DEDUNET_Platform_Integration_v1/docs/brand-prototype/02_DEDUNET_IDENTITY_PROTOTYPE.md,none,unchanged
+handoffs/incoming/side-a/DEDUNET_Platform_Integration_v1/docs/brand-prototype/03_DEDUNET_WEBSITE_AND_LIFECYCLE_COPY.md,markdown,governance,build-time,source,handoffs/incoming/side-a/DEDUNET_Platform_Integration_v1/docs/brand-prototype/03_DEDUNET_WEBSITE_AND_LIFECYCLE_COPY.md,none,unchanged
+handoffs/incoming/side-a/DEDUNET_Platform_Integration_v1/docs/brand-prototype/04_DEDUNET_CAPSULE_PROTOTYPE.md,markdown,governance,build-time,source,handoffs/incoming/side-a/DEDUNET_Platform_Integration_v1/docs/brand-prototype/04_DEDUNET_CAPSULE_PROTOTYPE.md,none,unchanged
+handoffs/incoming/side-a/DEDUNET_Platform_Integration_v1/docs/brand-prototype/05_DEDUNET_MEDIA_PROTOTYPE.md,markdown,governance,build-time,source,handoffs/incoming/side-a/DEDUNET_Platform_Integration_v1/docs/brand-prototype/05_DEDUNET_MEDIA_PROTOTYPE.md,none,unchanged
+handoffs/incoming/side-a/DEDUNET_Platform_Integration_v1/docs/brand-prototype/06_OPEN_RISKS_AND_EXTERNAL_ACTIONS.md,markdown,governance,build-time,source,handoffs/incoming/side-a/DEDUNET_Platform_Integration_v1/docs/brand-prototype/06_OPEN_RISKS_AND_EXTERNAL_ACTIONS.md,none,unchanged
+handoffs/incoming/side-a/DEDUNET_Platform_Integration_v1/docs/brand-prototype/BRAND_PROTOTYPE_APPROVAL.md,markdown,governance,build-time,source,handoffs/incoming/side-a/DEDUNET_Platform_Integration_v1/docs/brand-prototype/BRAND_PROTOTYPE_APPROVAL.md,none,unchanged
+handoffs/incoming/side-a/DEDUNET_Platform_Integration_v1/evidence/side_a/trademark-search-log.csv,csv,governance,build-time,source,handoffs/incoming/side-a/DEDUNET_Platform_Integration_v1/evidence/side_a/trademark-search-log.csv,none,unchanged
+handoffs/incoming/side-a/DEDUNET_Platform_Integration_v1/handoffs/outgoing/HANDOFF_SIDE_A_TO_SIDE_B_DEDUNET_v1.md,markdown,governance,build-time,source,handoffs/incoming/side-a/DEDUNET_Platform_Integration_v1/handoffs/outgoing/HANDOFF_SIDE_A_TO_SIDE_B_DEDUNET_v1.md,none,unchanged
+handoffs/incoming/side-a/SB-HO-B0-001_ONE_PRODUCT_INPUT_REQUEST.md,markdown,governance,build-time,source,handoffs/incoming/side-a/SB-HO-B0-001_ONE_PRODUCT_INPUT_REQUEST.md,none,unchanged
+handoffs/incoming/side-a/archive/DEDUNET_Platform_Integration_v1.zip,archive,governance,build-time,source,handoffs/incoming/side-a/archive/DEDUNET_Platform_Integration_v1.zip,none,unchanged
+handoffs/incoming/side-b/HO-A-B-001_G0_VERTICAL_SLICE_INPUTS_v1.md,markdown,governance,build-time,source,handoffs/incoming/side-b/HO-A-B-001_G0_VERTICAL_SLICE_INPUTS_v1.md,none,unchanged
+handoffs/outgoing/side-a/HO-A-B-001_G0_VERTICAL_SLICE_INPUTS_v1.md,markdown,governance,build-time,source,handoffs/outgoing/side-a/HO-A-B-001_G0_VERTICAL_SLICE_INPUTS_v1.md,none,unchanged
+handoffs/outgoing/side-a/HO-A-B-002_SB_B0_INPUT_RESPONSE_v1.md,markdown,governance,build-time,source,handoffs/outgoing/side-a/HO-A-B-002_SB_B0_INPUT_RESPONSE_v1.md,none,unchanged
+handoffs/outgoing/side-a/HO-A-B-003_SB_B0_INPUT_RESPONSE_v1_1.md,markdown,governance,build-time,source,handoffs/outgoing/side-a/HO-A-B-003_SB_B0_INPUT_RESPONSE_v1_1.md,none,unchanged
+handoffs/outgoing/side-b/SB-HO-B0-001_ONE_PRODUCT_INPUT_REQUEST.md,markdown,governance,build-time,source,handoffs/outgoing/side-b/SB-HO-B0-001_ONE_PRODUCT_INPUT_REQUEST.md,none,unchanged
+handoffs/outgoing/side-b/SB-HO-B1-001_M1_CONTRACT_AND_NON_SELLABLE_PROOF.md,markdown,governance,build-time,source,handoffs/outgoing/side-b/SB-HO-B1-001_M1_CONTRACT_AND_NON_SELLABLE_PROOF.md,none,unchanged
+handoffs/outgoing/side-b/SB-HO-B1-001_M1_CONTRACT_AND_NON_SELLABLE_PROOF_v1_0_0.md,markdown,governance,build-time,source,handoffs/outgoing/side-b/SB-HO-B1-001_M1_CONTRACT_AND_NON_SELLABLE_PROOF_v1_0_0.md,none,unchanged
+platform/poc/.dockerignore,other,infrastructure,build-time,source,.dockerignore,high,root command + docker + CI
+platform/poc/.env.example,config,infrastructure,build-time,source,.env.example,medium,root command + docker + CI
+platform/poc/.github/workflows/ci.yml,yaml,ci,build-time,source,.github/workflows/ci.yml,high,workflow path resolution
+platform/poc/.gitignore,other,infrastructure,build-time,source,__DELETE__,low,root command + docker + CI
+platform/poc/KNOWN_LIMITATIONS.md,markdown,documentation,build-time,source,docs/KNOWN_LIMITATIONS.md,low,root command + docker + CI
+platform/poc/Makefile,other,tooling,build-time,source,Makefile,medium,root command + docker + CI
+platform/poc/README.md,markdown,documentation,build-time,source,README.md,low,root command + docker + CI
+platform/poc/admin/admin.css,css,admin,build-time,source,apps/admin/admin.css,medium,browser load + frontend security test
+platform/poc/admin/admin.js,javascript,admin,build-time,source,apps/admin/admin.js,medium,browser load + frontend security test
+platform/poc/admin/index.html,html,admin,build-time,source,apps/admin/index.html,medium,browser load + frontend security test
+platform/poc/backend/Dockerfile,other,commerce-api,build-time,source,services/commerce-api/Dockerfile,medium,"pytest, alembic, manage.py"
+platform/poc/backend/alembic.ini,config,commerce-api,build-time,source,services/commerce-api/alembic.ini,medium,"pytest, alembic, manage.py"
+platform/poc/backend/app/__init__.py,python,commerce-api,build-time,source,services/commerce-api/app/__init__.py,medium,"pytest, alembic, manage.py"
+platform/poc/backend/app/ai_stylist.py,python,commerce-api,build-time,source,services/commerce-api/app/ai_stylist.py,medium,"pytest, alembic, manage.py"
+platform/poc/backend/app/candidate_activation.py,python,commerce-api,build-time,source,services/commerce-api/app/candidate_activation.py,medium,"pytest, alembic, manage.py"
+platform/poc/backend/app/catalog.py,python,commerce-api,build-time,source,services/commerce-api/app/catalog.py,medium,"pytest, alembic, manage.py"
+platform/poc/backend/app/commerce/__init__.py,python,commerce-api,build-time,source,services/commerce-api/app/commerce/__init__.py,medium,"pytest, alembic, manage.py"
+platform/poc/backend/app/commerce/api.py,python,commerce-api,build-time,source,services/commerce-api/app/commerce/api.py,medium,"pytest, alembic, manage.py"
+platform/poc/backend/app/commerce/db.py,python,commerce-api,build-time,source,services/commerce-api/app/commerce/db.py,medium,"pytest, alembic, manage.py"
+platform/poc/backend/app/commerce/inventory.py,python,commerce-api,build-time,source,services/commerce-api/app/commerce/inventory.py,medium,"pytest, alembic, manage.py"
+platform/poc/backend/app/commerce/models.py,python,commerce-api,build-time,source,services/commerce-api/app/commerce/models.py,medium,"pytest, alembic, manage.py"
+platform/poc/backend/app/commerce/payments.py,python,commerce-api,build-time,source,services/commerce-api/app/commerce/payments.py,medium,"pytest, alembic, manage.py"
+platform/poc/backend/app/commerce/pricing.py,python,commerce-api,build-time,source,services/commerce-api/app/commerce/pricing.py,medium,"pytest, alembic, manage.py"
+platform/poc/backend/app/commerce/security.py,python,commerce-api,build-time,source,services/commerce-api/app/commerce/security.py,medium,"pytest, alembic, manage.py"
+platform/poc/backend/app/commerce/seed.py,python,commerce-api,build-time,source,services/commerce-api/app/commerce/seed.py,medium,"pytest, alembic, manage.py"
+platform/poc/backend/app/commerce/services.py,python,commerce-api,build-time,source,services/commerce-api/app/commerce/services.py,medium,"pytest, alembic, manage.py"
+platform/poc/backend/app/config.py,python,commerce-api,build-time,source,services/commerce-api/app/config.py,medium,"pytest, alembic, manage.py"
+platform/poc/backend/app/main.py,python,commerce-api,build-time,source,services/commerce-api/app/main.py,medium,"pytest, alembic, manage.py"
+platform/poc/backend/app/money.py,python,commerce-api,build-time,source,services/commerce-api/app/money.py,medium,"pytest, alembic, manage.py"
+platform/poc/backend/app/schemas.py,python,commerce-api,build-time,source,services/commerce-api/app/schemas.py,medium,"pytest, alembic, manage.py"
+platform/poc/backend/data/candidate_products.json,json,commerce-api,runtime,source,services/commerce-api/data/candidate_products.json,medium,"pytest, alembic, manage.py"
+platform/poc/backend/data/products.json,json,commerce-api,runtime,source,services/commerce-api/data/products.json,medium,"pytest, alembic, manage.py"
+platform/poc/backend/docker-entrypoint.sh,shell,commerce-api,build-time,source,services/commerce-api/docker-entrypoint.sh,medium,"pytest, alembic, manage.py"
+platform/poc/backend/manage.py,python,commerce-api,build-time,source,services/commerce-api/manage.py,medium,"pytest, alembic, manage.py"
+platform/poc/backend/migrations/env.py,python,commerce-api,build-time,source,services/commerce-api/migrations/env.py,medium,"pytest, alembic, manage.py"
+platform/poc/backend/migrations/script.py.mako,template,commerce-api,build-time,source,services/commerce-api/migrations/script.py.mako,medium,"pytest, alembic, manage.py"
+platform/poc/backend/migrations/versions/8d2d3d0f9b6f_initial_commerce_schema.py,python,commerce-api,build-time,source,services/commerce-api/migrations/versions/8d2d3d0f9b6f_initial_commerce_schema.py,medium,"pytest, alembic, manage.py"
+platform/poc/backend/requirements.txt,text,commerce-api,build-time,source,services/commerce-api/requirements.txt,medium,"pytest, alembic, manage.py"
+platform/poc/backend/tests/conftest.py,python,commerce-api,build-time,source,services/commerce-api/tests/conftest.py,medium,"pytest, alembic, manage.py"
+platform/poc/backend/tests/test_admin_security.py,python,commerce-api,build-time,source,services/commerce-api/tests/test_admin_security.py,medium,"pytest, alembic, manage.py"
+platform/poc/backend/tests/test_api.py,python,commerce-api,build-time,source,services/commerce-api/tests/test_api.py,medium,"pytest, alembic, manage.py"
+platform/poc/backend/tests/test_candidate_activation.py,python,commerce-api,build-time,source,services/commerce-api/tests/test_candidate_activation.py,medium,"pytest, alembic, manage.py"
+platform/poc/backend/tests/test_commerce_e2e.py,python,commerce-api,build-time,source,services/commerce-api/tests/test_commerce_e2e.py,medium,"pytest, alembic, manage.py"
+platform/poc/backend/tests/test_dependency_declaration.py,python,commerce-api,build-time,source,services/commerce-api/tests/test_dependency_declaration.py,medium,"pytest, alembic, manage.py"
+platform/poc/backend/tests/test_frontend_security.py,python,commerce-api,build-time,source,services/commerce-api/tests/test_frontend_security.py,medium,"pytest, alembic, manage.py"
+platform/poc/backend/tests/test_money_integrity.py,python,commerce-api,build-time,source,services/commerce-api/tests/test_money_integrity.py,medium,"pytest, alembic, manage.py"
+platform/poc/docker-compose.yml,yaml,infrastructure,build-time,source,docker-compose.yml,high,root command + docker + CI
+platform/poc/docs/EXTERNAL_SERVICE_ACTIVATION.md,markdown,documentation,build-time,source,docs/operations/EXTERNAL_SERVICE_ACTIVATION.md,low,link check
+platform/poc/docs/RUNBOOKS.md,markdown,documentation,build-time,source,docs/operations/RUNBOOKS.md,low,link check
+platform/poc/docs/api/openapi.json,json,contracts,build-time,generated,packages/contracts/openapi/openapi.json,medium,openapi export drift
+platform/poc/docs/brand_asset_manifest.csv,csv,documentation,build-time,source,docs/operations/brand_asset_manifest.csv,low,link check
+platform/poc/docs/cross_team_handoff_checklist.md,markdown,documentation,build-time,source,docs/operations/cross_team_handoff_checklist.md,low,link check
+platform/poc/docs/decision_log.md,markdown,documentation,build-time,source,docs/operations/decision_log.md,low,link check
+platform/poc/docs/product_master_template.csv,csv,documentation,build-time,source,docs/operations/product_master_template.csv,low,link check
+platform/poc/docs/variant_master_template.csv,csv,documentation,build-time,source,docs/operations/variant_master_template.csv,low,link check
+platform/poc/mobile/App.tsx,typescript,mobile,build-time,source,apps/mobile/App.tsx,low,tsc --noEmit (blocked)
+platform/poc/mobile/README.md,markdown,mobile,build-time,source,apps/mobile/README.md,low,tsc --noEmit (blocked)
+platform/poc/mobile/app.json,json,mobile,build-time,source,apps/mobile/app.json,low,tsc --noEmit (blocked)
+platform/poc/mobile/package.json,json,mobile,build-time,source,apps/mobile/package.json,low,tsc --noEmit (blocked)
+platform/poc/scripts/mutation_guard_check.py,python,tooling,build-time,source,scripts/validation/mutation_guard_check.py,medium,validators + mutation harness
+platform/poc/scripts/validate_candidate_data.py,python,tooling,build-time,source,scripts/validation/validate_candidate_data.py,medium,validators + mutation harness
+platform/poc/scripts/validate_product_data.py,python,tooling,build-time,source,scripts/validation/validate_product_data.py,medium,validators + mutation harness
+platform/poc/storefront/Dockerfile,other,web,build-time,source,apps/web/Dockerfile,medium,browser load + frontend security test
+platform/poc/storefront/app.js,javascript,web,build-time,source,apps/web/app.js,medium,browser load + frontend security test
+platform/poc/storefront/index.html,html,web,build-time,source,apps/web/index.html,medium,browser load + frontend security test
+platform/poc/storefront/nginx.conf,other,web,build-time,source,apps/web/nginx.conf,medium,browser load + frontend security test
+platform/poc/storefront/styles.css,css,web,build-time,source,apps/web/styles.css,medium,browser load + frontend security test
+prompts/00_MASTER_ORCHESTRATOR_BOOTSTRAP.md,markdown,root,build-time,source,prompts/00_MASTER_ORCHESTRATOR_BOOTSTRAP.md,none,unchanged
+prompts/01_CONTINUE_GATE_EXECUTION.md,markdown,root,build-time,source,prompts/01_CONTINUE_GATE_EXECUTION.md,none,unchanged
+prompts/02_GATE_REVIEW_AND_RELEASE_DECISION.md,markdown,root,build-time,source,prompts/02_GATE_REVIEW_AND_RELEASE_DECISION.md,none,unchanged
+prompts/03_MANUAL_SIDE_A_START.md,markdown,root,build-time,source,prompts/03_MANUAL_SIDE_A_START.md,none,unchanged
+prompts/04_MANUAL_SIDE_B_START.md,markdown,root,build-time,source,prompts/04_MANUAL_SIDE_B_START.md,none,unchanged
+scripts/validation/make_redacted_domain_evidence.py,python,root,build-time,source,scripts/validation/make_redacted_domain_evidence.py,none,unchanged
