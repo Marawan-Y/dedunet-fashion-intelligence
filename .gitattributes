@@ -1,0 +1,23 @@
+# Shell scripts and Dockerfiles MUST keep LF endings.
+# A CRLF shebang makes the Linux kernel report "no such file or directory" for the
+# interpreter, which is a confusing way for a container to fail to start. Without this,
+# a checkout on Windows with core.autocrlf=true would silently break the image.
+*.sh                 text eol=lf
+Dockerfile           text eol=lf
+*.dockerfile         text eol=lf
+docker-entrypoint.sh text eol=lf
+
+# Keep these deterministic across platforms too.
+*.yml            text eol=lf
+*.yaml           text eol=lf
+*.json           text eol=lf
+
+# Incoming handoffs are IMMUTABLE EVIDENCE whose integrity is asserted by SHA-256
+# manifests. Any line-ending normalisation rewrites their bytes, so a fresh clone would
+# fail its own checksum verification and the evidence would no longer be evidence.
+# "-text" disables all conversion and stores them exactly as delivered.
+handoffs/incoming/**     -text
+
+# Governance evidence (registrar letters, transcripts) must be byte-stable for the same
+# reason: their checksums are recorded and re-verified.
+evidence/governance/**   -text

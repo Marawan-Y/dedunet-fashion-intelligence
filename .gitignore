@@ -1,0 +1,56 @@
+# Secrets and local configuration — never commit real values
+.env
+.env.local
+.env.staging
+*.env.local
+!.env.example
+secrets/
+*.pem
+*.key
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+*.egg-info/
+.coverage
+htmlcov/
+
+# Node / Expo
+node_modules/
+.expo/
+dist/
+build/
+*.log
+
+# Local databases and generated artifacts.
+# The -wal/-shm suffixes matter: SQLite in WAL mode writes sidecar files that a bare
+# *.sqlite3 pattern does not match, and they would otherwise be committed.
+*.sqlite
+*.sqlite3
+*.sqlite3-wal
+*.sqlite3-shm
+*.db
+artifacts/
+reports/
+backups/
+
+# Duplicate source archives must never be re-introduced.
+# The incoming Side A archive under handoffs/incoming/side-a/archive/ is deliberate
+# immutable evidence and is force-added; this rule targets stray snapshots elsewhere.
+/platform/*.zip
+/apps/**/*.zip
+/services/**/*.zip
+
+# Unredacted personal evidence must never enter version control.
+# Only the redacted copy belongs here; see evidence/governance/domain/README.md.
+evidence/governance/domain/*_ORIGINAL_*
+evidence/governance/domain/dedunet.com_ownership_letter.pdf
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
