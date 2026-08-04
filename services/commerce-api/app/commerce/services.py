@@ -167,16 +167,61 @@ def _now_expression(session: Session):
 TERMINAL_STATUSES = frozenset({"sent", "failed", "suppressed"})
 
 
-def _release_claim(note: Notification) -> None:
-    """Clear lease metadata once a row reaches a settled state.
+# Values that clear the lease. Applied as part of every finalizing write so cleanup can
+# never drift away from the state change it accompanies.
+_CLEARED_CLAIM = {"claimed_at": None, "claim_expires_at": None, "claim_token": ""}
 
-    A stale claim left on a settled row is harmless to delivery but actively misleading
-    to an operator reading the table: it looks like work in flight that will never move.
+
+def _finalize(session: Session, *, note_id: int, token: str, values: dict) -> bool:
+    """Compare-and-set. Returns True only if this worker still owns the row.
+
+    ``claim_token`` is a FENCING token, not a label. Loading a row and then writing it
+    back cannot be safe here: between the claim and the write, the lease may have expired
+    and another worker may have legitimately taken over. A read-then-write would let the
+    slow worker silently overwrite the new owner's completed state — including stamping
+    ``sent`` over a row the new owner had already failed, or clearing a live claim.
+
+    The ownership condition is evaluated by the database AT WRITE TIME:
+
+        id = :id AND status = 'sending' AND claim_token = :token
+
+    ``rowcount == 0`` means ownership was lost. The caller must then do nothing: not
+    retry under a new token, not clear anyone's metadata, not report the row finalized.
     """
 
-    note.claimed_at = None
-    note.claim_expires_at = None
-    note.claim_token = ""
+    result = session.execute(
+        update(Notification)
+        .where(
+            Notification.id == note_id,
+            Notification.status == "sending",
+            Notification.claim_token == token,
+        )
+        .values(**values)
+        .execution_options(synchronize_session=False)
+    )
+    session.commit()
+    return result.rowcount == 1
+
+
+def _log_ownership_loss(note_id: int, stage: str) -> None:
+    """Record that a stale worker declined to write.
+
+    Safe by construction: it names the row and the stage, never the recipient, the message
+    body or a token value.
+    """
+
+    print(
+        json.dumps(
+            {
+                "component": "notification-dispatch",
+                "event": "ownership_lost",
+                "notification_id": note_id,
+                "stage": stage,
+                "detail": "lease expired and the row was reclaimed; stale write discarded",
+            }
+        ),
+        flush=True,
+    )
 
 
 def dispatch_pending_notifications(
@@ -212,7 +257,12 @@ def dispatch_pending_notifications(
 
     limit = DEFAULT_BATCH_SIZE if limit is None else limit
     max_attempts = DEFAULT_MAX_ATTEMPTS if max_attempts is None else max_attempts
-    counts = {"sent": 0, "failed": 0, "retried": 0, "suppressed": 0, "claimed": 0}
+    counts = {
+        "sent": 0, "failed": 0, "retried": 0, "suppressed": 0, "claimed": 0,
+        # Incremented when a finalizing write affected zero rows because the
+        # lease had expired and another worker had taken over.
+        "ownership_lost": 0,
+    }
 
     # Claim ATOMICALLY, in one statement, and commit before doing any work.
     #
@@ -278,16 +328,28 @@ def dispatch_pending_notifications(
     counts["claimed"] = len(pending)
 
     for note in pending:
+        # Captured before any slow call. The ORM object may be stale by the time the
+        # provider returns; these two values are all the fenced write needs.
+        note_id = note.id
+        attempts_at_claim = note.attempts
 
         customer = session.get(Customer, note.customer_id)
         if customer is None or customer.deleted_at is not None:
             # Erasure must not be undone by a queued email. Terminal, never retried,
             # and the sender is never invoked.
-            note.status = "suppressed"
-            note.last_error = "recipient erased or missing; delivery suppressed"
-            _release_claim(note)
-            session.commit()
-            counts["suppressed"] += 1
+            owned = _finalize(
+                session,
+                note_id=note_id,
+                token=token,
+                values={
+                    "status": "suppressed",
+                    "last_error": "recipient erased or missing; delivery suppressed",
+                    **_CLEARED_CLAIM,
+                },
+            )
+            counts["suppressed" if owned else "ownership_lost"] += 1
+            if not owned:
+                _log_ownership_loss(note_id, "suppressed")
             continue
 
         try:
@@ -296,41 +358,71 @@ def dispatch_pending_notifications(
                 recipient=customer.email,
                 subject=note.subject,
                 body=note.body,
-                idempotency_key=f"notification-{note.id}",
+                idempotency_key=f"notification-{note_id}",
             )
         except notifications.NotificationRejected as exc:
-            note.status = "failed"
-            note.last_error = f"terminal: {exc}"
-            _release_claim(note)
-            session.commit()
-            counts["failed"] += 1
+            owned = _finalize(
+                session,
+                note_id=note_id,
+                token=token,
+                values={
+                    "status": "failed",
+                    "last_error": f"terminal: {exc}",
+                    **_CLEARED_CLAIM,
+                },
+            )
+            counts["failed" if owned else "ownership_lost"] += 1
+            if not owned:
+                _log_ownership_loss(note_id, "terminal rejection")
             continue
         except notifications.NotificationError as exc:
-            # Retryable. Stays queued until the attempt ceiling, then becomes terminal so
-            # a permanently broken provider cannot produce an infinite retry loop.
-            note.last_error = f"retryable: {exc}"
-            # Back to 'queued' so a later cycle can retry it; a row left in 'sending'
-            # would be invisible to every future claim and silently stuck forever.
-            note.status = "queued"
-            _release_claim(note)
-            if note.attempts >= max_attempts:
-                note.status = "failed"
-                note.last_error = (
-                    f"retryable failure persisted after {note.attempts} attempts: {exc}"
-                )
-                counts["failed"] += 1
+            # Retryable. Returns to 'queued' until the attempt ceiling, then becomes
+            # terminal so a permanently broken provider cannot retry forever. A row left
+            # in 'sending' would be invisible to every future claim.
+            if attempts_at_claim >= max_attempts:
+                values = {
+                    "status": "failed",
+                    "last_error": (
+                        f"retryable failure persisted after {attempts_at_claim} attempts: {exc}"
+                    ),
+                    **_CLEARED_CLAIM,
+                }
+                outcome = "failed"
             else:
-                counts["retried"] += 1
-            session.commit()
+                values = {
+                    "status": "queued",
+                    "last_error": f"retryable: {exc}",
+                    **_CLEARED_CLAIM,
+                }
+                outcome = "retried"
+
+            owned = _finalize(session, note_id=note_id, token=token, values=values)
+            counts[outcome if owned else "ownership_lost"] += 1
+            if not owned:
+                _log_ownership_loss(note_id, "retryable failure")
             continue
 
-        note.status = "sent"
-        note.sent_at = utcnow()
-        note.provider_reference = result.provider_reference
-        note.last_error = ""
-        _release_claim(note)
-        session.commit()
-        counts["sent"] += 1
+        owned = _finalize(
+            session,
+            note_id=note_id,
+            token=token,
+            values={
+                "status": "sent",
+                "sent_at": utcnow(),
+                "provider_reference": result.provider_reference,
+                "last_error": "",
+                **_CLEARED_CLAIM,
+            },
+        )
+        if owned:
+            counts["sent"] += 1
+        else:
+            # The provider accepted, but this worker no longer owns the row: its lease
+            # expired and another worker took over. Recording 'sent' here would overwrite
+            # the current owner's state with a result they did not produce. The delivery
+            # still happened, which is the at-least-once window, and the log says so.
+            counts["ownership_lost"] += 1
+            _log_ownership_loss(note_id, "success after lease expiry")
 
     return counts
 

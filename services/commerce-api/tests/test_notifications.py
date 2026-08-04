@@ -159,7 +159,10 @@ def test_rerun_is_idempotent_and_does_not_resend(seeded):
     assert services.dispatch_pending_notifications(seeded)["sent"] == 1
 
     second = services.dispatch_pending_notifications(seeded)
-    assert second == {"sent": 0, "failed": 0, "retried": 0, "suppressed": 0, "claimed": 0}
+    assert second == {
+        "sent": 0, "failed": 0, "retried": 0, "suppressed": 0, "claimed": 0,
+        "ownership_lost": 0,
+    }
 
     note = seeded.get(Notification, note_id)
     assert note.attempts == 1, "a sent notification was claimed again"
@@ -793,3 +796,280 @@ def test_readiness_is_independent_of_recovery_activity(client, seeded, monkeypat
     assert response.status_code == 200
     checks = response.json()["checks"]
     assert "worker" not in checks and "notification" not in checks
+
+
+# ================================================================== lease fencing
+#
+# The claim token is a FENCING token, not a label. These tests execute the exact race:
+#
+#   A claims (token A) -> A is delayed -> A's lease expires -> B reclaims (token B)
+#   -> B becomes owner -> A resumes and tries to finalize with token A
+#
+# A must not be able to write anything. Every assertion below checks the DATABASE state
+# after the stale write, not the return value of the stale worker.
+
+
+def _claim_as(session, note_id, token, *, attempts=1):
+    """Put a row into the state a worker holds after claiming it."""
+
+    note = session.get(Notification, note_id)
+    session.refresh(note)
+    note.status = "sending"
+    note.attempts = attempts
+    note.claimed_at = datetime.now(timezone.utc)
+    note.claim_expires_at = datetime.now(timezone.utc) + timedelta(seconds=300)
+    note.claim_token = token
+    session.commit()
+    return note
+
+
+def _stale_finalize(session, note_id, token, values):
+    """Worker A resuming with a token it no longer owns."""
+
+    return services._finalize(session, note_id=note_id, token=token, values=values)
+
+
+def test_stale_worker_cannot_mark_sent_after_reclaim(seeded):
+    note_id, _ = queue_one(seeded)
+    _claim_as(seeded, note_id, "token-A")
+
+    # B reclaims after A's lease expired, and completes.
+    _claim_as(seeded, note_id, "token-B", attempts=2)
+    assert services._finalize(
+        seeded, note_id=note_id, token="token-B",
+        values={"status": "failed", "last_error": "B decided this failed",
+                **services._CLEARED_CLAIM},
+    ) is True
+
+    # A resumes and tries to stamp success.
+    owned = _stale_finalize(
+        seeded, note_id, "token-A",
+        {"status": "sent", "sent_at": datetime.now(timezone.utc),
+         "provider_reference": "A_ref", **services._CLEARED_CLAIM},
+    )
+    assert owned is False, "the stale worker believed it still owned the row"
+
+    note = seeded.get(Notification, note_id)
+    seeded.refresh(note)
+    assert note.status == "failed", "A overwrote B's terminal state with 'sent'"
+    assert note.last_error == "B decided this failed"
+    assert note.provider_reference != "A_ref", "A overwrote B's provider reference"
+
+
+def test_stale_worker_cannot_write_a_retryable_failure_after_reclaim(seeded):
+    note_id, _ = queue_one(seeded)
+    _claim_as(seeded, note_id, "token-A")
+    _claim_as(seeded, note_id, "token-B", attempts=2)
+
+    services._finalize(
+        seeded, note_id=note_id, token="token-B",
+        values={"status": "sent", "sent_at": datetime.now(timezone.utc),
+                "provider_reference": "B_ref", "last_error": "",
+                **services._CLEARED_CLAIM},
+    )
+
+    owned = _stale_finalize(
+        seeded, note_id, "token-A",
+        {"status": "queued", "last_error": "retryable: A's stale view",
+         **services._CLEARED_CLAIM},
+    )
+    assert owned is False
+
+    note = seeded.get(Notification, note_id)
+    seeded.refresh(note)
+    assert note.status == "sent", "A resurrected a delivered row back to 'queued'"
+    assert note.provider_reference == "B_ref"
+    assert note.last_error == ""
+
+
+def test_stale_worker_cannot_write_a_terminal_rejection_after_reclaim(seeded):
+    note_id, _ = queue_one(seeded)
+    _claim_as(seeded, note_id, "token-A")
+    _claim_as(seeded, note_id, "token-B", attempts=2)
+
+    services._finalize(
+        seeded, note_id=note_id, token="token-B",
+        values={"status": "sent", "sent_at": datetime.now(timezone.utc),
+                "provider_reference": "B_ref", **services._CLEARED_CLAIM},
+    )
+
+    owned = _stale_finalize(
+        seeded, note_id, "token-A",
+        {"status": "failed", "last_error": "terminal: A's stale rejection",
+         **services._CLEARED_CLAIM},
+    )
+    assert owned is False
+
+    note = seeded.get(Notification, note_id)
+    seeded.refresh(note)
+    assert note.status == "sent", "A marked a delivered row as failed"
+    assert "stale" not in note.last_error
+
+
+def test_stale_worker_cannot_clear_a_live_claim(seeded):
+    """A must not wipe B's in-flight lease metadata."""
+
+    note_id, _ = queue_one(seeded)
+    _claim_as(seeded, note_id, "token-A")
+    b = _claim_as(seeded, note_id, "token-B", attempts=2)
+    b_expiry = b.claim_expires_at
+
+    owned = _stale_finalize(
+        seeded, note_id, "token-A",
+        {"status": "sending", **services._CLEARED_CLAIM},
+    )
+    assert owned is False
+
+    note = seeded.get(Notification, note_id)
+    seeded.refresh(note)
+    assert note.claim_token == "token-B", "A cleared or stole the live claim token"
+    assert note.claim_expires_at is not None, "A wiped B's lease"
+    assert note.status == "sending"
+
+
+def test_current_owner_can_finalize_normally(seeded):
+    """Fencing must not break the ordinary path."""
+
+    note_id, _ = queue_one(seeded)
+    _claim_as(seeded, note_id, "token-B", attempts=1)
+
+    owned = services._finalize(
+        seeded, note_id=note_id, token="token-B",
+        values={"status": "sent", "sent_at": datetime.now(timezone.utc),
+                "provider_reference": "B_ref", "last_error": "",
+                **services._CLEARED_CLAIM},
+    )
+    assert owned is True
+
+    note = seeded.get(Notification, note_id)
+    seeded.refresh(note)
+    assert note.status == "sent"
+    assert note.provider_reference == "B_ref"
+    assert note.claim_token == "" and note.claim_expires_at is None
+
+
+def test_finalize_is_rejected_once_the_row_left_sending(seeded):
+    """Ownership requires status == 'sending', not merely a matching token."""
+
+    note_id, _ = queue_one(seeded)
+    _claim_as(seeded, note_id, "token-A")
+    services._finalize(
+        seeded, note_id=note_id, token="token-A",
+        values={"status": "sent", "sent_at": datetime.now(timezone.utc),
+                **services._CLEARED_CLAIM},
+    )
+
+    # Same token, but the row is settled. A second write must not land.
+    again = services._finalize(
+        seeded, note_id=note_id, token="token-A",
+        values={"status": "failed", "last_error": "double finalize"},
+    )
+    assert again is False, "a settled row was finalized twice"
+
+    note = seeded.get(Notification, note_id)
+    seeded.refresh(note)
+    assert note.status == "sent"
+
+
+def test_no_row_is_deleted_by_a_rejected_stale_write(seeded):
+    before = len(seeded.scalars(select(Notification)).all())
+    note_id, _ = queue_one(seeded)
+    _claim_as(seeded, note_id, "token-A")
+    _claim_as(seeded, note_id, "token-B", attempts=2)
+
+    _stale_finalize(seeded, note_id, "token-A",
+                    {"status": "failed", **services._CLEARED_CLAIM})
+
+    after = len(seeded.scalars(select(Notification)).all())
+    assert after == before + 1, "a rejected stale write deleted a row"
+
+
+def test_ownership_loss_is_observable_and_counted(seeded, capsys):
+    """The whole dispatch path, not just the helper: A's provider call returns after
+    B has reclaimed and completed, and A's stale finalization must be discarded."""
+
+    note_id, _ = queue_one(seeded)
+
+    class SlowThenReclaimed:
+        """Simulates A: while A is inside send(), B reclaims and completes the row."""
+
+        name = "slow"
+
+        def send(self, *, recipient, subject, body, idempotency_key):
+            from app.commerce.db import SessionLocal
+
+            other = SessionLocal()
+            try:
+                note = other.get(Notification, note_id)
+                note.status = "sending"
+                note.attempts = 2
+                note.claim_token = "token-B"
+                note.claim_expires_at = datetime.now(timezone.utc) + timedelta(seconds=300)
+                other.commit()
+                services._finalize(
+                    other, note_id=note_id, token="token-B",
+                    values={"status": "sent", "sent_at": datetime.now(timezone.utc),
+                            "provider_reference": "B_ref", "last_error": "",
+                            **services._CLEARED_CLAIM},
+                )
+            finally:
+                other.close()
+
+            # A's provider call now returns successfully, too late.
+            return notifications.DeliveryResult(
+                provider="slow", provider_reference="A_ref", accepted=True,
+                delivered_at=datetime.now(timezone.utc),
+            )
+
+    notifications._sender = SlowThenReclaimed()
+    try:
+        counts = services.dispatch_pending_notifications(seeded)
+    finally:
+        notifications.reset_sender()
+
+    assert counts["ownership_lost"] == 1, f"ownership loss was not counted: {counts}"
+    assert counts["sent"] == 0, "the stale worker reported a delivery it did not own"
+
+    output = capsys.readouterr().out
+    assert '"event": "ownership_lost"' in output, "ownership loss was not logged"
+    assert '"notification_id"' in output
+    # The log must not leak the recipient, the body or a token value.
+    assert "token-B" not in output and "@meret.example" not in output
+
+    note = seeded.get(Notification, note_id)
+    seeded.refresh(note)
+    assert note.status == "sent", "final state is not the current owner's"
+    assert note.provider_reference == "B_ref", "A's reference overwrote B's"
+    assert note.attempts == 2, "attempts diverged from the documented policy"
+
+def test_finalize_requires_status_sending_even_with_a_matching_token(seeded):
+    """The status arm of the ownership condition, covered independently.
+
+    The token arm normally catches a stale worker first, because a reclaim rewrites the
+    token. This test isolates the OTHER arm: a row that has already left 'sending' while
+    still carrying its token must not be finalizable. That is defence in depth against a
+    partially-applied write leaving a settled row with a token attached — without it,
+    a late arrival could overwrite a completed result.
+    """
+
+    note_id, _ = queue_one(seeded)
+    note = _claim_as(seeded, note_id, "token-A")
+
+    # Settled, but the token deliberately left behind.
+    note.status = "sent"
+    note.provider_reference = "original_ref"
+    seeded.commit()
+
+    owned = services._finalize(
+        seeded, note_id=note_id, token="token-A",
+        values={"status": "failed", "last_error": "late arrival",
+                "provider_reference": "late_ref"},
+    )
+    assert owned is False, (
+        "a row that had already left 'sending' was finalized again; only the token was "
+        "checked, so a late write could overwrite a completed result"
+    )
+
+    seeded.refresh(note)
+    assert note.status == "sent"
+    assert note.provider_reference == "original_ref"

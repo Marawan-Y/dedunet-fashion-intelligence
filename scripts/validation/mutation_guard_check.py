@@ -404,8 +404,8 @@ MUTATIONS: tuple[Mutation, ...] = (
         mutation_id="M24_notification_row_never_deleted",
         guard="terminal rejection retains the row",
         target=SERVICES,
-        original='            note.status = "failed"\n            note.last_error = f"terminal: {exc}"\n',
-        mutated='            session.delete(note)  # MUTATED: row deleted on rejection\n',
+        original='                    "status": "failed",\n                    "last_error": f"terminal: {exc}",',
+        mutated='                    "status": "failed",\n                    "last_error": "",  # MUTATED: rejection reason discarded',
         tests=(f"{TEST_NOTIFY}::test_recipient_rejection_is_terminal",),
         covers=("an outbox that deletes rows destroys the delivery audit trail",),
     ),
@@ -452,8 +452,8 @@ MUTATIONS: tuple[Mutation, ...] = (
         mutation_id="M29_sent_notification_not_resent",
         guard="a delivered notification reaches a terminal status",
         target=SERVICES,
-        original='        note.status = "sent"\n        note.sent_at = utcnow()',
-        mutated='        note.sent_at = utcnow()  # MUTATED: status left queued after delivery',
+        original='                "status": "sent",\n                "sent_at": utcnow(),',
+        mutated='                "status": "sending",\n                "sent_at": utcnow(),  # MUTATED: never settles',
         tests=(f"{TEST_NOTIFY}::test_rerun_is_idempotent_and_does_not_resend",),
         covers=("a row left queued after delivery is re-sent on every later cycle",),
     ),
@@ -461,8 +461,8 @@ MUTATIONS: tuple[Mutation, ...] = (
         mutation_id="M30_max_attempts_terminal_behaviour",
         guard="attempt ceiling makes a failing row terminal",
         target=SERVICES,
-        original='            if note.attempts >= max_attempts:\n                note.status = "failed"',
-        mutated='            if False:  # MUTATED: ceiling never reached\n                note.status = "failed"',
+        original="            if attempts_at_claim >= max_attempts:",
+        mutated="            if False:  # MUTATED: ceiling never reached",
         tests=(f"{TEST_NOTIFY}::test_max_attempts_prevents_an_infinite_retry_loop",),
         covers=("without a terminal ceiling a broken provider is retried forever",),
     ),
@@ -514,8 +514,8 @@ MUTATIONS: tuple[Mutation, ...] = (
         mutation_id="M35_claim_cleared_on_success",
         guard="lease metadata is cleared after delivery",
         target=SERVICES,
-        original='        note.last_error = ""\n        _release_claim(note)',
-        mutated='        note.last_error = ""  # MUTATED: claim left on a settled row',
+        original='                "last_error": "",\n                **_CLEARED_CLAIM,',
+        mutated='                "last_error": "",  # MUTATED: claim left on a settled row',
         tests=(
             f"{TEST_NOTIFY}::test_claim_metadata_is_cleared_on_every_settled_path",
         ),
@@ -525,8 +525,8 @@ MUTATIONS: tuple[Mutation, ...] = (
         mutation_id="M36_claim_cleared_on_terminal_failure",
         guard="lease metadata is cleared after terminal rejection",
         target=SERVICES,
-        original='            note.last_error = f"terminal: {exc}"\n            _release_claim(note)',
-        mutated='            note.last_error = f"terminal: {exc}"  # MUTATED: claim retained',
+        original='                    "last_error": f"terminal: {exc}",\n                    **_CLEARED_CLAIM,',
+        mutated='                    "last_error": f"terminal: {exc}",  # MUTATED: claim retained',
         tests=(
             f"{TEST_NOTIFY}::test_claim_metadata_is_cleared_on_every_settled_path",
         ),
@@ -543,6 +543,51 @@ MUTATIONS: tuple[Mutation, ...] = (
             "a zero TTL makes every claim instantly stale, which is the exact "
             "double-send the lease exists to prevent",
         ),
+    ),
+    # ---- Workstream B correction: lease fencing --------------------------------
+    Mutation(
+        mutation_id="M38_finalize_requires_matching_token",
+        guard="finalization is fenced by claim_token",
+        target=SERVICES,
+        original="            Notification.claim_token == token,\n",
+        mutated="",
+        tests=(f"{TEST_NOTIFY}::test_stale_worker_cannot_clear_a_live_claim",),
+        covers=(
+            "without the token condition a slow worker overwrites the current owner's "
+            "completed state",
+        ),
+    ),
+    Mutation(
+        mutation_id="M39_finalize_requires_status_sending",
+        guard="finalization requires the row to still be in flight",
+        target=SERVICES,
+        original='            Notification.status == "sending",\n            Notification.claim_token == token,',
+        mutated="            Notification.claim_token == token,",
+        tests=(
+            f"{TEST_NOTIFY}::test_finalize_requires_status_sending_even_with_a_matching_token",
+        ),
+        covers=("a settled row must not be finalized twice by a late arrival",),
+    ),
+    Mutation(
+        mutation_id="M40_ownership_loss_is_detected",
+        guard="rowcount decides ownership",
+        target=SERVICES,
+        original="    return result.rowcount == 1",
+        mutated="    return True  # MUTATED: ownership loss ignored",
+        tests=(f"{TEST_NOTIFY}::test_ownership_loss_is_observable_and_counted",),
+        covers=(
+            "reporting a stale write as successful makes the dispatcher lie about what "
+            "it delivered",
+        ),
+    ),
+    Mutation(
+        mutation_id="M41_stale_success_is_not_counted_as_sent",
+        guard="a stale success is recorded as ownership loss, not delivery",
+        target=SERVICES,
+        original='        if owned:\n            counts["sent"] += 1',
+        mutated='        if True:  # MUTATED: stale success counted as delivered\n            counts["sent"] += 1',
+        tests=(f"{TEST_NOTIFY}::test_ownership_loss_is_observable_and_counted",),
+        covers=("a delivery count that includes disowned writes is not a delivery count",),
     ),
 )
 
