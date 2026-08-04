@@ -413,8 +413,10 @@ MUTATIONS: tuple[Mutation, ...] = (
         mutation_id="M25_claim_status_eligibility_gate",
         guard="claim query filters on status == queued",
         target=SERVICES,
-        original='        .where(Notification.status == "queued", Notification.attempts < max_attempts)',
-        mutated="        .where(Notification.attempts < max_attempts)  # MUTATED: status gate removed",
+        # Anchor updated when the claim query gained lease recovery. The gate now lives
+        # in the first arm of the or_(); removing it lets a sent or failed row be claimed.
+        original='                Notification.status == "queued",',
+        mutated='                Notification.status != "__never__",  # MUTATED: status gate removed',
         tests=(f"{TEST_NOTIFY}::test_claim_query_only_selects_eligible_statuses",),
         covers=("without the status gate a sent notification is delivered again",),
     ),
@@ -422,8 +424,9 @@ MUTATIONS: tuple[Mutation, ...] = (
         mutation_id="M26_attempts_increment_before_send",
         guard="attempts incremented during the atomic claim",
         target=SERVICES,
-        original='            .values(status="sending", attempts=Notification.attempts + 1)',
-        mutated='            .values(status="sending")  # MUTATED: attempt not counted',
+        # Anchor updated when the claim gained lease fields.
+        original="                attempts=Notification.attempts + 1,",
+        mutated="                # MUTATED: attempt not counted",
         tests=(f"{TEST_NOTIFY}::test_max_attempts_prevents_an_infinite_retry_loop",),
         covers=("without an attempt counter a poison row retries forever",),
     ),
@@ -473,6 +476,72 @@ MUTATIONS: tuple[Mutation, ...] = (
         covers=(
             "the worker must be an independently runnable process, not a thread the API "
             "starts",
+        ),
+    ),
+    # ---- Workstream B correction: claim leases and crash recovery -------------
+    Mutation(
+        mutation_id="M32_stale_claim_is_recoverable",
+        guard="expired claims are eligible again",
+        target=SERVICES,
+        original='            or_(\n                Notification.status == "queued",\n                and_(\n                    Notification.status == "sending",\n                    Notification.claim_expires_at.is_not(None),\n                    Notification.claim_expires_at < now_sql,\n                ),\n            ),',
+        mutated='            Notification.status == "queued",  # MUTATED: recovery arm removed',
+        tests=(
+            f"{TEST_NOTIFY}::test_an_abandoned_claim_is_reclaimed_after_expiry_and_settles",
+        ),
+        covers=("without recovery a worker killed mid-send strands the row forever",),
+    ),
+    Mutation(
+        mutation_id="M33_live_claim_is_protected",
+        guard="a claim inside its lease is never stolen",
+        target=SERVICES,
+        original="                    Notification.claim_expires_at < now_sql,\n",
+        mutated="",
+        tests=(f"{TEST_NOTIFY}::test_a_live_claim_is_not_reclaimed_before_expiry",),
+        covers=("stealing a live claim makes two workers send the same notification",),
+    ),
+    Mutation(
+        mutation_id="M34_claim_expiry_is_persisted",
+        guard="the lease timestamp is written at claim time",
+        target=SERVICES,
+        original="                claim_expires_at=_expiry_expression(session, ttl),\n",
+        mutated="",
+        tests=(
+            f"{TEST_NOTIFY}::test_row_remains_sending_immediately_after_worker_termination",
+        ),
+        covers=("a claim with no recorded lease can never be judged stale",),
+    ),
+    Mutation(
+        mutation_id="M35_claim_cleared_on_success",
+        guard="lease metadata is cleared after delivery",
+        target=SERVICES,
+        original='        note.last_error = ""\n        _release_claim(note)',
+        mutated='        note.last_error = ""  # MUTATED: claim left on a settled row',
+        tests=(
+            f"{TEST_NOTIFY}::test_claim_metadata_is_cleared_on_every_settled_path",
+        ),
+        covers=("a stale claim on a settled row reads as work in flight that never moves",),
+    ),
+    Mutation(
+        mutation_id="M36_claim_cleared_on_terminal_failure",
+        guard="lease metadata is cleared after terminal rejection",
+        target=SERVICES,
+        original='            note.last_error = f"terminal: {exc}"\n            _release_claim(note)',
+        mutated='            note.last_error = f"terminal: {exc}"  # MUTATED: claim retained',
+        tests=(
+            f"{TEST_NOTIFY}::test_claim_metadata_is_cleared_on_every_settled_path",
+        ),
+        covers=("a failed row must not look like an in-flight send",),
+    ),
+    Mutation(
+        mutation_id="M37_claim_ttl_must_be_positive",
+        guard="a non-positive claim TTL is rejected",
+        target=SERVICES,
+        original="    if ttl <= 0:",
+        mutated="    if False:  # MUTATED: non-positive TTL accepted",
+        tests=(f"{TEST_NOTIFY}::test_claim_ttl_is_validated_strictly",),
+        covers=(
+            "a zero TTL makes every claim instantly stale, which is the exact "
+            "double-send the lease exists to prevent",
         ),
     ),
 )

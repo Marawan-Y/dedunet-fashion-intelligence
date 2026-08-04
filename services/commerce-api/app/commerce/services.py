@@ -20,7 +20,7 @@ import json
 import secrets
 from dataclasses import dataclass
 
-from sqlalchemy import select, update
+from sqlalchemy import and_, func, or_, select, text, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -117,8 +117,66 @@ def queue_notification(
 DEFAULT_MAX_ATTEMPTS = int(os.getenv("NOTIFICATION_MAX_ATTEMPTS", "5"))
 DEFAULT_BATCH_SIZE = int(os.getenv("NOTIFICATION_BATCH_SIZE", "50"))
 
+
+def claim_ttl_seconds() -> int:
+    """How long a claim stays valid before it is treated as abandoned.
+
+    Read at call time so tests can vary it. Validated strictly: a zero or negative TTL
+    would make every claim instantly stale and let two workers dispatch the same row
+    simultaneously, which is the precise failure the lease exists to prevent. A
+    non-numeric value is a configuration error, not something to paper over with a
+    default.
+    """
+
+    raw = os.getenv("NOTIFICATION_CLAIM_TTL_SECONDS", "300").strip()
+    try:
+        ttl = int(raw)
+    except ValueError:
+        raise ValueError(
+            f"NOTIFICATION_CLAIM_TTL_SECONDS must be an integer, got {raw!r}"
+        ) from None
+    if ttl <= 0:
+        raise ValueError(
+            f"NOTIFICATION_CLAIM_TTL_SECONDS must be positive, got {ttl}; a non-positive "
+            "lease would make every claim instantly reclaimable by another worker"
+        )
+    return ttl
+
+
+def _expiry_expression(session: Session, ttl: int):
+    """Database-side ``now() + ttl``.
+
+    Deliberately NOT computed from the worker's clock. Two workers on hosts with drifted
+    clocks must reach the same verdict on whether a claim is stale, and only the database
+    observes a single consistent clock. ``ttl`` is an int validated above, so the literal
+    interpolation below cannot carry injection.
+    """
+
+    dialect = session.bind.dialect.name
+    if dialect == "postgresql":
+        return func.now() + text(f"interval '{ttl} seconds'")
+    # SQLite: datetime(CURRENT_TIMESTAMP, '+N seconds')
+    return func.datetime(func.current_timestamp(), f"+{ttl} seconds")
+
+
+def _now_expression(session: Session):
+    dialect = session.bind.dialect.name
+    return func.now() if dialect == "postgresql" else func.current_timestamp()
+
 # Terminal states. A row in one of these is never claimed again.
 TERMINAL_STATUSES = frozenset({"sent", "failed", "suppressed"})
+
+
+def _release_claim(note: Notification) -> None:
+    """Clear lease metadata once a row reaches a settled state.
+
+    A stale claim left on a settled row is harmless to delivery but actively misleading
+    to an operator reading the table: it looks like work in flight that will never move.
+    """
+
+    note.claimed_at = None
+    note.claim_expires_at = None
+    note.claim_token = ""
 
 
 def dispatch_pending_notifications(
@@ -167,9 +225,29 @@ def dispatch_pending_notifications(
     # Moving each row to an intermediate 'sending' state makes the claim DURABLE: it
     # survives the commit, and the eligibility filter (status == 'queued') excludes it
     # from every other worker permanently, not just for the life of a transaction.
+    ttl = claim_ttl_seconds()
+    token = secrets.token_hex(16)
+    now_sql = _now_expression(session)
+
+    # Eligible = a fresh queued row, OR a 'sending' row whose lease has EXPIRED.
+    #
+    # The second arm is the crash-recovery path. A worker killed after committing its
+    # claim but before writing an outcome leaves the row in 'sending'; without this it
+    # would be excluded from every future claim and stranded permanently. A claim that
+    # has NOT expired is still excluded, so a live send is never duplicated.
     eligible = (
         select(Notification.id)
-        .where(Notification.status == "queued", Notification.attempts < max_attempts)
+        .where(
+            Notification.attempts < max_attempts,
+            or_(
+                Notification.status == "queued",
+                and_(
+                    Notification.status == "sending",
+                    Notification.claim_expires_at.is_not(None),
+                    Notification.claim_expires_at < now_sql,
+                ),
+            ),
+        )
         .order_by(Notification.id)
         .limit(limit)
         .with_for_update(skip_locked=True)
@@ -179,12 +257,18 @@ def dispatch_pending_notifications(
         session.scalars(
             update(Notification)
             .where(Notification.id.in_(eligible))
-            .values(status="sending", attempts=Notification.attempts + 1)
+            .values(
+                status="sending",
+                attempts=Notification.attempts + 1,
+                claimed_at=now_sql,
+                claim_expires_at=_expiry_expression(session, ttl),
+                claim_token=token,
+            )
             .returning(Notification.id)
             .execution_options(synchronize_session=False)
         ).all()
     )
-    session.commit()          # attempts persisted BEFORE any external call
+    session.commit()          # attempts and lease persisted BEFORE any external call
 
     pending = (
         list(session.scalars(select(Notification).where(Notification.id.in_(claimed_ids))).all())
@@ -201,6 +285,7 @@ def dispatch_pending_notifications(
             # and the sender is never invoked.
             note.status = "suppressed"
             note.last_error = "recipient erased or missing; delivery suppressed"
+            _release_claim(note)
             session.commit()
             counts["suppressed"] += 1
             continue
@@ -216,6 +301,7 @@ def dispatch_pending_notifications(
         except notifications.NotificationRejected as exc:
             note.status = "failed"
             note.last_error = f"terminal: {exc}"
+            _release_claim(note)
             session.commit()
             counts["failed"] += 1
             continue
@@ -226,6 +312,7 @@ def dispatch_pending_notifications(
             # Back to 'queued' so a later cycle can retry it; a row left in 'sending'
             # would be invisible to every future claim and silently stuck forever.
             note.status = "queued"
+            _release_claim(note)
             if note.attempts >= max_attempts:
                 note.status = "failed"
                 note.last_error = (
@@ -241,6 +328,7 @@ def dispatch_pending_notifications(
         note.sent_at = utcnow()
         note.provider_reference = result.provider_reference
         note.last_error = ""
+        _release_claim(note)
         session.commit()
         counts["sent"] += 1
 

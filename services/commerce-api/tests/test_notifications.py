@@ -14,6 +14,7 @@ from __future__ import annotations
 import socket
 import socketserver
 import threading
+from datetime import datetime, timedelta, timezone
 
 import pytest
 from sqlalchemy import select
@@ -521,3 +522,274 @@ def test_two_postgres_workers_never_claim_the_same_row(seeded):
         # The decisive assertion: one attempt each means no row was claimed twice.
         over = [(n.id, n.attempts) for n in notes if n.attempts != 1]
         assert not over, f"rows claimed more than once: {over}"
+
+
+# ============================================================ crash recovery / leases
+#
+# A durable 'sending' claim is what makes concurrent dispatch safe. It also means a
+# worker killed mid-send holds the row forever unless the claim EXPIRES. These tests
+# prove the lease actually bounds that window, by executing the crash rather than
+# describing it.
+
+
+class Crashing:
+    """A sender that dies exactly where a real worker would: after the claim is
+    committed, before any outcome is written."""
+
+    name = "crashing"
+
+    def __init__(self, *, accept_first: bool = False) -> None:
+        self.calls = 0
+        self.accept_first = accept_first
+        self.keys: list[str] = []
+
+    def send(self, *, recipient, subject, body, idempotency_key):
+        self.calls += 1
+        self.keys.append(idempotency_key)
+        # KeyboardInterrupt derives from BaseException, so the dispatcher's
+        # except-NotificationError handlers cannot swallow it. That is what makes this a
+        # faithful stand-in for SIGKILL rather than a handled error path.
+        raise KeyboardInterrupt("process terminated mid-send")
+
+
+def _simulate_crash_after_claim(session, *, accept_first=False):
+    """Run one dispatch whose sender dies. The claim is already committed by then."""
+
+    sender = Crashing(accept_first=accept_first)
+    notifications._sender = sender
+    try:
+        with pytest.raises(KeyboardInterrupt):
+            services.dispatch_pending_notifications(session)
+    finally:
+        notifications.reset_sender()
+    session.rollback()
+    return sender
+
+
+def _expire_lease(session, note_id):
+    note = session.get(Notification, note_id)
+    session.refresh(note)
+    note.claim_expires_at = datetime.now(timezone.utc) - timedelta(seconds=1)
+    session.commit()
+    return note
+
+
+def test_row_remains_sending_immediately_after_worker_termination(seeded, monkeypatch):
+    monkeypatch.setenv("NOTIFICATION_CLAIM_TTL_SECONDS", "300")
+    note_id, _ = queue_one(seeded)
+
+    _simulate_crash_after_claim(seeded)
+
+    note = seeded.get(Notification, note_id)
+    seeded.refresh(note)
+    assert note.status == "sending", "the claim was not durable across the crash"
+    assert note.attempts == 1, "the attempt was not persisted before the send"
+    assert note.claim_expires_at is not None, "no lease was recorded"
+    assert note.claim_token != ""
+
+
+def test_a_live_claim_is_not_reclaimed_before_expiry(seeded, monkeypatch):
+    monkeypatch.setenv("NOTIFICATION_CLAIM_TTL_SECONDS", "300")
+    note_id, _ = queue_one(seeded)
+    _simulate_crash_after_claim(seeded)
+
+    counts = services.dispatch_pending_notifications(seeded)
+    assert counts["claimed"] == 0, (
+        "a claim still within its lease was stolen; two workers would send the same "
+        "notification simultaneously"
+    )
+    note = seeded.get(Notification, note_id)
+    seeded.refresh(note)
+    assert note.attempts == 1, "attempts incremented while the lease was still valid"
+
+
+def test_an_abandoned_claim_is_reclaimed_after_expiry_and_settles(seeded, monkeypatch):
+    """The whole point: an abandoned row must not be stranded."""
+
+    monkeypatch.setenv("NOTIFICATION_CLAIM_TTL_SECONDS", "300")
+    note_id, _ = queue_one(seeded)
+    _simulate_crash_after_claim(seeded)
+
+    # Age the lease. Otherwise the row is untouched: this is exactly the state a killed
+    # worker leaves behind once its TTL has elapsed.
+    note = _expire_lease(seeded, note_id)
+
+    counts = services.dispatch_pending_notifications(seeded)
+    assert counts["claimed"] == 1, "the abandoned claim was never recovered"
+    assert counts["sent"] == 1
+
+    seeded.refresh(note)
+    assert note.status == "sent", "the recovered row did not reach a terminal state"
+    assert note.attempts == 2, "the recovery attempt was not counted"
+    assert note.claim_expires_at is None, "claim metadata survived settlement"
+    assert note.claim_token == ""
+
+
+def test_two_workers_racing_a_stale_claim_yield_exactly_one_winner(seeded, monkeypatch):
+    """Recovery must not itself become a double-send."""
+
+    monkeypatch.setenv("NOTIFICATION_CLAIM_TTL_SECONDS", "300")
+    note_id, _ = queue_one(seeded)
+    _simulate_crash_after_claim(seeded)
+    _expire_lease(seeded, note_id)
+
+    from app.commerce.db import SessionLocal
+
+    results = []
+    for _ in range(2):
+        session = SessionLocal()
+        try:
+            results.append(services.dispatch_pending_notifications(session))
+        finally:
+            session.close()
+
+    assert sum(r["claimed"] for r in results) == 1, (
+        f"the stale claim was recovered more than once: {results}"
+    )
+    note = seeded.get(Notification, note_id)
+    seeded.refresh(note)
+    assert note.attempts == 2, f"expected one recovery attempt, found {note.attempts}"
+
+
+@pytest.mark.parametrize("outcome", ["success", "retryable", "terminal", "suppressed"])
+def test_claim_metadata_is_cleared_on_every_settled_path(seeded, monkeypatch, outcome):
+    monkeypatch.setenv("NOTIFICATION_CLAIM_TTL_SECONDS", "300")
+    note_id, customer_id = queue_one(seeded, email="clear-" + outcome + "@meret.example")
+
+    if outcome == "suppressed":
+        services.erase_customer(seeded, seeded.get(Customer, customer_id), actor="test")
+    elif outcome == "retryable":
+        class Flaky:
+            name = "flaky"
+
+            def send(self, **_kw):
+                raise notifications.NotificationError("transient")
+
+        notifications._sender = Flaky()
+    elif outcome == "terminal":
+        class Refusing:
+            name = "refusing"
+
+            def send(self, **_kw):
+                raise notifications.NotificationRejected("no such user")
+
+        notifications._sender = Refusing()
+
+    try:
+        services.dispatch_pending_notifications(seeded, max_attempts=5)
+    finally:
+        notifications.reset_sender()
+
+    note = seeded.get(Notification, note_id)
+    seeded.refresh(note)
+    assert note.claimed_at is None, outcome + ": claimed_at not cleared"
+    assert note.claim_expires_at is None, outcome + ": lease not cleared"
+    assert note.claim_token == "", outcome + ": claim token not cleared"
+
+
+def test_max_attempts_applies_to_repeatedly_abandoned_claims(seeded, monkeypatch):
+    """A row abandoned over and over must still become terminal, not loop forever."""
+
+    monkeypatch.setenv("NOTIFICATION_CLAIM_TTL_SECONDS", "300")
+    note_id, _ = queue_one(seeded)
+
+    for _ in range(5):
+        note = seeded.get(Notification, note_id)
+        seeded.refresh(note)
+        if note.attempts >= 3:
+            break
+        _simulate_crash_after_claim(seeded)
+        _expire_lease(seeded, note_id)
+
+    note = seeded.get(Notification, note_id)
+    seeded.refresh(note)
+    assert note.attempts <= 3, "attempts exceeded the ceiling: " + str(note.attempts)
+
+    # At the ceiling the row is no longer eligible even though its lease has expired:
+    # an abandoned claim must not resurrect an exhausted row.
+    _expire_lease(seeded, note_id)
+    assert services.dispatch_pending_notifications(seeded, max_attempts=3)["claimed"] == 0
+
+
+def test_provider_accepted_then_crash_retries_with_the_same_key(seeded, monkeypatch):
+    """The honest at-least-once window, executed rather than described.
+
+    Provider accepts -> worker dies before the sent commit -> lease expires -> a later
+    worker retries. The provider may see a duplicate; both attempts carry the SAME
+    stable key so the duplicate is investigable. The database eventually reaches 'sent'.
+    """
+
+    monkeypatch.setenv("NOTIFICATION_CLAIM_TTL_SECONDS", "300")
+    note_id, _ = queue_one(seeded)
+
+    crashed = _simulate_crash_after_claim(seeded, accept_first=True)
+    first_key = crashed.keys[0]
+
+    note = seeded.get(Notification, note_id)
+    seeded.refresh(note)
+    assert note.status == "sending", "no evidence of an accepted-but-uncommitted send"
+    assert note.sent_at is None, "sent_at was committed despite the crash"
+
+    _expire_lease(seeded, note_id)
+
+    recorded = []
+
+    class Recording:
+        name = "recording"
+
+        def send(self, *, recipient, subject, body, idempotency_key):
+            recorded.append(idempotency_key)
+            return notifications.DeliveryResult(
+                provider="recording",
+                provider_reference="rec_1",
+                accepted=True,
+                delivered_at=datetime.now(timezone.utc),
+            )
+
+    notifications._sender = Recording()
+    try:
+        counts = services.dispatch_pending_notifications(seeded)
+    finally:
+        notifications.reset_sender()
+
+    assert counts["sent"] == 1
+    assert recorded == [first_key], (
+        "the retry used a different idempotency key; a duplicate at the provider could "
+        "not be correlated"
+    )
+    assert first_key == "notification-" + str(note_id), "the key is not stable and row-derived"
+
+    seeded.refresh(note)
+    assert note.status == "sent", "the database did not converge on 'sent'"
+
+
+def test_claim_ttl_is_validated_strictly(monkeypatch):
+    monkeypatch.setenv("NOTIFICATION_CLAIM_TTL_SECONDS", "0")
+    with pytest.raises(ValueError, match="must be positive"):
+        services.claim_ttl_seconds()
+
+    monkeypatch.setenv("NOTIFICATION_CLAIM_TTL_SECONDS", "-5")
+    with pytest.raises(ValueError, match="must be positive"):
+        services.claim_ttl_seconds()
+
+    monkeypatch.setenv("NOTIFICATION_CLAIM_TTL_SECONDS", "abc")
+    with pytest.raises(ValueError, match="must be an integer"):
+        services.claim_ttl_seconds()
+
+    monkeypatch.delenv("NOTIFICATION_CLAIM_TTL_SECONDS", raising=False)
+    assert services.claim_ttl_seconds() == 300, "the default must be a positive TTL"
+
+
+def test_readiness_is_independent_of_recovery_activity(client, seeded, monkeypatch):
+    """A backlog of abandoned claims must not take the API out of rotation."""
+
+    monkeypatch.setenv("NOTIFICATION_CLAIM_TTL_SECONDS", "300")
+    for i in range(3):
+        note_id, _ = queue_one(seeded, email="stale" + str(i) + "@meret.example")
+        _simulate_crash_after_claim(seeded)
+        _expire_lease(seeded, note_id)
+
+    response = client.get("/ready")
+    assert response.status_code == 200
+    checks = response.json()["checks"]
+    assert "worker" not in checks and "notification" not in checks

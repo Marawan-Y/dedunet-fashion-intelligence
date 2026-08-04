@@ -118,6 +118,9 @@ services:
       NOTIFICATION_WORKER_INTERVAL_SECONDS: "15"
       NOTIFICATION_BATCH_SIZE: "50"
       NOTIFICATION_MAX_ATTEMPTS: "5"
+      # Bounds how long a worker killed mid-send can hold a claim before another
+      # worker may recover it. Must exceed the slowest realistic provider call.
+      NOTIFICATION_CLAIM_TTL_SECONDS: "300"
       PYTHONDONTWRITEBYTECODE: "1"
       PYTHONUNBUFFERED: "1"
     depends_on:

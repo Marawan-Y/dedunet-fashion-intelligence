@@ -385,6 +385,21 @@ class Notification(Base):
     # would raise StringDataRightTruncation there while passing silently on SQLite.
     last_error: Mapped[str] = mapped_column(Text, default="", server_default="")
     provider_reference: Mapped[str] = mapped_column(String(120), default="", server_default="")
+    # --- claim lease --------------------------------------------------------------
+    # A durable 'sending' claim survives a commit, which is what makes concurrent
+    # dispatch safe. It also means a worker killed mid-send leaves the row claimed
+    # forever unless the claim EXPIRES. These three columns bound that window.
+    #
+    # claim_expires_at is compared against the DATABASE clock, never a worker-local
+    # timer: two workers on hosts with different uptimes must agree on whether a claim
+    # is stale, and only the database sees a single consistent clock.
+    claimed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    claim_expires_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), index=True
+    )
+    # Identifies WHICH worker holds the claim, so a recovery can be attributed and a
+    # racing recovery can prove it won.
+    claim_token: Mapped[str] = mapped_column(String(64), default="", server_default="")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
 
     __table_args__ = (
