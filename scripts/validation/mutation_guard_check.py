@@ -60,12 +60,14 @@ MAIN = BACKEND / "app" / "main.py"
 NOTIFICATIONS = BACKEND / "app" / "commerce" / "notifications.py"
 SERVICES = BACKEND / "app" / "commerce" / "services.py"
 WORKER = BACKEND / "notification_worker.py"
+BACKUP = ROOT / "infrastructure" / "backup" / "backup_manager.py"
 
 TEST_CANDIDATE = "tests/test_candidate_activation.py"
 TEST_API = "tests/test_api.py"
 TEST_MONEY = "tests/test_money_integrity.py"
 TEST_RATE = "tests/test_rate_limit.py"
 TEST_NOTIFY = "tests/test_notifications.py"
+TEST_BACKUP = "tests/test_backup_guards.py"
 
 
 MUTATIONS: tuple[Mutation, ...] = (
@@ -588,6 +590,75 @@ MUTATIONS: tuple[Mutation, ...] = (
         mutated='        if True:  # MUTATED: stale success counted as delivered\n            counts["sent"] += 1',
         tests=(f"{TEST_NOTIFY}::test_ownership_loss_is_observable_and_counted",),
         covers=("a delivery count that includes disowned writes is not a delivery count",),
+    ),
+    # ---- Workstream D: backup and restore --------------------------------------
+    Mutation(
+        mutation_id="M42_checksum_verified_before_restore",
+        guard="restore verifies the checksum before contacting the database",
+        target=BACKUP,
+        original="    cmd_verify(argparse.Namespace(name=args.name))     # checksum BEFORE restore",
+        mutated="    pass  # MUTATED: checksum not verified before restore",
+        tests=(
+            f"{TEST_BACKUP}::test_restore_verifies_the_checksum_before_touching_the_database",
+        ),
+        covers=("restoring a corrupt dump can destroy a working database",),
+    ),
+    Mutation(
+        mutation_id="M43_checksum_mismatch_is_fatal",
+        guard="a checksum mismatch raises",
+        target=BACKUP,
+        original="    if actual != recorded:",
+        mutated="    if False:  # MUTATED: mismatch ignored",
+        tests=(f"{TEST_BACKUP}::test_verify_rejects_a_modified_dump",),
+        covers=("a silently accepted mismatch makes the checksum decorative",),
+    ),
+    Mutation(
+        mutation_id="M44_restore_target_differs_from_source",
+        guard="restore refuses the source database",
+        target=BACKUP,
+        original='    if target == cfg["database"]:\n        raise BackupError(\n            f"refusing to restore over the source database {target!r}. "',
+        mutated='    if False:  # MUTATED: source may be overwritten\n        raise BackupError(\n            f"refusing to restore over the source database {target!r}. "',
+        tests=(f"{TEST_BACKUP}::test_restore_refuses_to_target_the_source_database",),
+        covers=("a rehearsal that can overwrite production is the incident it prevents",),
+    ),
+    Mutation(
+        mutation_id="M45_non_empty_target_rejected",
+        guard="a populated restore target is refused without an override",
+        target=BACKUP,
+        original="        if int(tables or 0) > 0 and not args.force:",
+        mutated="        if False:  # MUTATED: non-empty target accepted silently",
+        tests=(f"{TEST_BACKUP}::test_restore_rejects_a_non_empty_target_without_force",),
+        covers=("restoring over populated data without consent destroys it",),
+    ),
+    Mutation(
+        mutation_id="M46_failed_pg_restore_cannot_report_success",
+        guard="a non-zero pg_restore raises",
+        target=BACKUP,
+        original="    if result.returncode != 0:\n        raise BackupError(\n            f\"pg_restore FAILED (exit {result.returncode}): \"",
+        mutated="    if False:  # MUTATED: restore failure ignored\n        raise BackupError(\n            f\"pg_restore FAILED (exit {result.returncode}): \"",
+        tests=(f"{TEST_BACKUP}::test_a_failed_pg_restore_cannot_report_success",),
+        covers=("a backup believed restorable but not is worse than no backup",),
+    ),
+    Mutation(
+        mutation_id="M47_parity_reports_failure",
+        guard="parity mismatches produce a non-zero result",
+        target=BACKUP,
+        original="    return 0 if not failures else 1",
+        mutated="    return 0  # MUTATED: parity always reports success",
+        tests=(
+            f"{TEST_BACKUP}::test_parity_fails_on_a_row_count_mismatch",
+            f"{TEST_BACKUP}::test_parity_fails_on_a_migration_revision_mismatch",
+        ),
+        covers=("parity that cannot fail proves nothing about the restore",),
+    ),
+    Mutation(
+        mutation_id="M48_cleanup_cannot_drop_the_source",
+        guard="cleanup refuses the source database",
+        target=BACKUP,
+        original='    if target == cfg["database"]:\n        raise BackupError(\n            f"refusing to drop the SOURCE database {target!r}.',
+        mutated='    if False:  # MUTATED: cleanup may drop the source\n        raise BackupError(\n            f"refusing to drop the SOURCE database {target!r}.',
+        tests=(f"{TEST_BACKUP}::test_cleanup_refuses_to_drop_the_source_database",),
+        covers=("cleanup must never be able to delete the database it protects",),
     ),
 )
 

@@ -54,3 +54,6 @@ evidence/governance/domain/dedunet.com_ownership_letter.pdf
 Thumbs.db
 .vscode/
 .idea/
+
+# Backup artifacts contain personal and operational data and must never be committed.
+backups/
