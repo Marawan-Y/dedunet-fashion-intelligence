@@ -221,22 +221,23 @@ def test_cannot_add_more_than_available(client, seeded):
     assert response.status_code == 409
 
 
-def test_concurrent_reservation_never_oversells(seeded):
-    """Twenty threads race for five units. Exactly five may win.
+def _race_for_stock(variant_id: int, on_hand: int, threads: int, session_factory=None):
+    """Run `threads` single-unit reservations against `on_hand` units.
 
-    This is the overselling guard. It asserts on the DATABASE state, not on the number
-    of successful HTTP responses, because the invariant that matters is that reserved
-    never exceeds on_hand.
+    Returns (reported_wins, exceptions). Never swallows a thread error: a reservation that
+    raised must not be silently counted as a loss.
     """
 
+    SessionLocal = session_factory or _default_session_factory()
+
     with SessionLocal() as session:
-        variant_id = _variant_id(session, TEE_SKU)
         item = session.get(InventoryItem, variant_id)
-        item.on_hand = 5
+        item.on_hand = on_hand
         item.reserved = 0
         session.commit()
 
-    successes: list[bool] = []
+    wins: list[bool] = []
+    failures: list[BaseException] = []
     lock = threading.Lock()
 
     def attempt() -> None:
@@ -245,21 +246,134 @@ def test_concurrent_reservation_never_oversells(seeded):
             won = inventory.try_reserve(session, variant_id, 1)
             session.commit()
             with lock:
-                successes.append(won)
+                wins.append(won)
+        except BaseException as exc:  # noqa: BLE001 - recorded, then asserted on
+            with lock:
+                failures.append(exc)
         finally:
             session.close()
 
-    threads = [threading.Thread(target=attempt) for _ in range(20)]
-    for thread in threads:
-        thread.start()
-    for thread in threads:
-        thread.join()
+    workers = [threading.Thread(target=attempt) for _ in range(threads)]
+    for worker in workers:
+        worker.start()
+    for worker in workers:
+        worker.join()
 
-    assert sum(successes) == 5, f"expected exactly 5 winners, got {sum(successes)}"
-    with SessionLocal() as session:
+    return wins, failures
+
+
+def _default_session_factory():
+    from app.commerce.db import SessionLocal as _SessionLocal
+
+    return _SessionLocal
+
+
+def test_concurrent_reservation_never_oversells(tmp_path):
+    """Twenty threads race for five units. Exactly five win, and stock is never oversold.
+
+    Runs against a FILE-BACKED SQLite database with a normal connection pool, so every
+    thread gets its OWN connection.
+
+    That is not a detail. The shared in-memory engine used elsewhere in the suite is
+    `StaticPool` with `check_same_thread=False`, which hands every session the SAME
+    `sqlite3.Connection`. Python's sqlite3 module does not support concurrent statement
+    execution on one connection, and this test raised
+    `sqlite3.InterfaceError: bad parameter or other API misuse` in roughly 1 run in 11 as a
+    result. The database was never wrong — the conditional UPDATE guarantees that — but the
+    harness was misusing the driver, and the failure looked like an overselling defect.
+
+    Giving each thread its own connection removes the misuse entirely, which makes both the
+    database invariant AND the reported winner count deterministic here. The assertions are
+    therefore stronger than before, not weaker.
+    """
+
+    from sqlalchemy import create_engine
+    from sqlalchemy.orm import sessionmaker
+
+    from app.commerce.db import Base
+    from app.commerce.models import Product, Variant
+
+    engine = create_engine(f"sqlite+pysqlite:///{tmp_path / 'race.sqlite3'}", future=True)
+    Session = sessionmaker(bind=engine, autoflush=False, expire_on_commit=False)
+    Base.metadata.create_all(engine)
+
+    with Session() as session:
+        product = Product(slug="race-product", name="Race", category="tops", is_active=True)
+        session.add(product)
+        session.flush()
+        variant = Variant(
+            product_id=product.id, sku="RACE-M", size="M", color="Ink", price_minor_units=100
+        )
+        session.add(variant)
+        session.flush()
+        session.add(InventoryItem(variant_id=variant.id, on_hand=5, reserved=0))
+        session.commit()
+        variant_id = variant.id
+
+    wins, failures = _race_for_stock(variant_id, on_hand=5, threads=20, session_factory=Session)
+
+    # 4. No thread exception or hidden warning.
+    assert failures == [], f"a reservation thread raised: {failures[:2]}"
+
+    with Session() as session:
         item = session.get(InventoryItem, variant_id)
+        # 1. Reserved never exceeds available stock.
+        assert item.reserved <= item.on_hand
+        # 2. Successful reservations equal the committed reserved quantity.
+        assert sum(wins) == item.reserved, (
+            f"{sum(wins)} threads reported a win but {item.reserved} units were reserved"
+        )
+        # 3. Exactly the available quantity succeeded.
+        assert sum(wins) == 5, f"expected exactly 5 winners, got {sum(wins)}"
         assert item.reserved == 5
         assert item.available == 0
+
+    engine.dispose()
+
+
+@pytest.mark.skipif(
+    "postgres" not in __import__("os").environ.get("COMMERCE_TEST_DATABASE_URL", ""),
+    reason="exact winner count requires real per-connection row locking",
+)
+def test_concurrent_reservation_winner_count_is_exact_on_postgresql(seeded):
+    """Exactly five of twenty threads win, under genuine row-level contention.
+
+    PostgreSQL gives every session its own connection, so `rowcount` belongs to the
+    statement that produced it and the reported winner count is authoritative.
+    """
+
+    import os
+
+    from sqlalchemy import create_engine
+    from sqlalchemy.orm import sessionmaker
+
+    # Its OWN engine and pool. Twenty concurrent sessions borrowed from the shared test
+    # pool starved the notification tests that ran afterwards, which use FOR UPDATE SKIP
+    # LOCKED and their own threads -- six of them failed in a full-suite run while passing
+    # 38/38 in isolation. A test that spawns twenty connections must not compete with the
+    # rest of the suite for them.
+    engine = create_engine(
+        os.environ["COMMERCE_TEST_DATABASE_URL"], future=True, pool_size=25, max_overflow=10
+    )
+    Session = sessionmaker(bind=engine, autoflush=False, expire_on_commit=False)
+    try:
+        with Session() as session:
+            variant_id = _variant_id(session, TEE_SKU)
+
+        wins, failures = _race_for_stock(
+            variant_id, on_hand=5, threads=20, session_factory=Session
+        )
+
+        assert failures == []
+        assert sum(wins) == 5, f"expected exactly 5 winners, got {sum(wins)}"
+
+        with Session() as session:
+            item = session.get(InventoryItem, variant_id)
+            assert item.reserved == 5
+            assert item.available == 0
+            assert sum(wins) == item.reserved
+    finally:
+        engine.dispose()
         assert item.reserved <= item.on_hand
 
 
