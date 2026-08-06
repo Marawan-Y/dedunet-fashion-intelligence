@@ -1,0 +1,25 @@
+{
+  "name": "DEDUNET",
+  "legal_name": null,
+  "domain": "dedunet.com",
+  "tagline": "Worth, worn.",
+  "status": {
+    "brand_selection": "FOUNDER_SELECTED",
+    "prototype": "PROTOTYPE_APPROVED",
+    "legal": "LEGAL_CLEARANCE_PENDING",
+    "public_commercial_launch": "BLOCKED"
+  },
+  "naming_risk": {
+    "status": "PRELIMINARY_RISK_DISCLOSED",
+    "detail": "A 'DeDeNet' conflict is disclosed by Side A as a high preliminary risk. Domain ownership is not trademark clearance.",
+    "prohibited_narrative": "DEDUNET must not be described as a historically verified Egyptian or pharaonic weaving goddess. That claim is explicitly blocked by Side A."
+  },
+  "source_tokens": {
+    "name": "DEDUNET",
+    "tagline": "Worth, worn.",
+    "logoPrimary": "assets/brand-prototype/logos/logo-primary.svg",
+    "logoCompact": "assets/brand-prototype/logos/logo-compact.svg",
+    "identityTerritory": "Material Worth",
+    "status": "PROVISIONAL_NOT_LEGALLY_CLEARED"
+  }
+}

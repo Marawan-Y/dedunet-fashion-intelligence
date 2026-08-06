@@ -1,0 +1,18 @@
+[
+  {
+    "collection_id": "FIRST-PASSAGE-01",
+    "slug": "first-passage",
+    "name": "First Passage",
+    "status": "PROTOTYPE",
+    "description": "Five connected unisex pieces built around material, proportion and useful layering.",
+    "product_ids": [
+      "DDN-TS01",
+      "DDN-SH01",
+      "DDN-TR01",
+      "DDN-OS01",
+      "DDN-SC01"
+    ],
+    "hero_asset_id": "MEDIA-COLLECTION-001",
+    "evidence_status": "All product specifications pending supplier verification and sample approval."
+  }
+]

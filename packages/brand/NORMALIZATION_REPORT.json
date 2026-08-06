@@ -1,0 +1,62 @@
+{
+  "generated_at": "2026-08-06T13:26:24.071880+00:00",
+  "generator": "scripts/brand/build_brand_package.py",
+  "source_package": "handoffs/incoming/side-a/DEDUNET_Platform_Integration_v1",
+  "source_manifest_entries": 54,
+  "counts": {
+    "products": 5,
+    "variants": 62,
+    "unique_skus": 62,
+    "assets": 31,
+    "product_media": 18,
+    "collections": 1
+  },
+  "money": {
+    "authoritative_unit": "integer minor units",
+    "currency": "EUR",
+    "converter": "app.money.to_minor_units (binary floats rejected)",
+    "max_decimal_places": 2,
+    "conversions": [
+      [
+        "122",
+        12200
+      ],
+      [
+        "142",
+        14200
+      ],
+      [
+        "192",
+        19200
+      ],
+      [
+        "72",
+        7200
+      ],
+      [
+        "74",
+        7400
+      ]
+    ]
+  },
+  "states": {
+    "publication_status": "preview",
+    "sellable": false,
+    "inventory_status": "prototype_unavailable",
+    "evidence_status": "DRAFT",
+    "material_claim_status": "UNVERIFIED",
+    "origin_claim_status": "UNVERIFIED",
+    "legal_brand_status": "LEGAL_CLEARANCE_PENDING",
+    "media_status": "PROTOTYPE_CONCEPT",
+    "country_of_origin": "XX",
+    "intended_origin": "EG"
+  },
+  "media_roles": [
+    "back",
+    "detail",
+    "front",
+    "lifestyle"
+  ],
+  "errors": [],
+  "warnings": []
+}

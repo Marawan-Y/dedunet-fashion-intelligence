@@ -1,0 +1,311 @@
+[
+  {
+    "external_product_id": "DDN-TS01",
+    "slug": "the-source-tee",
+    "name": "The Source Tee",
+    "category": "T-Shirts",
+    "collection_label": "FIRST PASSAGE / 01",
+    "short_description": "A heavyweight relaxed tee defined by a controlled shoulder and clean neckline.",
+    "long_description": "The Source Tee establishes the capsule's base proportion: relaxed through the body, deliberate at the shoulder and compact at the neck. A restrained back-neck passage stitch becomes the only identity detail.",
+    "currency": "EUR",
+    "prototype_price_minor_units": 7200,
+    "compare_at_price_minor_units": null,
+    "sku_prefix": "DDN-SRC",
+    "sizes": [
+      "XS",
+      "S",
+      "M",
+      "L",
+      "XL",
+      "XXL"
+    ],
+    "colorways": [
+      "Carbon",
+      "Chalk",
+      "Resin"
+    ],
+    "care_instructions": "Prototype guidance: wash at 30°C with similar colours; reshape while damp; do not tumble dry. Final care label requires material and test approval.",
+    "publication_status": "preview",
+    "sellable": false,
+    "inventory_status": "prototype_unavailable",
+    "evidence_status": "DRAFT",
+    "material_claim_status": "UNVERIFIED",
+    "origin_claim_status": "UNVERIFIED",
+    "legal_brand_status": "LEGAL_CLEARANCE_PENDING",
+    "media_status": "PROTOTYPE_CONCEPT",
+    "country_of_origin": "XX",
+    "intended_origin": "EG",
+    "source_origin_statement": "Intended Egypt production; factory and country-of-origin evidence pending.",
+    "source_material_statement": "Heavyweight combed cotton jersey",
+    "source_composition_statement": "100% cotton intended; fibre origin unverified",
+    "source_evidence_statement": "DRAFT — supplier documents, sample and tests pending",
+    "badges": [
+      "Prototype",
+      "New Passage"
+    ],
+    "search_terms": [
+      "unisex heavyweight t-shirt",
+      "relaxed tee",
+      "minimal t-shirt"
+    ],
+    "related_products": [
+      "DDN-OS01",
+      "DDN-TR01"
+    ],
+    "recommendation_metadata": {
+      "layer": "base",
+      "weather": "mild,warm",
+      "formality": "casual",
+      "compatibility": [
+        "DDN-OS01",
+        "DDN-TR01"
+      ]
+    }
+  },
+  {
+    "external_product_id": "DDN-SH01",
+    "slug": "the-passage-shirt",
+    "name": "The Passage Shirt",
+    "category": "Shirts",
+    "collection_label": "FIRST PASSAGE / 01",
+    "short_description": "An elongated shirt with a straight front, low side splits and soft structure.",
+    "long_description": "The Passage Shirt uses length, movement and negative space rather than applied decoration. Wear it closed, open as a light layer or partially tucked with The Measure Trouser.",
+    "currency": "EUR",
+    "prototype_price_minor_units": 12200,
+    "compare_at_price_minor_units": null,
+    "sku_prefix": "DDN-PSG",
+    "sizes": [
+      "XS",
+      "S",
+      "M",
+      "L",
+      "XL",
+      "XXL"
+    ],
+    "colorways": [
+      "Chalk",
+      "Carbon",
+      "Silt"
+    ],
+    "care_instructions": "Prototype guidance: wash at 30°C; warm iron; line dry. Final care label requires material and test approval.",
+    "publication_status": "preview",
+    "sellable": false,
+    "inventory_status": "prototype_unavailable",
+    "evidence_status": "DRAFT",
+    "material_claim_status": "UNVERIFIED",
+    "origin_claim_status": "UNVERIFIED",
+    "legal_brand_status": "LEGAL_CLEARANCE_PENDING",
+    "media_status": "PROTOTYPE_CONCEPT",
+    "country_of_origin": "XX",
+    "intended_origin": "EG",
+    "source_origin_statement": "Intended Egypt production; factory and country-of-origin evidence pending.",
+    "source_material_statement": "Light cotton poplin",
+    "source_composition_statement": "100% cotton intended; fibre origin unverified",
+    "source_evidence_statement": "DRAFT — supplier documents, sample and tests pending",
+    "badges": [
+      "Prototype",
+      "New Passage"
+    ],
+    "search_terms": [
+      "unisex oversized shirt",
+      "long cotton shirt",
+      "minimal shirt"
+    ],
+    "related_products": [
+      "DDN-TR01",
+      "DDN-SC01"
+    ],
+    "recommendation_metadata": {
+      "layer": "mid",
+      "weather": "mild,warm",
+      "formality": "smart-casual",
+      "compatibility": [
+        "DDN-TR01",
+        "DDN-SC01"
+      ]
+    }
+  },
+  {
+    "external_product_id": "DDN-TR01",
+    "slug": "the-measure-trouser",
+    "name": "The Measure Trouser",
+    "category": "Trousers",
+    "collection_label": "FIRST PASSAGE / 01",
+    "short_description": "A relaxed straight trouser with one controlled front fold and adjustable waist tabs.",
+    "long_description": "The Measure Trouser balances volume with a clear vertical line. Adjustable waist tabs support flexible unisex fit while the leg remains straight and easy to combine across the capsule.",
+    "currency": "EUR",
+    "prototype_price_minor_units": 14200,
+    "compare_at_price_minor_units": null,
+    "sku_prefix": "DDN-MSR",
+    "sizes": [
+      "XS",
+      "S",
+      "M",
+      "L",
+      "XL",
+      "XXL"
+    ],
+    "colorways": [
+      "Carbon",
+      "Silt"
+    ],
+    "care_instructions": "Prototype guidance: wash at 30°C; wash inside out; line dry. Final care label requires material and test approval.",
+    "publication_status": "preview",
+    "sellable": false,
+    "inventory_status": "prototype_unavailable",
+    "evidence_status": "DRAFT",
+    "material_claim_status": "UNVERIFIED",
+    "origin_claim_status": "UNVERIFIED",
+    "legal_brand_status": "LEGAL_CLEARANCE_PENDING",
+    "media_status": "PROTOTYPE_CONCEPT",
+    "country_of_origin": "XX",
+    "intended_origin": "EG",
+    "source_origin_statement": "Intended Egypt production; factory and country-of-origin evidence pending.",
+    "source_material_statement": "Midweight cotton twill",
+    "source_composition_statement": "98% cotton / 2% elastane intended; unverified",
+    "source_evidence_statement": "DRAFT — supplier documents, sample and tests pending",
+    "badges": [
+      "Prototype",
+      "Hero Passage"
+    ],
+    "search_terms": [
+      "unisex relaxed trousers",
+      "straight cotton trouser",
+      "adjustable waist trouser"
+    ],
+    "related_products": [
+      "DDN-TS01",
+      "DDN-SH01",
+      "DDN-OS01"
+    ],
+    "recommendation_metadata": {
+      "layer": "bottom",
+      "weather": "mild,cool",
+      "formality": "smart-casual",
+      "compatibility": [
+        "DDN-TS01",
+        "DDN-SH01",
+        "DDN-OS01"
+      ]
+    }
+  },
+  {
+    "external_product_id": "DDN-OS01",
+    "slug": "the-structure-overshirt",
+    "name": "The Structure Overshirt",
+    "category": "Outerwear",
+    "collection_label": "FIRST PASSAGE / 01",
+    "short_description": "A structured overshirt with a straight hem, concealed fastening and offset seam.",
+    "long_description": "The Structure Overshirt is the capsule's architectural piece. A clean outer surface keeps attention on proportion while one offset seam introduces DEDUNET's passage-line logic.",
+    "currency": "EUR",
+    "prototype_price_minor_units": 19200,
+    "compare_at_price_minor_units": null,
+    "sku_prefix": "DDN-STR",
+    "sizes": [
+      "XS",
+      "S",
+      "M",
+      "L",
+      "XL",
+      "XXL"
+    ],
+    "colorways": [
+      "Carbon",
+      "Sandstone"
+    ],
+    "care_instructions": "Prototype guidance: gentle wash at 30°C or professional clean depending on final fabric tests. Final care label pending.",
+    "publication_status": "preview",
+    "sellable": false,
+    "inventory_status": "prototype_unavailable",
+    "evidence_status": "DRAFT",
+    "material_claim_status": "UNVERIFIED",
+    "origin_claim_status": "UNVERIFIED",
+    "legal_brand_status": "LEGAL_CLEARANCE_PENDING",
+    "media_status": "PROTOTYPE_CONCEPT",
+    "country_of_origin": "XX",
+    "intended_origin": "EG",
+    "source_origin_statement": "Intended Egypt production; factory and country-of-origin evidence pending.",
+    "source_material_statement": "Cotton canvas",
+    "source_composition_statement": "100% cotton intended; fibre origin unverified",
+    "source_evidence_statement": "DRAFT — supplier documents, sample and tests pending",
+    "badges": [
+      "Prototype",
+      "Hero Passage"
+    ],
+    "search_terms": [
+      "unisex overshirt",
+      "minimal cotton jacket",
+      "structured shirt jacket"
+    ],
+    "related_products": [
+      "DDN-TS01",
+      "DDN-TR01"
+    ],
+    "recommendation_metadata": {
+      "layer": "outer",
+      "weather": "mild,cool",
+      "formality": "smart-casual",
+      "compatibility": [
+        "DDN-TS01",
+        "DDN-TR01"
+      ]
+    }
+  },
+  {
+    "external_product_id": "DDN-SC01",
+    "slug": "the-trace-scarf",
+    "name": "The Trace Scarf",
+    "category": "Accessories",
+    "collection_label": "FIRST PASSAGE / 01",
+    "short_description": "A light rectangular scarf carrying the sparse Passage Lines motif.",
+    "long_description": "The Trace Scarf translates the graphic system into textile form. Parallel lines are interrupted by small Resin points, creating a pattern that changes when folded or wrapped.",
+    "currency": "EUR",
+    "prototype_price_minor_units": 7400,
+    "compare_at_price_minor_units": null,
+    "sku_prefix": "DDN-TRC",
+    "sizes": [
+      "ONE"
+    ],
+    "colorways": [
+      "Sandstone / Resin",
+      "Indigo / Chalk"
+    ],
+    "care_instructions": "Prototype guidance: hand wash cool; dry flat; cool iron. Final care label requires material and print tests.",
+    "publication_status": "preview",
+    "sellable": false,
+    "inventory_status": "prototype_unavailable",
+    "evidence_status": "DRAFT",
+    "material_claim_status": "UNVERIFIED",
+    "origin_claim_status": "UNVERIFIED",
+    "legal_brand_status": "LEGAL_CLEARANCE_PENDING",
+    "media_status": "PROTOTYPE_CONCEPT",
+    "country_of_origin": "XX",
+    "intended_origin": "EG",
+    "source_origin_statement": "Intended Egypt production; factory and country-of-origin evidence pending.",
+    "source_material_statement": "Light cotton voile",
+    "source_composition_statement": "100% cotton intended; fibre origin unverified",
+    "source_evidence_statement": "DRAFT — supplier documents, sample and tests pending",
+    "badges": [
+      "Prototype",
+      "Textile Passage"
+    ],
+    "search_terms": [
+      "unisex cotton scarf",
+      "minimal patterned scarf",
+      "North African inspired textile"
+    ],
+    "related_products": [
+      "DDN-SH01",
+      "DDN-OS01"
+    ],
+    "recommendation_metadata": {
+      "layer": "accessory",
+      "weather": "all",
+      "formality": "all",
+      "compatibility": [
+        "DDN-SH01",
+        "DDN-OS01"
+      ]
+    }
+  }
+]

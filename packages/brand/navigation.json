@@ -1,0 +1,141 @@
+{
+  "version": "1.0.0",
+  "locale": "en-DE",
+  "header": [
+    {
+      "id": "new",
+      "label": "New",
+      "href": "/collections/new"
+    },
+    {
+      "id": "shop",
+      "label": "Shop",
+      "href": "/shop",
+      "children": [
+        {
+          "label": "All Products",
+          "href": "/shop"
+        },
+        {
+          "label": "Tops",
+          "href": "/collections/tops"
+        },
+        {
+          "label": "Bottoms",
+          "href": "/collections/bottoms"
+        },
+        {
+          "label": "Layers",
+          "href": "/collections/layers"
+        },
+        {
+          "label": "Accessories",
+          "href": "/collections/accessories"
+        }
+      ]
+    },
+    {
+      "id": "first-passage",
+      "label": "First Passage",
+      "href": "/collections/first-passage"
+    },
+    {
+      "id": "about",
+      "label": "About",
+      "href": "/about"
+    },
+    {
+      "id": "journal",
+      "label": "Journal",
+      "href": "/journal"
+    }
+  ],
+  "utilities": [
+    {
+      "label": "Search",
+      "action": "open-search"
+    },
+    {
+      "label": "Account",
+      "href": "/account"
+    },
+    {
+      "label": "Bag",
+      "action": "open-cart"
+    }
+  ],
+  "footer": {
+    "Shop": [
+      [
+        "New",
+        "/collections/new"
+      ],
+      [
+        "First Passage",
+        "/collections/first-passage"
+      ],
+      [
+        "All Products",
+        "/shop"
+      ],
+      [
+        "Size Guide",
+        "/size-guide"
+      ]
+    ],
+    "DEDUNET": [
+      [
+        "About",
+        "/about"
+      ],
+      [
+        "Journal",
+        "/journal"
+      ],
+      [
+        "Contact",
+        "/contact"
+      ],
+      [
+        "Press",
+        "/press"
+      ]
+    ],
+    "Help": [
+      [
+        "Delivery",
+        "/delivery"
+      ],
+      [
+        "Returns",
+        "/returns"
+      ],
+      [
+        "Care",
+        "/care"
+      ],
+      [
+        "Accessibility",
+        "/accessibility"
+      ]
+    ],
+    "Legal": [
+      [
+        "Privacy",
+        "/privacy"
+      ],
+      [
+        "Terms",
+        "/terms"
+      ],
+      [
+        "Imprint",
+        "/imprint"
+      ],
+      [
+        "Cookie Settings",
+        "#cookie-settings"
+      ]
+    ]
+  }
+}

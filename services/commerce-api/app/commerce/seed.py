@@ -168,6 +168,10 @@ def seed(session: Session, *, include_demo_accounts: bool = True) -> dict:
             country_of_origin=spec["country_of_origin"],
             image_url=spec["image_url"],
             is_active=spec["is_active"],
+            # The demo catalogue is purchasable in sandbox and was before `sellable`
+            # existed. It opts in explicitly because the column fails closed.
+            sellable=spec["is_active"],
+            publication_status="published" if spec["is_active"] else "draft",
         )
         session.add(product)
         session.flush()
@@ -180,6 +184,11 @@ def seed(session: Session, *, include_demo_accounts: bool = True) -> dict:
                 size=variant_spec["size"],
                 color=variant_spec["color"],
                 price_minor_units=variant_spec["price_minor_units"],
+                # Kept consistent with the parent. A sellable product whose variants all
+                # read `sellable = false` is contradictory data, even though the purchase
+                # gate reads the product flag.
+                sellable=spec["is_active"],
+                inventory_status="stocked" if spec["is_active"] else "",
             )
             session.add(variant)
             session.flush()

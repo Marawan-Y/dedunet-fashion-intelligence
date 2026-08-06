@@ -26,6 +26,7 @@ from sqlalchemy import (
     String,
     Text,
     UniqueConstraint,
+    false,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -151,9 +152,77 @@ class Product(Base):
     is_active: Mapped[bool] = mapped_column(default=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
 
+    # --------------------------------------------------------------- DEDUNET integration
+    # Stable identity supplied by Side A (e.g. "DDN-TS01"). NULL for the legacy fixture
+    # catalogue. Unique where present, so a re-import matches instead of duplicating.
+    # Array position, filename and insertion order are never identity.
+    external_product_id: Mapped[str | None] = mapped_column(
+        String(40), unique=True, index=True, default=None
+    )
+    collection_id: Mapped[str] = mapped_column(String(60), default="", index=True)
+    intended_origin: Mapped[str] = mapped_column(String(2), default="")
+
+    # Typed states. Prose is not a state: these exist so API, admin, web and mobile can
+    # each decide safely without parsing a sentence.
+    publication_status: Mapped[str] = mapped_column(String(30), default="preview", index=True)
+    # Fails CLOSED. A row created without thinking is not purchasable; the seed and the
+    # admin endpoint opt in explicitly, and the DEDUNET import leaves it False.
+    # `false()` rather than text("0"): PostgreSQL rejects an integer default on a boolean
+    # column, so a literal "0" would upgrade on SQLite and fail on the runtime database.
+    sellable: Mapped[bool] = mapped_column(default=False, server_default=false())
+    inventory_status: Mapped[str] = mapped_column(String(40), default="")
+    evidence_status: Mapped[str] = mapped_column(String(40), default="")
+    material_claim_status: Mapped[str] = mapped_column(String(30), default="")
+    origin_claim_status: Mapped[str] = mapped_column(String(30), default="")
+    legal_brand_status: Mapped[str] = mapped_column(String(40), default="")
+    media_status: Mapped[str] = mapped_column(String(40), default="")
+
     variants: Mapped[list["Variant"]] = relationship(
         back_populates="product", cascade="all, delete-orphan"
     )
+    media: Mapped[list["ProductMedia"]] = relationship(
+        back_populates="product",
+        cascade="all, delete-orphan",
+        order_by="ProductMedia.sort_order",
+    )
+
+
+class ProductMedia(Base):
+    """One media record per product asset.
+
+    Replaces the single `Product.image_url`, which cannot hold the four roles Side A ships
+    (CONFLICT-007). `image_url` survives as a derived, non-authoritative convenience for
+    legacy consumers until they migrate.
+
+    Both unique constraints matter: the first stops the same asset attaching twice, the
+    second stops two assets claiming one slot in a role, which would make the gallery order
+    depend on row order.
+    """
+
+    __tablename__ = "product_media"
+    __table_args__ = (
+        UniqueConstraint("product_id", "asset_id", name="uq_product_media_asset"),
+        UniqueConstraint("product_id", "role", "sort_order", name="uq_product_media_slot"),
+        CheckConstraint("sort_order >= 0", name="ck_product_media_sort_order"),
+        CheckConstraint(
+            "role IN ('front','back','detail','lifestyle','campaign','collection')",
+            name="ck_product_media_role",
+        ),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    product_id: Mapped[int] = mapped_column(
+        ForeignKey("products.id", ondelete="CASCADE"), index=True
+    )
+    asset_id: Mapped[str] = mapped_column(String(60), index=True)
+    role: Mapped[str] = mapped_column(String(20))
+    sort_order: Mapped[int] = mapped_column(Integer, default=0)
+    path: Mapped[str] = mapped_column(String(300))
+    alt_text: Mapped[str] = mapped_column(String(400), default="")
+    status: Mapped[str] = mapped_column(String(40), default="")
+    checksum_sha256: Mapped[str] = mapped_column(String(64), default="")
+
+    product: Mapped[Product] = relationship(back_populates="media")
 
 
 class Variant(Base):
@@ -168,6 +237,17 @@ class Variant(Base):
     size: Mapped[str] = mapped_column(String(20))
     color: Mapped[str] = mapped_column(String(40))
     price_minor_units: Mapped[int] = mapped_column(Integer)
+
+    # Stable Side A identity (e.g. "DDN-TS01-CAR-XS"). NULL for legacy fixture variants.
+    external_variant_id: Mapped[str | None] = mapped_column(
+        String(60), unique=True, index=True, default=None
+    )
+    # Fails closed, exactly as Product.sellable does.
+    # `false()` rather than text("0"): PostgreSQL rejects an integer default on a boolean
+    # column, so a literal "0" would upgrade on SQLite and fail on the runtime database.
+    sellable: Mapped[bool] = mapped_column(default=False, server_default=false())
+    inventory_status: Mapped[str] = mapped_column(String(40), default="")
+    evidence_status: Mapped[str] = mapped_column(String(40), default="")
 
     product: Mapped[Product] = relationship(back_populates="variants")
     inventory: Mapped["InventoryItem"] = relationship(

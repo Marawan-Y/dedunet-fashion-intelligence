@@ -201,7 +201,36 @@ def _product_payload(session: Session, product: Product) -> dict:
         "care_instructions": product.care_instructions,
         "country_of_origin": product.country_of_origin,
         "currency": product.currency,
+        # Retained as a DERIVED convenience for legacy consumers. `media` below is the
+        # authoritative representation (CONFLICT-007).
         "image_url": product.image_url,
+        # --- stable external identity ----------------------------------------------
+        "external_product_id": product.external_product_id,
+        "collection_id": product.collection_id,
+        # --- typed states, so a consumer never parses prose to decide -------------
+        "publication_status": product.publication_status,
+        "sellable": product.sellable,
+        "inventory_status": product.inventory_status,
+        "evidence_status": product.evidence_status,
+        "material_claim_status": product.material_claim_status,
+        # `intended_origin` is shipped alongside `origin_claim_status` deliberately: a
+        # consumer that reads one without the other could render an intended origin as a
+        # verified one, which is the exact claim this programme may not make.
+        "origin_claim_status": product.origin_claim_status,
+        "intended_origin": product.intended_origin,
+        "legal_brand_status": product.legal_brand_status,
+        "media_status": product.media_status,
+        "media": [
+            {
+                "asset_id": m.asset_id,
+                "role": m.role,
+                "sort_order": m.sort_order,
+                "path": m.path,
+                "alt_text": m.alt_text,
+                "status": m.status,
+            }
+            for m in sorted(product.media, key=lambda m: (m.sort_order, m.asset_id))
+        ],
         "variants": [
             {
                 "id": v.id,
@@ -210,6 +239,10 @@ def _product_payload(session: Session, product: Product) -> dict:
                 "color": v.color,
                 "price_minor_units": v.price_minor_units,
                 "available": available_quantity(session, v.id),
+                "external_variant_id": v.external_variant_id,
+                "sellable": v.sellable,
+                "inventory_status": v.inventory_status,
+                "evidence_status": v.evidence_status,
             }
             for v in product.variants
         ],

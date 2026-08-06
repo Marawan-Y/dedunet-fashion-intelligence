@@ -26,7 +26,7 @@ from sqlalchemy.orm import Session
 
 import os
 
-from . import inventory, notifications, payments, pricing
+from . import inventory, modes, notifications, payments, pricing
 from .models import (
     AnalyticsEvent,
     AuditLog,
@@ -495,6 +495,16 @@ def add_to_cart(session: Session, cart: Cart, *, variant_id: int, quantity: int)
     if not variant.product.is_active:
         raise DomainError("this product is not available for sale")
 
+    # Blocked at the CART boundary, not only at checkout. Letting a prototype into the bag
+    # and refusing it at payment wastes the shopper's time and, worse, implies the item was
+    # purchasable right up to the last step.
+    try:
+        modes.assert_purchasable(
+            sellable=variant.product.sellable, product_name=variant.product.name
+        )
+    except modes.PurchaseBlocked as exc:
+        raise DomainError(str(exc)) from exc
+
     existing = session.scalar(
         select(CartLine).where(CartLine.cart_id == cart.id, CartLine.variant_id == variant_id)
     )
@@ -583,6 +593,19 @@ def checkout(
 
     if not cart.lines:
         raise DomainError("the cart is empty")
+
+    # Re-checked here even though add_to_cart already gated it. A cart can outlive a mode
+    # change or a product being withdrawn, and this is the last point before money moves.
+    # The check happens BEFORE the gateway is contacted, so a blocked purchase makes no
+    # payment call at all.
+    for line in cart.lines:
+        try:
+            modes.assert_purchasable(
+                sellable=line.variant.product.sellable,
+                product_name=line.variant.product.name,
+            )
+        except modes.PurchaseBlocked as exc:
+            raise DomainError(str(exc)) from exc
 
     breakdown = quote_cart(session, cart, country_code=country_code, promotion_code=promotion_code)
 
@@ -936,6 +959,12 @@ def create_product(
         country_of_origin=country_of_origin,
         image_url=image_url,
         is_active=is_active,
+        # `sellable` fails closed at the column level, so an ordinary admin-created product
+        # must opt in explicitly. It tracks is_active here, which preserves the behaviour
+        # this endpoint had before the flag existed. The DEDUNET prototype import
+        # deliberately does NOT opt in.
+        sellable=is_active,
+        publication_status="published" if is_active else "draft",
     )
     session.add(product)
     session.flush()
@@ -947,6 +976,8 @@ def create_product(
             size=spec["size"],
             color=spec["color"],
             price_minor_units=int(spec["price_minor_units"]),
+            sellable=is_active,
+            inventory_status="stocked" if is_active else "",
         )
         session.add(variant)
         session.flush()

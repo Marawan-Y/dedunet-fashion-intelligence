@@ -1,0 +1,182 @@
+[
+  {
+    "external_product_id": "DDN-TS01",
+    "asset_id": "DDN-TS01-FRONT",
+    "role": "front",
+    "sort_order": 0,
+    "path": "assets/brand-prototype/products/ddn-ts01-front.svg",
+    "alt_text": "Concept front view of The Source Tee",
+    "status": "PROTOTYPE_CONCEPT",
+    "sha256": "5ca9960c623522fb1edd19e7e21373aa01710dbdcb0b35ca2fe50d9a3de48ad9"
+  },
+  {
+    "external_product_id": "DDN-TS01",
+    "asset_id": "DDN-TS01-BACK",
+    "role": "back",
+    "sort_order": 1,
+    "path": "assets/brand-prototype/products/ddn-ts01-back.svg",
+    "alt_text": "Concept back view of The Source Tee",
+    "status": "PROTOTYPE_CONCEPT",
+    "sha256": "0d6d10eaaeb89f388f0df1174d5a10732583a252ac23adaf65332deb60f74c29"
+  },
+  {
+    "external_product_id": "DDN-TS01",
+    "asset_id": "DDN-TS01-DETAIL",
+    "role": "detail",
+    "sort_order": 2,
+    "path": "assets/brand-prototype/products/ddn-ts01-detail.svg",
+    "alt_text": "Concept detail view of The Source Tee",
+    "status": "PROTOTYPE_CONCEPT",
+    "sha256": "9381b4290ee76f4f309372382f600bdb37ec3cd1d2bb535c320df1c8f3836ba3"
+  },
+  {
+    "external_product_id": "DDN-TS01",
+    "asset_id": "DDN-TS01-LIFESTYLE",
+    "role": "lifestyle",
+    "sort_order": 3,
+    "path": "assets/brand-prototype/media/ddn-ts01-lifestyle.svg",
+    "alt_text": "Abstract lifestyle concept for The Source Tee",
+    "status": "PROTOTYPE_CONCEPT",
+    "sha256": "4880754c45c7dceda2c98cc2779c61e65e04af269750f47490c5d935d64e11aa"
+  },
+  {
+    "external_product_id": "DDN-SH01",
+    "asset_id": "DDN-SH01-FRONT",
+    "role": "front",
+    "sort_order": 0,
+    "path": "assets/brand-prototype/products/ddn-sh01-front.svg",
+    "alt_text": "Concept front view of The Passage Shirt",
+    "status": "PROTOTYPE_CONCEPT",
+    "sha256": "43187ac7aaeddf00cccde319656d4b2fbc6a48a553a6d783b90dac56fbd8a575"
+  },
+  {
+    "external_product_id": "DDN-SH01",
+    "asset_id": "DDN-SH01-BACK",
+    "role": "back",
+    "sort_order": 1,
+    "path": "assets/brand-prototype/products/ddn-sh01-back.svg",
+    "alt_text": "Concept back view of The Passage Shirt",
+    "status": "PROTOTYPE_CONCEPT",
+    "sha256": "dc4f2b46d4a2c790a831f7a4ce6477d157a23210a0e9c1183d1973b6301a68b1"
+  },
+  {
+    "external_product_id": "DDN-SH01",
+    "asset_id": "DDN-SH01-DETAIL",
+    "role": "detail",
+    "sort_order": 2,
+    "path": "assets/brand-prototype/products/ddn-sh01-detail.svg",
+    "alt_text": "Concept detail view of The Passage Shirt",
+    "status": "PROTOTYPE_CONCEPT",
+    "sha256": "db1a53ab4b50bed448b6f386022747070f07118ae8394fdb85765e88b8a71700"
+  },
+  {
+    "external_product_id": "DDN-TR01",
+    "asset_id": "DDN-TR01-FRONT",
+    "role": "front",
+    "sort_order": 0,
+    "path": "assets/brand-prototype/products/ddn-tr01-front.svg",
+    "alt_text": "Concept front view of The Measure Trouser",
+    "status": "PROTOTYPE_CONCEPT",
+    "sha256": "21eecf68179cb397939c5737d95f173a04a88b7b089838058a471c1f6cc96005"
+  },
+  {
+    "external_product_id": "DDN-TR01",
+    "asset_id": "DDN-TR01-BACK",
+    "role": "back",
+    "sort_order": 1,
+    "path": "assets/brand-prototype/products/ddn-tr01-back.svg",
+    "alt_text": "Concept back view of The Measure Trouser",
+    "status": "PROTOTYPE_CONCEPT",
+    "sha256": "573302fd0f96b54676ac9f4bb9634c1f43f80570abf136dcf5e5c06460b245b4"
+  },
+  {
+    "external_product_id": "DDN-TR01",
+    "asset_id": "DDN-TR01-DETAIL",
+    "role": "detail",
+    "sort_order": 2,
+    "path": "assets/brand-prototype/products/ddn-tr01-detail.svg",
+    "alt_text": "Concept detail view of The Measure Trouser",
+    "status": "PROTOTYPE_CONCEPT",
+    "sha256": "a45610571c25a77d6564608f8c1dfb34b7555658b74a51247eb0c4b1527e7d7a"
+  },
+  {
+    "external_product_id": "DDN-TR01",
+    "asset_id": "DDN-TR01-LIFESTYLE",
+    "role": "lifestyle",
+    "sort_order": 3,
+    "path": "assets/brand-prototype/media/ddn-tr01-lifestyle.svg",
+    "alt_text": "Abstract lifestyle concept for The Measure Trouser",
+    "status": "PROTOTYPE_CONCEPT",
+    "sha256": "edf0af60cc35a7263004cf7fde219b4853607335e0ac3f5404714c924d70241a"
+  },
+  {
+    "external_product_id": "DDN-OS01",
+    "asset_id": "DDN-OS01-FRONT",
+    "role": "front",
+    "sort_order": 0,
+    "path": "assets/brand-prototype/products/ddn-os01-front.svg",
+    "alt_text": "Concept front view of The Structure Overshirt",
+    "status": "PROTOTYPE_CONCEPT",
+    "sha256": "88aeead0a1c099deb130d6dff9ec0f1468fe576a5a678c797d4688c1a7c84f0d"
+  },
+  {
+    "external_product_id": "DDN-OS01",
+    "asset_id": "DDN-OS01-BACK",
+    "role": "back",
+    "sort_order": 1,
+    "path": "assets/brand-prototype/products/ddn-os01-back.svg",
+    "alt_text": "Concept back view of The Structure Overshirt",
+    "status": "PROTOTYPE_CONCEPT",
+    "sha256": "f534b2e3b24cee06901f80a32ace100e49a47c9b2957ab07f480b026058d2414"
+  },
+  {
+    "external_product_id": "DDN-OS01",
+    "asset_id": "DDN-OS01-DETAIL",
+    "role": "detail",
+    "sort_order": 2,
+    "path": "assets/brand-prototype/products/ddn-os01-detail.svg",
+    "alt_text": "Concept detail view of The Structure Overshirt",
+    "status": "PROTOTYPE_CONCEPT",
+    "sha256": "50ce42e584dee7ed947bdd69fc9092e8e2aa1170789a301c27c9a5368c3f8d0f"
+  },
+  {
+    "external_product_id": "DDN-OS01",
+    "asset_id": "DDN-OS01-LIFESTYLE",
+    "role": "lifestyle",
+    "sort_order": 3,
+    "path": "assets/brand-prototype/media/ddn-os01-lifestyle.svg",
+    "alt_text": "Abstract lifestyle concept for The Structure Overshirt",
+    "status": "PROTOTYPE_CONCEPT",
+    "sha256": "8044df5a3ed2ae2bd5a2097b6b5f2b3e5279c3bdb9643a3ca49f473f6abc9188"
+  },
+  {
+    "external_product_id": "DDN-SC01",
+    "asset_id": "DDN-SC01-FRONT",
+    "role": "front",
+    "sort_order": 0,
+    "path": "assets/brand-prototype/products/ddn-sc01-front.svg",
+    "alt_text": "Concept front view of The Trace Scarf",
+    "status": "PROTOTYPE_CONCEPT",
+    "sha256": "f8bba4745a8e8200e7b590b6f002c57af1d962578b59d44b15ec3ef59e7c9a1e"
+  },
+  {
+    "external_product_id": "DDN-SC01",
+    "asset_id": "DDN-SC01-BACK",
+    "role": "back",
+    "sort_order": 1,
+    "path": "assets/brand-prototype/products/ddn-sc01-back.svg",
+    "alt_text": "Concept back view of The Trace Scarf",
+    "status": "PROTOTYPE_CONCEPT",
+    "sha256": "a46dbb7a43ecad42eb15a764ea4d047d47a1f36c2e12cf8a003f548154103b60"
+  },
+  {
+    "external_product_id": "DDN-SC01",
+    "asset_id": "DDN-SC01-DETAIL",
+    "role": "detail",
+    "sort_order": 2,
+    "path": "assets/brand-prototype/products/ddn-sc01-detail.svg",
+    "alt_text": "Concept detail view of The Trace Scarf",
+    "status": "PROTOTYPE_CONCEPT",
+    "sha256": "83841bea02a199b574e675864049599808f338afa54b3b99d9fecde49367cdee"
+  }
+]
