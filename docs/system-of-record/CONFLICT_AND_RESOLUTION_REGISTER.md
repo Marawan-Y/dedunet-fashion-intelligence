@@ -3,9 +3,10 @@
 | Control | Value |
 |---|---|
 | Artifact ID | SOR-CONF-001 |
-| Version | 1.0 |
+| Version | 1.1 |
 | Owner | Technical lead |
 | Status | SELF-VALIDATED |
+| Updated | 2026-08-06 — CONFLICT-001 marked superseded; CONFLICT-009 and CONFLICT-010 added by the successor agent takeover (`SUCCESSOR_AGENT_TAKEOVER_REPORT.md`) |
 | Rule | No material contradiction is resolved silently. Each carries a proposed resolution and an approval state. |
 
 Resolution follows the source-of-truth hierarchy in the human manager approval, §4.
@@ -38,7 +39,12 @@ or written by the active project.
 directory the boundary rule says to ignore.
 
 **Owner:** Marawan Younis (secrets and infrastructure)
-**Approval status:** PROPOSED — proceeding under the boundary rule; reversible.
+**Approval status:** **SUPERSEDED 2026-08-06** — resolved by commit `e84cb09`, which normalised the
+Git root to the active project via `git subtree split`. `git rev-parse --show-toplevel` now returns
+`C:/Users/User/Desktop/Claude/Fashion_Commerce_Codex_Multi_Agent_Pack`, the sibling pack has 0
+tracked files, and no remote exists. The description above is retained as the historical record of
+why the migration was performed; it no longer describes the current state. See
+`docs/architecture/GIT_ROOT_NORMALIZATION.md` and `SUCCESSOR_AGENT_TAKEOVER_REPORT.md` §1.
 
 ---
 
@@ -215,3 +221,81 @@ blind replace would break assertions and demo credentials simultaneously.
 
 **Owner:** Aya Ashraf (brand claims), with technical lead executing
 **Approval status:** PROPOSED — scheduled for M7.
+
+---
+
+## CONFLICT-009 — The honesty documents contradict five delivered workstreams
+
+**Files:** `docs/KNOWN_LIMITATIONS.md`, `README.md`
+
+**Conflicting values:** `KNOWN_LIMITATIONS.md` states "No rate limiting" (L86), "Backup and
+restore — NOT_STARTED" (L50), "Nothing dispatches them … No message has ever been sent" (L63),
+"PostgreSQL has **not** been exercised here" (L81), "Staging / production deployment —
+NOT_STARTED" (L47), "81 tests pass" (L99) and "None of these has a **named human risk owner**"
+(L38). `README.md` claims "81 tests" twice (L135, L152) and describes a MERET-era platform with no
+PostgreSQL, rate limiting, notifications, staging or backup.
+
+Against these: Workstreams A, B, C, D and E are all committed, evidenced and independently
+re-verified — 167 SQLite / 168 PostgreSQL tests, 48/48 mutations, live 429 responses, a rehearsed
+restore, and four named risk owners in `RISK_OWNER_REGISTER.md` v2.0.
+
+`README.md` additionally links three files that do not exist: `docs/RUNBOOKS.md`,
+`docs/EXTERNAL_SERVICE_ACTIVATION.md` and `KNOWN_LIMITATIONS.md`. The real paths are
+`docs/operations/RUNBOOKS.md`, `docs/operations/EXTERNAL_SERVICE_ACTIVATION.md` and
+`docs/KNOWN_LIMITATIONS.md`.
+
+**Affected systems:** onboarding of any new agent or human, readiness review, gate decisions,
+external communication about platform state.
+
+**Proposed resolution:** A documentation-only commit updating both files to the verified state,
+before Workstream F. Each corrected line must cite the evidence file that supports it. Do **not**
+delete the historical entries wholesale — convert each `NOT_STARTED` to its verified status with a
+pointer to `evidence/workstream-*/`, so the record shows the progression rather than erasing it.
+
+**Reason:** The source-of-truth order places current Git implementation and executed tests above
+documentation. `KNOWN_LIMITATIONS.md` is the file the repository designates as its honest
+inventory — a stale honesty document is worse than none, because it is trusted. The direction of
+the error is unusual and worth naming: these documents **understate** what was delivered. That is
+the safe direction for a launch claim, but it is still false, and a readiness review conducted
+over it would reject work that is in fact complete.
+
+**Risk:** Medium. No runtime impact. The failure mode is decision-level: a reviewer, manager or
+successor agent concluding that rate limiting, backups, notifications or PostgreSQL are missing
+and either re-implementing them or blocking a gate that should pass.
+
+**Owner:** Technical lead
+**Approval status:** OPEN — recorded by the successor agent 2026-08-06. Not resolved silently; not
+fixed during the read-only takeover. Recommended as the next commit.
+
+---
+
+## CONFLICT-010 — No Git remote exists for the entire verified history
+
+**Files:** repository configuration — `git remote` returns 0 entries
+
+**Conflicting values:** Every verified artifact in this program — R0 and Workstreams A through E,
+their evidence, and the immutable Side A package — exists on a single branch, in a single working
+copy, on one developer machine. `GIT_ROOT_NORMALIZATION.md` §1 references a bundle at
+`C:\Users\User\Desktop\dedunet_private_evidence\git_backup\`, which is outside the repository and
+was not verified by the takeover.
+
+**Affected systems:** continuity of all delivered work, disaster recovery, any future CI execution,
+team acceptance testing, onboarding.
+
+**Proposed resolution:** Owner decision, not an agent decision. Two viable paths: (a) a private
+remote, which requires a deliberate secret and personal-data review first — the repository has
+already carried an unredacted personal-data blob once (CONFLICT-003) and only a history purge
+removed it; or (b) a scheduled, verified local bundle with a recorded checksum, which is weaker but
+requires no third-party trust decision.
+
+**Reason:** The repository's own backup runbook observes that RPO equals the time since someone
+last ran a backup by hand. The same now applies to the source code and evidence themselves, and
+unlike the database there is no rehearsal proving they can be recovered.
+
+**Risk:** High in consequence, unknown in likelihood. Losing this machine loses every verified
+result the program depends on. It does not block Workstream F.
+
+**Owner:** Marawan Younis (secrets and infrastructure)
+**Approval status:** OPEN — recorded by the successor agent 2026-08-06. Awaiting owner decision.
+Explicitly **not** actioned: adding a remote would publish a repository whose personal-data and
+secret posture the owner has not cleared for that purpose.
