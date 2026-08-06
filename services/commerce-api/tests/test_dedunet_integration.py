@@ -272,6 +272,123 @@ def test_having_a_price_does_not_make_a_prototype_sellable():
     assert all(v["sellable"] is False for v in priced)
 
 
+def test_normalizer_refuses_non_zero_prototype_stock_rather_than_zeroing_it():
+    """Exercises the BUILDER, not its committed output.
+
+    Caught by the mutation harness: replacing the refusal with `stock = 0` survived,
+    because the other zero-stock test reads `packages/brand/variants.json` — a committed
+    artifact the mutation never regenerates. A guard whose test cannot observe it is not a
+    guard.
+
+    The distinction matters: silently zeroing would hide a source change that a human must
+    review. A prototype catalogue that suddenly ships stock is a decision, not noise.
+    """
+
+    import build_brand_package as builder
+
+    row = {
+        "variant_id": "DDN-TS01-CAR-XS",
+        "product_id": "DDN-TS01",
+        "sku": "DDN-SRC-CAR-XS",
+        "color": "Carbon",
+        "color_code": "CAR",
+        "size": "XS",
+        "price_eur": "72",
+        "currency": "EUR",
+        "inventory_status": "prototype_unavailable",
+        "stock_quantity": "7",  # <-- must be refused
+        "evidence_status": "DRAFT",
+    }
+
+    builder.errors.clear()
+    result = builder.normalize_variants([row], {"DDN-TS01"})
+
+    assert result == [], "a variant carrying stock must not be normalized at all"
+    assert any("stock_quantity must be 0" in e for e in builder.errors), builder.errors
+    builder.errors.clear()
+
+
+def test_normalizer_accepts_zero_stock():
+    # The counterpart: prove the refusal above is specific, not a blanket rejection.
+    import build_brand_package as builder
+
+    row = {
+        "variant_id": "DDN-TS01-CAR-XS",
+        "product_id": "DDN-TS01",
+        "sku": "DDN-SRC-CAR-XS",
+        "color": "Carbon",
+        "color_code": "CAR",
+        "size": "XS",
+        "price_eur": "72",
+        "currency": "EUR",
+        "inventory_status": "prototype_unavailable",
+        "stock_quantity": "0",
+        "evidence_status": "DRAFT",
+    }
+
+    builder.errors.clear()
+    result = builder.normalize_variants([row], {"DDN-TS01"})
+
+    assert len(result) == 1
+    assert result[0]["price_minor_units"] == 7200
+    assert result[0]["stock_quantity"] == 0
+    assert result[0]["sellable"] is False
+    assert builder.errors == []
+    builder.errors.clear()
+
+
+def test_normalizer_refuses_an_orphan_variant():
+    import build_brand_package as builder
+
+    row = {
+        "variant_id": "DDN-XX99-CAR-XS",
+        "product_id": "DDN-XX99",  # no such product
+        "sku": "DDN-XXX-CAR-XS",
+        "color": "Carbon",
+        "color_code": "CAR",
+        "size": "XS",
+        "price_eur": "72",
+        "currency": "EUR",
+        "inventory_status": "prototype_unavailable",
+        "stock_quantity": "0",
+        "evidence_status": "DRAFT",
+    }
+
+    builder.errors.clear()
+    result = builder.normalize_variants([row], {"DDN-TS01"})
+
+    assert result == []
+    assert any("orphan variant" in e for e in builder.errors), builder.errors
+    builder.errors.clear()
+
+
+def test_normalizer_refuses_a_duplicate_sku():
+    import build_brand_package as builder
+
+    base = {
+        "product_id": "DDN-TS01",
+        "sku": "DDN-SRC-CAR-XS",
+        "color": "Carbon",
+        "color_code": "CAR",
+        "currency": "EUR",
+        "price_eur": "72",
+        "inventory_status": "prototype_unavailable",
+        "stock_quantity": "0",
+        "evidence_status": "DRAFT",
+    }
+    rows = [
+        {**base, "variant_id": "DDN-TS01-CAR-XS", "size": "XS"},
+        {**base, "variant_id": "DDN-TS01-CAR-S", "size": "S"},  # same SKU
+    ]
+
+    builder.errors.clear()
+    result = builder.normalize_variants(rows, {"DDN-TS01"})
+
+    assert len(result) == 1, "the duplicate SKU must not be normalized"
+    assert any("duplicate SKU" in e for e in builder.errors), builder.errors
+    builder.errors.clear()
+
+
 # ------------------------------------------------------------------------- media
 
 def test_media_roles_are_valid_and_ordered_deterministically():
@@ -411,7 +528,12 @@ def dedunet_product(db_session):
             status="PROTOTYPE_CONCEPT",
         )
     )
-    db_session.flush()
+    # COMMIT, not just flush. The `client` fixture opens its own session per request. On
+    # in-memory SQLite every session shares one connection via StaticPool, so a flush is
+    # visible; on PostgreSQL each session gets its own connection and uncommitted rows are
+    # not. Flushing only passed on SQLite and 404'd on PostgreSQL - the same split the
+    # `seeded` fixture already handles by committing.
+    db_session.commit()
     return product, variant
 
 

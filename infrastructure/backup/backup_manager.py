@@ -55,6 +55,12 @@ CRITICAL_TABLES = [
     "carts", "cart_lines", "orders", "order_lines", "reservations",
     "payments", "shipments", "return_requests", "notifications",
     "promotions", "analytics_events", "audit_logs", "alembic_version",
+    # Added with the DEDUNET integration (revision e4b7a91c2d55). This list is explicit
+    # rather than discovered so that a table vanishing from a dump is a FAILURE instead of
+    # something the comparison quietly skips -- which is exactly why a new table has to be
+    # added here. It was missed once: the first rehearsal after the schema change reported
+    # PASS while never checking product_media at all.
+    "product_media",
 ]
 
 

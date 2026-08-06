@@ -68,6 +68,10 @@ TEST_MONEY = "tests/test_money_integrity.py"
 TEST_RATE = "tests/test_rate_limit.py"
 TEST_NOTIFY = "tests/test_notifications.py"
 TEST_BACKUP = "tests/test_backup_guards.py"
+TEST_DEDUNET = "tests/test_dedunet_integration.py"
+
+MODES = BACKEND / "app" / "commerce" / "modes.py"
+BRAND_BUILD = ROOT / "scripts" / "brand" / "build_brand_package.py"
 
 
 MUTATIONS: tuple[Mutation, ...] = (
@@ -659,6 +663,84 @@ MUTATIONS: tuple[Mutation, ...] = (
         mutated='    if False:  # MUTATED: cleanup may drop the source\n        raise BackupError(\n            f"refusing to drop the SOURCE database {target!r}.',
         tests=(f"{TEST_BACKUP}::test_cleanup_refuses_to_drop_the_source_database",),
         covers=("cleanup must never be able to delete the database it protects",),
+    ),
+    # ------------------------------------------------------------- DEDUNET integration
+    Mutation(
+        mutation_id="M49_public_commerce_mode_refused",
+        guard="PUBLIC_COMMERCE_MODE cannot be enabled by configuration",
+        target=MODES,
+        original='    if raw == PUBLIC_COMMERCE:\n        raise CommerceModeError(',
+        mutated='    if False:  # MUTATED: public commerce reachable by env var\n        raise CommerceModeError(',
+        tests=(
+            f"{TEST_DEDUNET}::test_public_commerce_mode_cannot_be_enabled_by_configuration",
+        ),
+        covers=(
+            "real money for real customers must never be one environment variable away "
+            "from a prototype whose brand clearance is pending",
+        ),
+    ),
+    Mutation(
+        mutation_id="M50_preview_mode_blocks_purchase",
+        guard="brand preview blocks every purchase regardless of the product",
+        target=MODES,
+        original='    if is_preview_mode():\n        raise PurchaseBlocked(',
+        mutated='    if False:  # MUTATED: preview no longer blocks\n        raise PurchaseBlocked(',
+        tests=(f"{TEST_DEDUNET}::test_preview_mode_blocks_every_purchase",),
+        covers=("a preview catalogue that can be bought is not a preview",),
+    ),
+    Mutation(
+        mutation_id="M51_non_sellable_product_blocked",
+        guard="a non-sellable product is refused in every mode",
+        target=MODES,
+        original="    if not sellable:\n        raise PurchaseBlocked(",
+        mutated="    if False:  # MUTATED: sellable ignored\n        raise PurchaseBlocked(",
+        tests=(
+            f"{TEST_DEDUNET}::test_commerce_test_mode_still_blocks_a_non_sellable_product",
+            f"{TEST_DEDUNET}::test_prototype_cannot_be_added_to_cart_even_in_commerce_test_mode",
+        ),
+        covers=("having a price must not make a prototype purchasable",),
+    ),
+    Mutation(
+        mutation_id="M52_cart_enforces_purchasability",
+        guard="the cart boundary refuses an unpurchasable variant",
+        target=SERVICES,
+        original="        modes.assert_purchasable(\n            sellable=variant.product.sellable, product_name=variant.product.name\n        )",
+        mutated="        pass  # MUTATED: cart accepts anything",
+        tests=(
+            f"{TEST_DEDUNET}::test_prototype_cannot_be_added_to_cart_even_in_commerce_test_mode",
+        ),
+        covers=(
+            "refusing only at checkout implies the item was purchasable until payment",
+        ),
+    ),
+    Mutation(
+        mutation_id="M53_money_rejects_binary_float",
+        guard="Side A prices are never converted from a binary float",
+        target=BRAND_BUILD,
+        original='    if isinstance(raw, float):\n        raise NormalizationError(',
+        mutated='    if False:  # MUTATED: floats accepted\n        raise NormalizationError(',
+        tests=(f"{TEST_DEDUNET}::test_conversion_rejects_binary_float",),
+        covers=("72.00 arriving as 71.99999999999999 must never become 7199",),
+    ),
+    Mutation(
+        mutation_id="M54_money_rejects_excess_decimals",
+        guard="EUR prices carrying more than two decimals are refused",
+        target=BRAND_BUILD,
+        original="        if decimals > 2:\n            raise NormalizationError(",
+        mutated="        if False:  # MUTATED: sub-cent silently truncated\n            raise NormalizationError(",
+        tests=(f"{TEST_DEDUNET}::test_conversion_rejects_more_than_two_decimals",),
+        covers=("a third decimal means the input is wrong, not that it should be rounded",),
+    ),
+    Mutation(
+        mutation_id="M55_prototype_stock_must_be_zero",
+        guard="a non-zero prototype stock is refused, not silently zeroed",
+        target=BRAND_BUILD,
+        original='            fail(f"{external_variant_id}: prototype stock_quantity must be 0, found {stock}")',
+        mutated="            stock = 0  # MUTATED: silently zeroed",
+        tests=(
+            f"{TEST_DEDUNET}::test_normalizer_refuses_non_zero_prototype_stock_rather_than_zeroing_it",
+        ),
+        covers=("a source that suddenly carries stock is a change to review, not to normalise away",),
     ),
 )
 
