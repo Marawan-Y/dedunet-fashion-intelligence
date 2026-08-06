@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="1920" viewBox="0 0 1080 1920" role="img">
+  <title>DEDUNET — concept image</title>
+  <desc>Fictional DEDUNET concept media. Not a photograph of a manufactured product.</desc>
+  <rect width="1080" height="1920" fill="#F6F1E7"/>
+  <path d="M0 1920 L356 0 H626 L259 1920 Z" fill="#33475B"/><path d="M518 1920 L820 0 H1080 V1920 Z" fill="#14120F"/><circle cx="658" cy="883" r="59" fill="#A95122"/>
+  <line x1="86" y1="345" x2="561" y2="345" stroke="#14120F" stroke-width="4"/>
+  <circle cx="324" cy="345" r="8" fill="#A95122"/>
+  <text x="86" y="1497" fill="#F6F1E7" font-family="Bodoni Moda, Didot, Georgia, serif" font-size="91" font-weight="600">DEDUNET</text>
+  <text x="86" y="1651" fill="#D8C3A3" font-family="Manrope, Arial, sans-serif" font-size="29" letter-spacing="3">MATERIAL WORTH / PROTOTYPE</text>
+  <text x="86" y="1824" fill="#D8C3A3" font-family="Manrope, Arial, sans-serif" font-size="19">CONCEPT IMAGE — NOT A MANUFACTURED PRODUCT PHOTOGRAPH</text>
+</svg>

@@ -30,7 +30,9 @@ import csv
 import hashlib
 import json
 import re
+import shutil
 import sys
+import xml.etree.ElementTree as ET
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -69,8 +71,75 @@ BRAND_ASSET_ROLES = {
 }
 
 
+def _display(path: Path) -> str:
+    """Repository-relative when possible; absolute otherwise (drift builds run in /tmp)."""
+
+    try:
+        return path.relative_to(ROOT).as_posix()
+    except ValueError:
+        return str(path)
+
+
 class NormalizationError(Exception):
     """Raised when the source cannot be normalised safely. Never repaired silently."""
+
+
+class UnsafeAssetError(NormalizationError):
+    """An asset carries content that must never be served to a browser."""
+
+
+# ------------------------------------------------------------------- SVG safety
+#
+# These SVGs are served to browsers. An SVG is an XML document that a browser will happily
+# execute, so it is an active-content format, not an image format. Everything below is
+# rejected at BUILD time rather than filtered at serve time: a build-time refusal is
+# reviewable in a diff, whereas a serve-time filter has to be right on every request.
+
+_SVG_SCRIPT_ELEMENTS = {"script", "foreignObject", "handler", "set", "animate"}
+
+# on* handlers are the classic vector. `xlink:href`/`href` may point anywhere.
+_EVENT_ATTR = re.compile(r"^on[a-z]+$", re.IGNORECASE)
+
+# Only same-document fragment references and data: images are permitted. Anything else is
+# an external resource fetched from a page that trusts our origin.
+_SAFE_HREF = re.compile(r"^(#|data:image/(png|jpeg|gif|webp);base64,)", re.IGNORECASE)
+
+_DANGEROUS_TEXT = (
+    "javascript:",
+    "<!entity",      # XXE / billion laughs
+    "<!doctype",     # DTDs bring entity declarations
+)
+
+
+def validate_svg(path: Path) -> list[str]:
+    """Return a list of safety problems. Empty means safe to serve."""
+
+    problems: list[str] = []
+    raw = path.read_bytes()
+
+    lowered = raw.decode("utf-8", errors="ignore").lower()
+    for marker in _DANGEROUS_TEXT:
+        if marker in lowered:
+            problems.append(f"contains {marker!r}")
+
+    try:
+        tree = ET.parse(path)
+    except ET.ParseError as exc:
+        return problems + [f"does not parse as XML: {exc}"]
+
+    for element in tree.iter():
+        tag = element.tag.rsplit("}", 1)[-1]  # strip the namespace
+        if tag in _SVG_SCRIPT_ELEMENTS:
+            problems.append(f"contains <{tag}>")
+
+        for attr, value in element.attrib.items():
+            name = attr.rsplit("}", 1)[-1]
+            if _EVENT_ATTR.match(name):
+                problems.append(f"has event handler {name!r}")
+            if name in {"href", "src"} and value and not _SAFE_HREF.match(value.strip()):
+                problems.append(f"references external resource {value[:60]!r}")
+
+    return problems
 
 
 errors: list[str] = []
@@ -224,9 +293,18 @@ def normalize_assets(rows: list[dict]) -> tuple[list[dict], dict[str, dict]]:
         if not target.is_file():
             fail(f"asset {asset_id}: file missing at {rel}")
             continue
+        # Every SVG we will serve is validated at BUILD time. A failure here stops the
+        # build; it is never downgraded to a warning, because the alternative is shipping
+        # active content to a browser on our own origin.
+        if target.suffix.lower() == ".svg":
+            for problem in validate_svg(target):
+                fail(f"unsafe SVG {asset_id} ({rel}): {problem}")
+
         record = {
             "asset_id": asset_id,
             "path": rel,
+            # Served URL. Applications use this and never construct a filesystem path.
+            "url": f"/api/v1/media/{rel}",
             "purpose": row.get("purpose", "").strip(),
             "ratio": row.get("ratio", "").strip(),
             "status": row.get("status", "").strip(),
@@ -353,6 +431,7 @@ def normalize_products(
                     "role": role,
                     "sort_order": index,
                     "path": asset["path"],
+                    "url": asset["url"],
                     "alt_text": asset["alt_text"],
                     "status": asset["status"],
                     "sha256": asset["sha256"],
@@ -463,7 +542,7 @@ def normalize_collections(rows: list[dict], product_ids: set[str]) -> list[dict]
 
 def build(check_only: bool) -> int:
     print(f"source : {SIDE_A.relative_to(ROOT).as_posix()}")
-    print(f"target : {OUT.relative_to(ROOT).as_posix()}")
+    print(f"target : {_display(OUT)}")
     print(f"mode   : {'CHECK (writes nothing)' if check_only else 'BUILD'}\n")
 
     tokens_raw = read_json(SRC / "brand-tokens.json")
@@ -563,12 +642,72 @@ def build(check_only: bool) -> int:
         return 0
 
     OUT.mkdir(parents=True, exist_ok=True)
+
+    # --- copy the asset BYTES into the package -------------------------------------
+    #
+    # Runtime must never read `handoffs/incoming/`. The handoff is checksum-protected
+    # evidence, and a server that opens files inside it is one path-handling bug away from
+    # serving something it should not. Copying here makes `packages/brand/` genuinely
+    # self-contained, and every copy is verified against the source digest.
+    asset_root = OUT / "assets"
+    if asset_root.exists():
+        shutil.rmtree(asset_root)
+    for record in assets:
+        source = SIDE_A / record["path"]
+        destination = asset_root / record["path"]
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(source, destination)
+        copied = hashlib.sha256(destination.read_bytes()).hexdigest()
+        if copied != record["sha256"]:
+            raise NormalizationError(
+                f"asset {record['asset_id']} changed while copying: "
+                f"{record['sha256']} -> {copied}"
+            )
+
     for name, payload in outputs.items():
         (OUT / name).write_text(
             json.dumps(payload, indent=2, ensure_ascii=False, sort_keys=False) + "\n",
             encoding="utf-8",
         )
     (OUT / "tokens.css").write_text(css, encoding="utf-8")
+
+    # --- generated brand seam for the two static browser clients --------------------
+    #
+    # `apps/web` and `apps/admin` are plain static files with no build step, so they cannot
+    # import from packages/brand at runtime. This emits ONE generated module into each,
+    # from the same source, rather than letting each client hard-code its own brand strings.
+    # Drift is caught by `--check`.
+    seam = (
+        "/* GENERATED by scripts/brand/build_brand_package.py -- do not edit by hand.\n"
+        "   Source: packages/brand/brand.json (from the immutable Side A delivery).\n"
+        "   Regenerate with: python scripts/brand/build_brand_package.py */\n"
+        "window.DEDUNET_BRAND = "
+        + json.dumps(
+            {
+                "name": brand["name"],
+                "tagline": brand["tagline"],
+                "domain": brand["domain"],
+                # Operator/governance-facing only. Never rendered as customer marketing.
+                "legalStatus": "PROVISIONAL_NOT_LEGALLY_CLEARED",
+                "publicLaunch": brand["status"]["public_commercial_launch"],
+                "assets": {
+                    role: f"/api/v1/media/{a['path']}"
+                    for a in assets
+                    if (role := a.get("brand_role"))
+                },
+            },
+            indent=2,
+            ensure_ascii=False,
+        )
+        + ";\n"
+    )
+    # Only when building the real package. A drift rebuild targets a temp directory and
+    # must not touch the working tree it is inspecting.
+    if OUT == ROOT / "packages" / "brand":
+        for client in ("web", "admin"):
+            (ROOT / "apps" / client / "brand.generated.js").write_text(seam, encoding="utf-8")
+    else:
+        (OUT / "brand.generated.js").write_text(seam, encoding="utf-8")
 
     (OUT / "README.md").write_text(
         "# packages/brand — GENERATED\n\n"
@@ -583,15 +722,106 @@ def build(check_only: bool) -> int:
         encoding="utf-8",
     )
 
-    print(f"wrote {len(outputs) + 2} files to {OUT.relative_to(ROOT).as_posix()}")
+    print(f"wrote {len(outputs) + 2} files to {_display(OUT)}")
     print("\nRESULT: BRAND_PACKAGE_BUILT")
+    return 0
+
+
+def verify_no_drift() -> int:
+    """Rebuild into a temporary directory and diff against the committed package.
+
+    `--check` proves the SOURCE still normalizes cleanly. This proves the COMMITTED OUTPUT
+    still matches that normalization — a different question, and the one that catches a
+    hand-edited `packages/brand/` file or a stale build after a source change.
+
+    The committed package is never touched: the rebuild goes to a temporary directory and
+    only the bytes are compared.
+    """
+
+    global OUT
+    import filecmp
+    import tempfile
+
+    committed = ROOT / "packages" / "brand"
+    if not committed.is_dir():
+        print("FAIL: packages/brand does not exist")
+        return 1
+
+    with tempfile.TemporaryDirectory(prefix="ddn-brand-") as tmp:
+        original = OUT
+        OUT = Path(tmp) / "brand"
+        try:
+            errors.clear()
+            status = build(check_only=False)
+        finally:
+            rebuilt, OUT = OUT, original
+        if status != 0:
+            print("FAIL: rebuild did not succeed")
+            return 1
+
+        # `brand.generated.js` is emitted into apps/web and apps/admin, not into the
+        # package, so it is compared separately below rather than treated as a package file.
+        SEAM = "brand.generated.js"
+        committed_files = {
+            p.relative_to(committed).as_posix() for p in committed.rglob("*") if p.is_file()
+        } - {SEAM}
+        rebuilt_files = {
+            p.relative_to(rebuilt).as_posix() for p in rebuilt.rglob("*") if p.is_file()
+        } - {SEAM}
+
+        missing = sorted(rebuilt_files - committed_files)
+        extra = sorted(committed_files - rebuilt_files)
+        differing = sorted(
+            rel
+            for rel in (committed_files & rebuilt_files)
+            # NORMALIZATION_REPORT carries a build timestamp, so it can never be
+            # byte-identical. Its COUNTS are compared instead, below.
+            if rel != "NORMALIZATION_REPORT.json"
+            and not filecmp.cmp(committed / rel, rebuilt / rel, shallow=False)
+        )
+
+        report_committed = json.loads((committed / "NORMALIZATION_REPORT.json").read_text("utf-8"))
+        report_rebuilt = json.loads((rebuilt / "NORMALIZATION_REPORT.json").read_text("utf-8"))
+        counts_differ = report_committed["counts"] != report_rebuilt["counts"]
+
+        print(f"committed files : {len(committed_files)}")
+        print(f"rebuilt files   : {len(rebuilt_files)}")
+        print(f"missing         : {len(missing)}  {missing[:5]}")
+        print(f"extra           : {len(extra)}  {extra[:5]}")
+        print(f"differing       : {len(differing)}  {differing[:5]}")
+        print(f"counts          : {'DIFFER' if counts_differ else 'match'} {report_committed['counts']}")
+
+        # The generated browser seam must match in BOTH static clients. A stale copy in
+        # one of them is exactly the drift this check exists to catch.
+        expected_seam = (rebuilt / SEAM).read_text(encoding="utf-8")
+        stale_seams = [
+            client
+            for client in ("web", "admin")
+            if not (ROOT / "apps" / client / SEAM).is_file()
+            or (ROOT / "apps" / client / SEAM).read_text(encoding="utf-8") != expected_seam
+        ]
+        print(f"seam            : {'STALE ' + str(stale_seams) if stale_seams else 'match (web, admin)'}")
+
+        if missing or extra or differing or counts_differ or stale_seams:
+            print("\nRESULT: BRAND_PACKAGE_DRIFT_DETECTED")
+            print("Regenerate with: python scripts/brand/build_brand_package.py")
+            return 1
+
+    print("\nRESULT: BRAND_PACKAGE_NO_DRIFT")
     return 0
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--check", action="store_true", help="validate only; write nothing")
+    parser.add_argument("--check", action="store_true", help="validate the source; write nothing")
+    parser.add_argument(
+        "--verify-no-drift",
+        action="store_true",
+        help="rebuild to a temp dir and fail if the committed package differs",
+    )
     args = parser.parse_args()
+    if args.verify_no_drift:
+        return verify_no_drift()
     return build(check_only=args.check)
 
 

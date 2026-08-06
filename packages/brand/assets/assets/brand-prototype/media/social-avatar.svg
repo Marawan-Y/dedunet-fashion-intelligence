@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="1080" viewBox="0 0 1080 1080" role="img">
+  <title>DEDUNET social avatar</title>
+  <desc>DEDUNET D/N passage mark on Carbon.</desc>
+  <rect width="1080" height="1080" fill="#14120F"/>
+  <path d="M236 206 V874 H430 C620 874 704 734 704 540 C704 346 620 206 430 206 Z" fill="none" stroke="#D8C3A3" stroke-width="68" stroke-linejoin="round"/>
+  <path d="M462 874 V206 L820 874 V206" fill="none" stroke="#D8C3A3" stroke-width="68" stroke-linejoin="round"/>
+  <circle cx="540" cy="540" r="56" fill="#A95122"/>
+</svg>

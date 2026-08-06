@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1500" height="500" viewBox="0 0 1500 500" role="img">
+  <title>Follow the passage. — concept image</title>
+  <desc>Fictional DEDUNET concept media. Not a photograph of a manufactured product.</desc>
+  <rect width="1500" height="500" fill="#F6F1E7"/>
+  <rect x="0" y="0" width="630" height="500" fill="#14120F"/><path d="M630 0 L1500 210 V500 H630 Z" fill="#D8C3A3"/><circle cx="630" cy="280" r="30" fill="#A95122"/>
+  <line x1="120" y1="90" x2="780" y2="90" stroke="#14120F" stroke-width="6"/>
+  <circle cx="450" cy="90" r="12" fill="#A95122"/>
+  <text x="120" y="390" fill="#F6F1E7" font-family="Bodoni Moda, Didot, Georgia, serif" font-size="42" font-weight="600">Follow the passage.</text>
+  <text x="120" y="430" fill="#D8C3A3" font-family="Manrope, Arial, sans-serif" font-size="13" letter-spacing="3">DEDUNET COLLECTION NOTES</text>
+  <text x="120" y="475" fill="#D8C3A3" font-family="Manrope, Arial, sans-serif" font-size="9">CONCEPT IMAGE — NOT A MANUFACTURED PRODUCT PHOTOGRAPH</text>
+</svg>

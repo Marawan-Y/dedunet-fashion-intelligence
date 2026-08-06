@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64" role="img">
+  <title>DEDUNET favicon</title>
+  <desc>Simplified D/N passage favicon.</desc>
+  <rect width="64" height="64" rx="8" fill="#14120F"/>
+  <path d="M14 11 V53 H26 C38 53 43 44 43 32 C43 20 38 11 26 11 Z" fill="none" stroke="#D8C3A3" stroke-width="5" stroke-linejoin="round"/>
+  <path d="M29 53 V11 L51 53 V11" fill="none" stroke="#D8C3A3" stroke-width="5" stroke-linejoin="round"/>
+  <circle cx="32" cy="32" r="4" fill="#A95122"/>
+</svg>

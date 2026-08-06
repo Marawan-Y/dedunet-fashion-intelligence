@@ -34,7 +34,10 @@ export type ProductMedia = {
   asset_id: string;
   role: "front" | "back" | "detail" | "lifestyle" | "campaign" | "collection";
   sort_order: number;
+  /** Package-relative path. Provenance only — clients fetch `url`. */
   path: string;
+  /** Fetchable, API-relative URL. Built by the server so no client composes one. */
+  url: string;
   alt_text: string;
   status: string;
 };

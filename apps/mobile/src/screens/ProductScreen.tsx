@@ -15,6 +15,7 @@ import { BRAND } from "../brand";
 import { formatMinorUnits } from "../money";
 import { materialLabel, originStatement } from "../origin";
 import type { AppState } from "../store";
+import { Gallery } from "../components/Gallery";
 import { Banner, Body, Button, Card, Heading, Loading, Screen, styles } from "../ui";
 
 type LoadState =
@@ -104,6 +105,8 @@ export function ProductScreen({ app, slug }: { app: AppState; slug: string }) {
       */}
       {material !== null ? <Body muted>{material}</Body> : null}
       {origin !== null ? <Body muted>{origin}</Body> : null}
+
+      <Gallery product={product} apiBase={apiBase} />
 
       {previewOnly ? (
         <Banner

@@ -21,3 +21,9 @@ handoffs/incoming/**     -text
 # Governance evidence (registrar letters, transcripts) must be byte-stable for the same
 # reason: their checksums are recorded and re-verified.
 evidence/governance/**   -text
+
+# Generated asset copies under packages/brand/assets are byte-for-byte copies of the
+# immutable Side A delivery and are verified against its SHA-256 digests. Git must not
+# normalise their line endings: doing so rewrites the bytes, breaks the checksums and makes
+# the brand-package drift check fail on any checkout with a different eol setting.
+packages/brand/assets/** -text

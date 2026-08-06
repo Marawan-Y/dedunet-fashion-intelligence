@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1500" viewBox="0 0 1200 1500" role="img">
+  <title>The Structure Overshirt — concept image</title>
+  <desc>Fictional DEDUNET concept media. Not a photograph of a manufactured product.</desc>
+  <rect width="1200" height="1500" fill="#F6F1E7"/>
+  <path d="M0 1500 L396 0 H696 L288 1500 Z" fill="#33475B"/><path d="M576 1500 L912 0 H1200 V1500 Z" fill="#14120F"/><circle cx="732" cy="690" r="66" fill="#A95122"/>
+  <line x1="96" y1="270" x2="624" y2="270" stroke="#14120F" stroke-width="4"/>
+  <circle cx="360" cy="270" r="9" fill="#A95122"/>
+  <text x="96" y="1170" fill="#F6F1E7" font-family="Bodoni Moda, Didot, Georgia, serif" font-size="102" font-weight="600">The Structure Overshirt</text>
+  <text x="96" y="1290" fill="#D8C3A3" font-family="Manrope, Arial, sans-serif" font-size="32" letter-spacing="3">LIFESTYLE CONCEPT / FIRST PASSAGE</text>
+  <text x="96" y="1425" fill="#D8C3A3" font-family="Manrope, Arial, sans-serif" font-size="21">CONCEPT IMAGE — NOT A MANUFACTURED PRODUCT PHOTOGRAPH</text>
+</svg>

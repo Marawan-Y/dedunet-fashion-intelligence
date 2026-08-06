@@ -2,6 +2,7 @@
   {
     "asset_id": "LOGO-PRIMARY-001",
     "path": "assets/brand-prototype/logos/logo-primary.svg",
+    "url": "/api/v1/media/assets/brand-prototype/logos/logo-primary.svg",
     "purpose": "Primary wordmark",
     "ratio": "25:6",
     "status": "PROTOTYPE_VECTOR",
@@ -16,6 +17,7 @@
   {
     "asset_id": "LOGO-COMPACT-001",
     "path": "assets/brand-prototype/logos/logo-compact.svg",
+    "url": "/api/v1/media/assets/brand-prototype/logos/logo-compact.svg",
     "purpose": "Compact D/N mark",
     "ratio": "1:1",
     "status": "PROTOTYPE_VECTOR",
@@ -30,6 +32,7 @@
   {
     "asset_id": "LOGO-MONO-001",
     "path": "assets/brand-prototype/logos/logo-monochrome.svg",
+    "url": "/api/v1/media/assets/brand-prototype/logos/logo-monochrome.svg",
     "purpose": "Monochrome logo",
     "ratio": "25:5",
     "status": "PROTOTYPE_VECTOR",
@@ -44,6 +47,7 @@
   {
     "asset_id": "LOGO-REVERSED-001",
     "path": "assets/brand-prototype/logos/logo-reversed.svg",
+    "url": "/api/v1/media/assets/brand-prototype/logos/logo-reversed.svg",
     "purpose": "Reversed logo",
     "ratio": "25:5",
     "status": "PROTOTYPE_VECTOR",
@@ -58,6 +62,7 @@
   {
     "asset_id": "FAVICON-001",
     "path": "assets/brand-prototype/logos/favicon.svg",
+    "url": "/api/v1/media/assets/brand-prototype/logos/favicon.svg",
     "purpose": "Browser favicon",
     "ratio": "1:1",
     "status": "PROTOTYPE_VECTOR",
@@ -72,6 +77,7 @@
   {
     "asset_id": "APP-ICON-001",
     "path": "assets/brand-prototype/logos/app-icon.png",
+    "url": "/api/v1/media/assets/brand-prototype/logos/app-icon.png",
     "purpose": "Mobile app icon",
     "ratio": "1:1",
     "status": "PROTOTYPE_RASTER",
@@ -86,6 +92,7 @@
   {
     "asset_id": "PATTERN-001",
     "path": "assets/brand-prototype/patterns/passage-lines.svg",
+    "url": "/api/v1/media/assets/brand-prototype/patterns/passage-lines.svg",
     "purpose": "Passage Lines pattern",
     "ratio": "3:2",
     "status": "PROTOTYPE_VECTOR",
@@ -100,6 +107,7 @@
   {
     "asset_id": "MEDIA-HERO-001",
     "path": "assets/brand-prototype/media/homepage-hero.svg",
+    "url": "/api/v1/media/assets/brand-prototype/media/homepage-hero.svg",
     "purpose": "Homepage hero",
     "ratio": "16:9",
     "status": "PROTOTYPE_CONCEPT",
@@ -114,6 +122,7 @@
   {
     "asset_id": "MEDIA-COLLECTION-001",
     "path": "assets/brand-prototype/media/collection-cover.svg",
+    "url": "/api/v1/media/assets/brand-prototype/media/collection-cover.svg",
     "purpose": "Collection cover",
     "ratio": "3:2",
     "status": "PROTOTYPE_CONCEPT",
@@ -128,6 +137,7 @@
   {
     "asset_id": "MEDIA-ABOUT-001",
     "path": "assets/brand-prototype/media/about-image.svg",
+    "url": "/api/v1/media/assets/brand-prototype/media/about-image.svg",
     "purpose": "About page image",
     "ratio": "3:2",
     "status": "PROTOTYPE_CONCEPT",
@@ -142,6 +152,7 @@
   {
     "asset_id": "MEDIA-EMAIL-001",
     "path": "assets/brand-prototype/media/email-banner.svg",
+    "url": "/api/v1/media/assets/brand-prototype/media/email-banner.svg",
     "purpose": "Email banner",
     "ratio": "3:1",
     "status": "PROTOTYPE_CONCEPT",
@@ -156,6 +167,7 @@
   {
     "asset_id": "MEDIA-APP-001",
     "path": "assets/brand-prototype/media/app-splash.svg",
+    "url": "/api/v1/media/assets/brand-prototype/media/app-splash.svg",
     "purpose": "App splash",
     "ratio": "9:16",
     "status": "PROTOTYPE_CONCEPT",
@@ -170,6 +182,7 @@
   {
     "asset_id": "MEDIA-SOCIAL-001",
     "path": "assets/brand-prototype/media/social-avatar.svg",
+    "url": "/api/v1/media/assets/brand-prototype/media/social-avatar.svg",
     "purpose": "Social avatar",
     "ratio": "1:1",
     "status": "PROTOTYPE_CONCEPT",
@@ -184,6 +197,7 @@
   {
     "asset_id": "DDN-TS01-FRONT",
     "path": "assets/brand-prototype/products/ddn-ts01-front.svg",
+    "url": "/api/v1/media/assets/brand-prototype/products/ddn-ts01-front.svg",
     "purpose": "The Source Tee front concept",
     "ratio": "4:5",
     "status": "PROTOTYPE_CONCEPT",
@@ -198,6 +212,7 @@
   {
     "asset_id": "DDN-TS01-BACK",
     "path": "assets/brand-prototype/products/ddn-ts01-back.svg",
+    "url": "/api/v1/media/assets/brand-prototype/products/ddn-ts01-back.svg",
     "purpose": "The Source Tee back concept",
     "ratio": "4:5",
     "status": "PROTOTYPE_CONCEPT",
@@ -212,6 +227,7 @@
   {
     "asset_id": "DDN-TS01-DETAIL",
     "path": "assets/brand-prototype/products/ddn-ts01-detail.svg",
+    "url": "/api/v1/media/assets/brand-prototype/products/ddn-ts01-detail.svg",
     "purpose": "The Source Tee detail concept",
     "ratio": "4:5",
     "status": "PROTOTYPE_CONCEPT",
@@ -226,6 +242,7 @@
   {
     "asset_id": "DDN-SH01-FRONT",
     "path": "assets/brand-prototype/products/ddn-sh01-front.svg",
+    "url": "/api/v1/media/assets/brand-prototype/products/ddn-sh01-front.svg",
     "purpose": "The Passage Shirt front concept",
     "ratio": "4:5",
     "status": "PROTOTYPE_CONCEPT",
@@ -240,6 +257,7 @@
   {
     "asset_id": "DDN-SH01-BACK",
     "path": "assets/brand-prototype/products/ddn-sh01-back.svg",
+    "url": "/api/v1/media/assets/brand-prototype/products/ddn-sh01-back.svg",
     "purpose": "The Passage Shirt back concept",
     "ratio": "4:5",
     "status": "PROTOTYPE_CONCEPT",
@@ -254,6 +272,7 @@
   {
     "asset_id": "DDN-SH01-DETAIL",
     "path": "assets/brand-prototype/products/ddn-sh01-detail.svg",
+    "url": "/api/v1/media/assets/brand-prototype/products/ddn-sh01-detail.svg",
     "purpose": "The Passage Shirt detail concept",
     "ratio": "4:5",
     "status": "PROTOTYPE_CONCEPT",
@@ -268,6 +287,7 @@
   {
     "asset_id": "DDN-TR01-FRONT",
     "path": "assets/brand-prototype/products/ddn-tr01-front.svg",
+    "url": "/api/v1/media/assets/brand-prototype/products/ddn-tr01-front.svg",
     "purpose": "The Measure Trouser front concept",
     "ratio": "4:5",
     "status": "PROTOTYPE_CONCEPT",
@@ -282,6 +302,7 @@
   {
     "asset_id": "DDN-TR01-BACK",
     "path": "assets/brand-prototype/products/ddn-tr01-back.svg",
+    "url": "/api/v1/media/assets/brand-prototype/products/ddn-tr01-back.svg",
     "purpose": "The Measure Trouser back concept",
     "ratio": "4:5",
     "status": "PROTOTYPE_CONCEPT",
@@ -296,6 +317,7 @@
   {
     "asset_id": "DDN-TR01-DETAIL",
     "path": "assets/brand-prototype/products/ddn-tr01-detail.svg",
+    "url": "/api/v1/media/assets/brand-prototype/products/ddn-tr01-detail.svg",
     "purpose": "The Measure Trouser detail concept",
     "ratio": "4:5",
     "status": "PROTOTYPE_CONCEPT",
@@ -310,6 +332,7 @@
   {
     "asset_id": "DDN-OS01-FRONT",
     "path": "assets/brand-prototype/products/ddn-os01-front.svg",
+    "url": "/api/v1/media/assets/brand-prototype/products/ddn-os01-front.svg",
     "purpose": "The Structure Overshirt front concept",
     "ratio": "4:5",
     "status": "PROTOTYPE_CONCEPT",
@@ -324,6 +347,7 @@
   {
     "asset_id": "DDN-OS01-BACK",
     "path": "assets/brand-prototype/products/ddn-os01-back.svg",
+    "url": "/api/v1/media/assets/brand-prototype/products/ddn-os01-back.svg",
     "purpose": "The Structure Overshirt back concept",
     "ratio": "4:5",
     "status": "PROTOTYPE_CONCEPT",
@@ -338,6 +362,7 @@
   {
     "asset_id": "DDN-OS01-DETAIL",
     "path": "assets/brand-prototype/products/ddn-os01-detail.svg",
+    "url": "/api/v1/media/assets/brand-prototype/products/ddn-os01-detail.svg",
     "purpose": "The Structure Overshirt detail concept",
     "ratio": "4:5",
     "status": "PROTOTYPE_CONCEPT",
@@ -352,6 +377,7 @@
   {
     "asset_id": "DDN-SC01-FRONT",
     "path": "assets/brand-prototype/products/ddn-sc01-front.svg",
+    "url": "/api/v1/media/assets/brand-prototype/products/ddn-sc01-front.svg",
     "purpose": "The Trace Scarf front concept",
     "ratio": "4:5",
     "status": "PROTOTYPE_CONCEPT",
@@ -366,6 +392,7 @@
   {
     "asset_id": "DDN-SC01-BACK",
     "path": "assets/brand-prototype/products/ddn-sc01-back.svg",
+    "url": "/api/v1/media/assets/brand-prototype/products/ddn-sc01-back.svg",
     "purpose": "The Trace Scarf back concept",
     "ratio": "4:5",
     "status": "PROTOTYPE_CONCEPT",
@@ -380,6 +407,7 @@
   {
     "asset_id": "DDN-SC01-DETAIL",
     "path": "assets/brand-prototype/products/ddn-sc01-detail.svg",
+    "url": "/api/v1/media/assets/brand-prototype/products/ddn-sc01-detail.svg",
     "purpose": "The Trace Scarf detail concept",
     "ratio": "4:5",
     "status": "PROTOTYPE_CONCEPT",
@@ -394,6 +422,7 @@
   {
     "asset_id": "DDN-TS01-LIFESTYLE",
     "path": "assets/brand-prototype/media/ddn-ts01-lifestyle.svg",
+    "url": "/api/v1/media/assets/brand-prototype/media/ddn-ts01-lifestyle.svg",
     "purpose": "The Source Tee lifestyle concept",
     "ratio": "4:5",
     "status": "PROTOTYPE_CONCEPT",
@@ -408,6 +437,7 @@
   {
     "asset_id": "DDN-TR01-LIFESTYLE",
     "path": "assets/brand-prototype/media/ddn-tr01-lifestyle.svg",
+    "url": "/api/v1/media/assets/brand-prototype/media/ddn-tr01-lifestyle.svg",
     "purpose": "The Measure Trouser lifestyle concept",
     "ratio": "4:5",
     "status": "PROTOTYPE_CONCEPT",
@@ -422,6 +452,7 @@
   {
     "asset_id": "DDN-OS01-LIFESTYLE",
     "path": "assets/brand-prototype/media/ddn-os01-lifestyle.svg",
+    "url": "/api/v1/media/assets/brand-prototype/media/ddn-os01-lifestyle.svg",
     "purpose": "The Structure Overshirt lifestyle concept",
     "ratio": "4:5",
     "status": "PROTOTYPE_CONCEPT",
