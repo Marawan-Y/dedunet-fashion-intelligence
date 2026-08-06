@@ -1,5 +1,5 @@
 /**
- * MERET operations portal.
+ * DEDUNET operations portal.
  *
  * Same XSS discipline as the storefront: every node is created with
  * `document.createElement` and every string is inserted as `textContent`. There is no
@@ -16,7 +16,24 @@ const API_BASE =
 const MINOR_UNIT_EXPONENTS = { EUR: 2 };
 const CURRENCY_SYMBOLS = { EUR: "€" };
 
-const state = { token: localStorage.getItem("meret_admin_token") || "" };
+/* One-time migration of browser storage keys from the legacy brand prefix.
+   Renaming a key without moving its value signs every existing session out and silently
+   discards a live cart, so the old value is carried across once and then removed. */
+(function migrateLegacyStorageKeys() {
+  const moved = {
+    meret_cart: "dedunet_cart",
+    meret_token: "dedunet_token",
+    meret_role: "dedunet_role",
+    meret_admin_token: "dedunet_admin_token",
+  };
+  for (const [from, to] of Object.entries(moved)) {
+    const value = localStorage.getItem(from);
+    if (value !== null && localStorage.getItem(to) === null) localStorage.setItem(to, value);
+    if (value !== null) localStorage.removeItem(from);
+  }
+})();
+
+const state = { token: localStorage.getItem("dedunet_admin_token") || "" };
 
 function money(minorUnits, currency = "EUR") {
   const exponent = MINOR_UNIT_EXPONENTS[currency];
@@ -102,7 +119,7 @@ function viewLogin() {
   const form = el("form", { class: "form", onsubmit: submit }, [
     el("h1", { text: "Operations sign in" }),
     el("label", { for: "e", text: "Email" }),
-    el("input", { id: "e", name: "email", type: "email", required: "required", value: "admin@meret.example" }),
+    el("input", { id: "e", name: "email", type: "email", required: "required", value: "admin@dedunet.example" }),
     el("label", { for: "p", text: "Password" }),
     el("input", { id: "p", name: "password", type: "password", required: "required", value: "demo-password-123" }),
     el("button", { class: "btn btn--primary", type: "submit", text: "Sign in" }),
@@ -125,7 +142,7 @@ function viewLogin() {
         return;
       }
       state.token = result.access_token;
-      localStorage.setItem("meret_admin_token", result.access_token);
+      localStorage.setItem("dedunet_admin_token", result.access_token);
       location.hash = "#/orders";
       route();
     } catch (error) {
@@ -379,7 +396,7 @@ function viewAudit() {
 
 function signOut() {
   state.token = "";
-  localStorage.removeItem("meret_admin_token");
+  localStorage.removeItem("dedunet_admin_token");
   location.hash = "#/login";
   route();
 }

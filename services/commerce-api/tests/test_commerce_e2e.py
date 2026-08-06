@@ -434,7 +434,7 @@ def test_customer_cannot_read_another_customers_order(client, seeded, auth):
 
     other = client.post(
         "/api/v1/auth/register",
-        json={"email": "other@meret.example", "password": "password-abc", "full_name": "Other"},
+        json={"email": "other@dedunet.example", "password": "password-abc", "full_name": "Other"},
     ).json()
     headers = {"Authorization": f"Bearer {other['access_token']}"}
 
@@ -450,7 +450,7 @@ def test_data_export_then_erasure_preserves_financial_history(client, seeded, au
     order = _checkout(client, cart_token, auth["customer"]).json()["order"]
 
     export = client.get("/api/v1/me/data-export", headers=auth["customer"]).json()
-    assert export["customer"]["email"] == "customer@meret.example"
+    assert export["customer"]["email"] == "customer@dedunet.example"
     assert export["orders"][0]["order_number"] == order["order_number"]
 
     erased = client.delete("/api/v1/me", headers=auth["customer"])
@@ -477,7 +477,7 @@ def test_data_export_then_erasure_preserves_financial_history(client, seeded, au
 
 def test_password_is_never_stored_or_returned_in_clear(client, seeded):
     payload = {
-        "email": "clear@meret.example",
+        "email": "clear@dedunet.example",
         "password": "super-secret-value",
         "full_name": "Clear Text",
     }

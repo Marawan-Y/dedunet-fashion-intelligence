@@ -48,8 +48,8 @@ BRAND_TOKENS = {
     "radius": {"sm": "2px", "md": "6px", "lg": "14px"},
 }
 
-DEMO_ADMIN_EMAIL = "admin@meret.example"
-DEMO_CUSTOMER_EMAIL = "customer@meret.example"
+DEMO_ADMIN_EMAIL = "admin@dedunet.example"
+DEMO_CUSTOMER_EMAIL = "customer@dedunet.example"
 # Demonstration credentials for a local, non-public, fictional dataset. They are not a
 # secret and grant access to nothing beyond a throwaway local database. Any deployment
 # beyond localhost must reseed with fresh credentials.

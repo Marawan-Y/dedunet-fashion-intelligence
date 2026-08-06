@@ -17,7 +17,7 @@ from app import rate_limit
 from app.main import app
 
 ORIGIN = "http://localhost:13000"
-BAD_LOGIN = {"email": "nobody@meret.example", "password": "definitely-wrong"}
+BAD_LOGIN = {"email": "nobody@dedunet.example", "password": "definitely-wrong"}
 
 
 class FakeClock:
@@ -146,7 +146,7 @@ def test_registration_uses_its_own_bucket(client, seeded):
     # Registration is a separate bucket and still has its allowance.
     response = client.post(
         "/api/v1/auth/register",
-        json={"email": "fresh1@meret.example", "password": "password-123", "full_name": "Fresh"},
+        json={"email": "fresh1@dedunet.example", "password": "password-123", "full_name": "Fresh"},
     )
     assert response.status_code == 201, response.text
 
@@ -158,7 +158,7 @@ def test_registration_bucket_is_five_per_hour(client, seeded):
             client.post(
                 "/api/v1/auth/register",
                 json={
-                    "email": f"reg{i}@meret.example",
+                    "email": f"reg{i}@dedunet.example",
                     "password": "password-123",
                     "full_name": f"Reg {i}",
                 },

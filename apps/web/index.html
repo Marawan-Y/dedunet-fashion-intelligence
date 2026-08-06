@@ -3,26 +3,30 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>MERET — fictional demonstration store</title>
+    <title>DEDUNET — prototype storefront</title>
     <meta
       name="description"
-      content="MERET is a fictional demonstration brand used to exercise the Fashion Commerce Platform. Not a real shop."
+      content="DEDUNET prototype storefront. Preview only — nothing is available to purchase."
     />
     <!-- This build must never be indexed: it is a non-public demonstration with
          fictional products and sandbox payments. -->
     <meta name="robots" content="noindex, nofollow" />
+    <link rel="icon" type="image/svg+xml" href="/api/v1/media/assets/brand-prototype/logos/favicon.svg" />
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
     <a class="skip" href="#main">Skip to content</a>
 
     <p class="notice" role="note">
-      Fictional demonstration store. Sandbox payments only — no real order is placed and no real
-      card is charged.
+      Prototype storefront. Preview only — nothing here is available to purchase, and no
+      real order is placed or card charged.
     </p>
 
     <header class="site">
-      <a class="brand" href="#/catalog" aria-label="MERET home">MERET</a>
+      <a class="brand" href="#/catalog" aria-label="DEDUNET home">
+        <img class="brand__mark" src="/api/v1/media/assets/brand-prototype/logos/logo-primary.svg"
+             alt="DEDUNET" width="132" height="28" />
+      </a>
       <nav class="nav" aria-label="Main">
         <a href="#/catalog">Collection</a>
         <a href="#/stylist">Stylist</a>
@@ -38,12 +42,13 @@
 
     <footer class="site-footer">
       <p>
-        MERET is an invented brand created to demonstrate and test this platform. Product,
-        material, origin, price and availability information is illustrative and is not a
-        substantiated claim.
+        DEDUNET — worth, worn. This is a prototype build. Imagery is concept artwork, not
+        product photography. Material, composition and origin are stated intentions pending
+        supplier documents, samples and testing, and are not substantiated claims.
       </p>
     </footer>
 
+    <script src="brand.generated.js"></script>
     <script src="app.js"></script>
   </body>
 </html>

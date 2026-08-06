@@ -1,5 +1,5 @@
 /**
- * MERET storefront — fictional demonstration brand.
+ * DEDUNET storefront — prototype build.
  *
  * SECURITY (closes SB-RISK-003, stored XSS)
  * -----------------------------------------
@@ -21,10 +21,27 @@ const API_BASE =
 const MINOR_UNIT_EXPONENTS = { EUR: 2 };
 const CURRENCY_SYMBOLS = { EUR: "€" };
 
+/* One-time migration of browser storage keys from the legacy brand prefix.
+   Renaming a key without moving its value signs every existing session out and silently
+   discards a live cart, so the old value is carried across once and then removed. */
+(function migrateLegacyStorageKeys() {
+  const moved = {
+    meret_cart: "dedunet_cart",
+    meret_token: "dedunet_token",
+    meret_role: "dedunet_role",
+    meret_admin_token: "dedunet_admin_token",
+  };
+  for (const [from, to] of Object.entries(moved)) {
+    const value = localStorage.getItem(from);
+    if (value !== null && localStorage.getItem(to) === null) localStorage.setItem(to, value);
+    if (value !== null) localStorage.removeItem(from);
+  }
+})();
+
 const state = {
-  cartToken: localStorage.getItem("meret_cart") || "",
-  token: localStorage.getItem("meret_token") || "",
-  role: localStorage.getItem("meret_role") || "",
+  cartToken: localStorage.getItem("dedunet_cart") || "",
+  token: localStorage.getItem("dedunet_token") || "",
+  role: localStorage.getItem("dedunet_role") || "",
 };
 
 /* ----------------------------------------------------------------- formatting */
@@ -258,7 +275,7 @@ async function viewProduct(slug) {
           body: JSON.stringify({ variant_id: selected.id, quantity: 1 }),
         });
         state.cartToken = cart.cart_token;
-        localStorage.setItem("meret_cart", cart.cart_token);
+        localStorage.setItem("dedunet_cart", cart.cart_token);
         setBanner("Added to your cart.", "ok");
       } catch (error) {
         setBanner(error.message, "error");
@@ -477,7 +494,7 @@ async function viewCheckout() {
           promotion_code: form.elements.promo.value.trim().toUpperCase(),
         }),
       });
-      localStorage.removeItem("meret_cart");
+      localStorage.removeItem("dedunet_cart");
       state.cartToken = "";
       location.hash = `#/order/${result.order.order_number}`;
     } catch (error) {
@@ -584,7 +601,7 @@ function viewAccount() {
           try {
             const data = await api("/api/v1/me/data-export");
             const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
-            const link = el("a", { href: URL.createObjectURL(blob), download: "meret-my-data.json" });
+            const link = el("a", { href: URL.createObjectURL(blob), download: "dedunet-my-data.json" });
             document.body.appendChild(link);
             link.click();
             link.remove();
@@ -600,8 +617,8 @@ function viewAccount() {
         onclick: () => {
           state.token = "";
           state.role = "";
-          localStorage.removeItem("meret_token");
-          localStorage.removeItem("meret_role");
+          localStorage.removeItem("dedunet_token");
+          localStorage.removeItem("dedunet_role");
           location.hash = "#/catalog";
           route();
         },
@@ -622,8 +639,8 @@ function viewAccount() {
       const result = await api(path, { method: "POST", body: JSON.stringify(body) });
       state.token = result.access_token;
       state.role = result.role;
-      localStorage.setItem("meret_token", result.access_token);
-      localStorage.setItem("meret_role", result.role);
+      localStorage.setItem("dedunet_token", result.access_token);
+      localStorage.setItem("dedunet_role", result.role);
       location.hash = "#/orders";
       route();
     } catch (error) {
@@ -634,7 +651,7 @@ function viewAccount() {
   const login = el("form", { class: "form", onsubmit: (e) => submit(e, "/api/v1/auth/login") }, [
     el("h2", { text: "Sign in" }),
     el("label", { for: "le", text: "Email" }),
-    el("input", { id: "le", name: "email", type: "email", required: "required", value: "customer@meret.example" }),
+    el("input", { id: "le", name: "email", type: "email", required: "required", value: "customer@dedunet.example" }),
     el("label", { for: "lp", text: "Password" }),
     el("input", { id: "lp", name: "password", type: "password", required: "required", value: "demo-password-123" }),
     el("button", { class: "btn btn--primary", type: "submit", text: "Sign in" }),

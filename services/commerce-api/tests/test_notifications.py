@@ -121,7 +121,7 @@ def rejecting_smtp():
 # ------------------------------------------------------------------------- helpers
 
 
-def queue_one(session, *, email="notify@meret.example", subject="Your order FC-TEST"):
+def queue_one(session, *, email="notify@dedunet.example", subject="Your order FC-TEST"):
     customer = session.scalar(select(Customer).where(Customer.email == email))
     if customer is None:
         customer = Customer(
@@ -200,25 +200,25 @@ def test_smtp_send_uses_a_real_socket_and_valid_protocol(seeded, fake_smtp, monk
     monkeypatch.setenv("NOTIFICATION_CHANNEL", "smtp")
     monkeypatch.setenv("SMTP_HOST", "127.0.0.1")
     monkeypatch.setenv("SMTP_PORT", str(fake_smtp.port))
-    monkeypatch.setenv("SMTP_FROM", "noreply@meret.example")
+    monkeypatch.setenv("SMTP_FROM", "noreply@dedunet.example")
     monkeypatch.setenv("SMTP_USE_TLS", "0")   # the fake server speaks plain SMTP
     notifications.reset_sender()
 
-    note_id, _ = queue_one(seeded, email="smtp-target@meret.example")
+    note_id, _ = queue_one(seeded, email="smtp-target@dedunet.example")
     counts = services.dispatch_pending_notifications(seeded)
 
     assert counts["sent"] == 1, "SMTP send did not succeed against the fake server"
 
     # The client genuinely connected and completed an exchange.
     assert fake_smtp.mail_from, "no MAIL FROM was received; no real connection was made"
-    assert "noreply@meret.example" in fake_smtp.mail_from[0]
+    assert "noreply@dedunet.example" in fake_smtp.mail_from[0]
     assert fake_smtp.rcpt_to, "no RCPT TO was received"
-    assert "smtp-target@meret.example" in fake_smtp.rcpt_to[0]
+    assert "smtp-target@dedunet.example" in fake_smtp.rcpt_to[0]
 
     assert len(fake_smtp.messages) == 1
     message = fake_smtp.messages[0]
     assert "Subject: Your order FC-TEST" in message
-    assert "To: smtp-target@meret.example" in message
+    assert "To: smtp-target@dedunet.example" in message
     # The stable notification identifier travels with the message so a duplicate arriving
     # at a real mailbox can be traced back to the row that produced it.
     assert f"{notifications.IDEMPOTENCY_HEADER}: notification-{note_id}" in message
@@ -234,7 +234,7 @@ def test_transport_failure_is_retryable_and_preserves_the_row(seeded, monkeypatc
     monkeypatch.setenv("NOTIFICATION_CHANNEL", "smtp")
     monkeypatch.setenv("SMTP_HOST", "127.0.0.1")
     monkeypatch.setenv("SMTP_PORT", "1")
-    monkeypatch.setenv("SMTP_FROM", "noreply@meret.example")
+    monkeypatch.setenv("SMTP_FROM", "noreply@dedunet.example")
     monkeypatch.setenv("SMTP_USE_TLS", "0")
     notifications.reset_sender()
 
@@ -255,7 +255,7 @@ def test_recipient_rejection_is_terminal(seeded, rejecting_smtp, monkeypatch):
     monkeypatch.setenv("NOTIFICATION_CHANNEL", "smtp")
     monkeypatch.setenv("SMTP_HOST", "127.0.0.1")
     monkeypatch.setenv("SMTP_PORT", str(rejecting_smtp.port))
-    monkeypatch.setenv("SMTP_FROM", "noreply@meret.example")
+    monkeypatch.setenv("SMTP_FROM", "noreply@dedunet.example")
     monkeypatch.setenv("SMTP_USE_TLS", "0")
     notifications.reset_sender()
 
@@ -328,7 +328,7 @@ def test_max_attempts_prevents_an_infinite_retry_loop(seeded, monkeypatch):
     monkeypatch.setenv("NOTIFICATION_CHANNEL", "smtp")
     monkeypatch.setenv("SMTP_HOST", "127.0.0.1")
     monkeypatch.setenv("SMTP_PORT", "1")
-    monkeypatch.setenv("SMTP_FROM", "noreply@meret.example")
+    monkeypatch.setenv("SMTP_FROM", "noreply@dedunet.example")
     monkeypatch.setenv("SMTP_USE_TLS", "0")
     notifications.reset_sender()
 
@@ -350,7 +350,7 @@ def test_no_notification_row_is_ever_deleted(seeded, rejecting_smtp, monkeypatch
     """Across success, terminal rejection and suppression, the count never drops."""
 
     for i in range(3):
-        queue_one(seeded, email=f"keep{i}@meret.example", subject=f"s{i}")
+        queue_one(seeded, email=f"keep{i}@dedunet.example", subject=f"s{i}")
     before = seeded.scalar(select(Notification).order_by(Notification.id))
     total_before = len(seeded.scalars(select(Notification)).all())
 
@@ -359,10 +359,10 @@ def test_no_notification_row_is_ever_deleted(seeded, rejecting_smtp, monkeypatch
     monkeypatch.setenv("NOTIFICATION_CHANNEL", "smtp")
     monkeypatch.setenv("SMTP_HOST", "127.0.0.1")
     monkeypatch.setenv("SMTP_PORT", str(rejecting_smtp.port))
-    monkeypatch.setenv("SMTP_FROM", "noreply@meret.example")
+    monkeypatch.setenv("SMTP_FROM", "noreply@dedunet.example")
     monkeypatch.setenv("SMTP_USE_TLS", "0")
     notifications.reset_sender()
-    queue_one(seeded, email="rejected@meret.example")
+    queue_one(seeded, email="rejected@dedunet.example")
     services.dispatch_pending_notifications(seeded)          # terminal rejection
 
     total_after = len(seeded.scalars(select(Notification)).all())
@@ -376,7 +376,7 @@ def test_no_notification_row_is_ever_deleted(seeded, rejecting_smtp, monkeypatch
 def test_erased_customer_is_never_emailed(seeded):
     """Erasure must not be undone by a queued notification."""
 
-    note_id, customer_id = queue_one(seeded, email="tobe-erased@meret.example")
+    note_id, customer_id = queue_one(seeded, email="tobe-erased@dedunet.example")
 
     customer = seeded.get(Customer, customer_id)
     services.erase_customer(seeded, customer, actor="test")
@@ -493,7 +493,7 @@ def test_two_postgres_workers_never_claim_the_same_row(seeded):
     from app.commerce.db import SessionLocal
 
     for i in range(10):
-        queue_one(seeded, email=f"race{i}@meret.example", subject=f"race-{i}")
+        queue_one(seeded, email=f"race{i}@dedunet.example", subject=f"race-{i}")
 
     results: list[dict] = []
     lock = threading.Lock()
@@ -657,7 +657,7 @@ def test_two_workers_racing_a_stale_claim_yield_exactly_one_winner(seeded, monke
 @pytest.mark.parametrize("outcome", ["success", "retryable", "terminal", "suppressed"])
 def test_claim_metadata_is_cleared_on_every_settled_path(seeded, monkeypatch, outcome):
     monkeypatch.setenv("NOTIFICATION_CLAIM_TTL_SECONDS", "300")
-    note_id, customer_id = queue_one(seeded, email="clear-" + outcome + "@meret.example")
+    note_id, customer_id = queue_one(seeded, email="clear-" + outcome + "@dedunet.example")
 
     if outcome == "suppressed":
         services.erase_customer(seeded, seeded.get(Customer, customer_id), actor="test")
@@ -788,7 +788,7 @@ def test_readiness_is_independent_of_recovery_activity(client, seeded, monkeypat
 
     monkeypatch.setenv("NOTIFICATION_CLAIM_TTL_SECONDS", "300")
     for i in range(3):
-        note_id, _ = queue_one(seeded, email="stale" + str(i) + "@meret.example")
+        note_id, _ = queue_one(seeded, email="stale" + str(i) + "@dedunet.example")
         _simulate_crash_after_claim(seeded)
         _expire_lease(seeded, note_id)
 
@@ -1034,7 +1034,7 @@ def test_ownership_loss_is_observable_and_counted(seeded, capsys):
     assert '"event": "ownership_lost"' in output, "ownership loss was not logged"
     assert '"notification_id"' in output
     # The log must not leak the recipient, the body or a token value.
-    assert "token-B" not in output and "@meret.example" not in output
+    assert "token-B" not in output and "@dedunet.example" not in output
 
     note = seeded.get(Notification, note_id)
     seeded.refresh(note)
