@@ -39,6 +39,40 @@ export function originLabel(countryOfOrigin: unknown): string | null {
 }
 
 /**
+ * Origin text using the typed states the API now ships.
+ *
+ * `origin_claim_status` and `intended_origin` must be read TOGETHER. Reading
+ * `intended_origin` alone would let a client render "EG" as a factual origin, which is the
+ * precise conversion of intent into fact that CONFLICT-006 forbids. Reading
+ * `country_of_origin` alone would show a customer the literal string "XX".
+ *
+ * Falls back to `originLabel` when the states are absent, so the legacy fixture catalogue
+ * keeps working against an older API.
+ */
+export function originStatement(product: {
+  country_of_origin?: unknown;
+  intended_origin?: unknown;
+  origin_claim_status?: unknown;
+}): string | null {
+  const status =
+    typeof product.origin_claim_status === "string" ? product.origin_claim_status.trim() : "";
+  const code =
+    typeof product.country_of_origin === "string" ? product.country_of_origin.trim().toUpperCase() : "";
+
+  if (status === "" ) return originLabel(product.country_of_origin);
+
+  if (status === "UNVERIFIED" || UNSUBSTANTIATED.has(code)) {
+    const intended =
+      typeof product.intended_origin === "string" ? product.intended_origin.trim().toUpperCase() : "";
+    if (!/^[A-Z]{2}$/.test(intended)) return null;
+    // "Intended production in EG" is a statement about a plan, not about a garment.
+    return `Intended production in ${intended} — not verified, no origin claim is made`;
+  }
+
+  return originLabel(product.country_of_origin);
+}
+
+/**
  * Text for a material/fibre field, or `null`.
  *
  * Same gate as origin: seed material values are illustrative placeholders, so the label

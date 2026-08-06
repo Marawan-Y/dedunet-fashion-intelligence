@@ -13,7 +13,7 @@ import { getProduct } from "../api/commerce";
 import type { Product, Variant } from "../api/types";
 import { BRAND } from "../brand";
 import { formatMinorUnits } from "../money";
-import { materialLabel, originLabel } from "../origin";
+import { materialLabel, originStatement } from "../origin";
 import type { AppState } from "../store";
 import { Banner, Body, Button, Card, Heading, Loading, Screen, styles } from "../ui";
 
@@ -83,8 +83,11 @@ export function ProductScreen({ app, slug }: { app: AppState; slug: string }) {
   }
 
   const { product } = state;
-  const origin = originLabel(product.country_of_origin);
+  const origin = originStatement(product);
   const material = materialLabel(product.material);
+  // `sellable === false` is a deliberate refusal. `undefined` means the legacy API, which
+  // predates the flag, so it must not be treated as "not sellable".
+  const previewOnly = product.sellable === false;
   const selected = product.variants.find((v) => v.id === selectedVariantId) ?? null;
   const price = selected ? formatMinorUnits(selected.price_minor_units, product.currency) : null;
 
@@ -101,6 +104,17 @@ export function ProductScreen({ app, slug }: { app: AppState; slug: string }) {
       */}
       {material !== null ? <Body muted>{material}</Body> : null}
       {origin !== null ? <Body muted>{origin}</Body> : null}
+
+      {previewOnly ? (
+        <Banner
+          testID="product-preview-only"
+          tone="warning"
+          message={
+            "Preview only — this piece is not available to buy. Imagery is concept artwork, " +
+            "not product photography."
+          }
+        />
+      ) : null}
 
       {product.variants.length === 0 ? (
         <Banner
@@ -140,13 +154,17 @@ export function ProductScreen({ app, slug }: { app: AppState; slug: string }) {
         <Button
           testID="product-add"
           label={
-            selected.available <= 0
-              ? "Out of stock"
-              : price === null
-                ? "Add to bag"
-                : `Add to bag — ${price}`
+            previewOnly
+              ? "Not available to buy"
+              : selected.available <= 0
+                ? "Out of stock"
+                : price === null
+                  ? "Add to bag"
+                  : `Add to bag — ${price}`
           }
-          disabled={selected.available <= 0}
+          // The server refuses this anyway. Disabling here means the customer is not
+          // invited to press a button whose only outcome is a rejection.
+          disabled={previewOnly || selected.available <= 0}
           busy={busy}
           onPress={() => void onAdd()}
         />

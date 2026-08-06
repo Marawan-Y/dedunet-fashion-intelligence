@@ -22,6 +22,21 @@ export type Variant = {
   color: string;
   price_minor_units: number;
   available: number;
+  /** Side A identity, e.g. "DDN-TS01-CAR-XS". Null for the legacy fixture catalogue. */
+  external_variant_id?: string | null;
+  sellable?: boolean;
+  inventory_status?: string;
+  evidence_status?: string;
+};
+
+/** One media record. Replaces the single `image_url` for products that ship a gallery. */
+export type ProductMedia = {
+  asset_id: string;
+  role: "front" | "back" | "detail" | "lifestyle" | "campaign" | "collection";
+  sort_order: number;
+  path: string;
+  alt_text: string;
+  status: string;
 };
 
 export type Product = {
@@ -40,8 +55,27 @@ export type Product = {
    */
   country_of_origin: string;
   currency: string;
+  /** Derived convenience only. `media` is authoritative when present. */
   image_url: string;
   variants: Variant[];
+
+  // ----------------------------------------------------- DEDUNET typed states
+  // All optional: the legacy fixture catalogue predates them, and a client that
+  // required them would break against an older API.
+  external_product_id?: string | null;
+  collection_id?: string;
+  publication_status?: string;
+  /** False means "not purchasable", whatever the price says. */
+  sellable?: boolean;
+  inventory_status?: string;
+  evidence_status?: string;
+  material_claim_status?: string;
+  /** Read TOGETHER with `intended_origin`; see `src/origin.ts`. */
+  origin_claim_status?: string;
+  intended_origin?: string;
+  legal_brand_status?: string;
+  media_status?: string;
+  media?: ProductMedia[];
 };
 
 // --------------------------------------------------------------------- auth (api.py:78)

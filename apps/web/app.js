@@ -270,6 +270,7 @@ async function viewProduct(slug) {
 
   render(
     el("nav", { class: "crumbs" }, [el("a", { href: "#/catalog", text: "← Collection" })]),
+    evidenceBanner(product),
     el("div", { class: "pdp" }, [
       el("div", { class: "pdp__media", "aria-hidden": "true", text: product.name.slice(0, 1) }),
       el("div", { class: "pdp__info" }, [
@@ -280,18 +281,86 @@ async function viewProduct(slug) {
         sizes,
         stock,
         addButton,
-        el("dl", { class: "specs" }, [
-          el("dt", { text: "Material" }), el("dd", { text: product.material || "—" }),
-          el("dt", { text: "Care" }), el("dd", { text: product.care_instructions || "—" }),
-          el("dt", { text: "Origin" }), el("dd", { text: product.country_of_origin || "—" }),
-        ]),
+        el("dl", { class: "specs" }, specRows(product)),
         el("p", {
           class: "disclaimer",
-          text: "Fictional demonstration product. Material and origin fields are illustrative and are not substantiated claims.",
+          text: disclaimerFor(product),
         }),
       ]),
     ])
   );
+}
+
+// ---------------------------------------------------------------- evidence-safe display
+//
+// The API ships typed states (origin_claim_status, evidence_status, sellable, ...) precisely
+// so a client never has to parse prose to decide what it may say. These three helpers are
+// the only place that turns those states into customer-facing text.
+
+/**
+ * Origin text, or null to render nothing.
+ *
+ * NEVER produces "Made in ...". `country_of_origin` is the deliberately invalid code `XX`
+ * while origin is unsubstantiated, and rendering it raw would show a customer "XX". When a
+ * real code is present it is still labelled unverified, because the payload carries no
+ * evidence that it was substantiated.
+ */
+function originText(product) {
+  const status = product.origin_claim_status || "";
+  const code = (product.country_of_origin || "").trim().toUpperCase();
+
+  if (status === "UNVERIFIED" || code === "XX" || code === "") {
+    const intended = (product.intended_origin || "").trim().toUpperCase();
+    return intended
+      ? `Intended production in ${intended} — not verified, no origin claim is made`
+      : null;
+  }
+  if (!/^[A-Z]{2}$/.test(code)) return null;
+  return `Declared origin ${code} — not independently verified`;
+}
+
+function specRows(product) {
+  const rows = [];
+  if (product.material) {
+    rows.push(el("dt", { text: "Material" }));
+    rows.push(el("dd", { text: `${product.material} (stated, not tested)` }));
+  }
+  if (product.care_instructions) {
+    rows.push(el("dt", { text: "Care" }));
+    rows.push(el("dd", { text: product.care_instructions }));
+  }
+  const origin = originText(product);
+  if (origin) {
+    rows.push(el("dt", { text: "Origin" }));
+    rows.push(el("dd", { text: origin }));
+  }
+  return rows;
+}
+
+function disclaimerFor(product) {
+  if (product.external_product_id) {
+    return (
+      "Prototype product. Imagery is concept artwork, not product photography. " +
+      "Material, composition and origin are stated intentions pending supplier documents, " +
+      "samples and testing. Nothing here is available to purchase."
+    );
+  }
+  return (
+    "Fictional demonstration product. Material and origin fields are illustrative and are " +
+    "not substantiated claims."
+  );
+}
+
+/** Banner shown when a product is visible but deliberately not purchasable. */
+function evidenceBanner(product) {
+  if (product.sellable !== false) return null;
+  return el("p", {
+    class: "disclaimer",
+    role: "status",
+    text:
+      "Preview only — this piece is not available to buy. " +
+      "It is shown to review design, copy and imagery before any commercial launch.",
+  });
 }
 
 async function viewCart() {

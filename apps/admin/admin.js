@@ -219,12 +219,29 @@ async function viewInventory() {
     return render(el("p", { class: "banner banner--error", text: error.message }));
   }
 
+  /**
+   * Product name plus the states that explain its commercial status.
+   *
+   * A DEDUNET prototype has a price and zero stock, which is indistinguishable from an
+   * ordinary sold-out line at a glance. Labelling it stops an operator "correcting" it by
+   * adding inventory to something that must not be sold.
+   */
+  function productLabel(product) {
+    if (!product.external_product_id) return product.name;
+    const flags = [product.external_product_id, "PREVIEW — NOT SELLABLE"];
+    if (product.evidence_status) flags.push(`evidence ${product.evidence_status}`);
+    return `${product.name}  [${flags.join(" · ")}]`;
+  }
+
   const rows = [];
   for (const product of products) {
     for (const variant of product.variants) {
       rows.push(
         el("tr", {}, [
-          el("td", { text: product.name }),
+          // Operators need to see WHY a row is unpurchasable before they try to adjust its
+          // stock. A prototype that looks like ordinary out-of-stock inventory invites
+          // someone to "fix" it by adding units.
+          el("td", { text: productLabel(product) }),
           el("td", { text: variant.sku }),
           el("td", { text: `${variant.size} · ${variant.color}` }),
           el("td", { text: String(variant.available) }),
