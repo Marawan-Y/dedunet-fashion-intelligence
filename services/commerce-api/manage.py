@@ -208,6 +208,58 @@ def cmd_check(_args: argparse.Namespace) -> int:
     return 0
 
 
+def _test_inventory(args, *, clear: bool) -> int:
+    """Load or clear synthetic COMMERCE_TEST_MODE stock.
+
+    Refused outside COMMERCE_TEST_MODE and refused without --confirm-test-only. Both
+    conditions are checked in `app.commerce.test_inventory`, so the CLI cannot be the
+    place someone accidentally relaxes them.
+    """
+
+    from app.commerce.db import SessionLocal
+    from app.commerce.synthetic_inventory import (
+        TestInventoryRefused,
+        clear_test_inventory,
+        load_test_inventory,
+    )
+
+    session = SessionLocal()
+    try:
+        if clear:
+            result = clear_test_inventory(session, confirmed=args.confirm_test_only)
+        else:
+            result = load_test_inventory(
+                session,
+                confirmed=args.confirm_test_only,
+                skus=args.sku or None,
+                quantity=args.quantity,
+            )
+        session.commit()
+    except TestInventoryRefused as exc:
+        session.rollback()
+        print(json.dumps({"result": "refused", "reason": str(exc)}))
+        return 1
+    except Exception:
+        session.rollback()
+        raise
+    finally:
+        session.close()
+
+    payload = result.as_dict()
+    payload["result"] = "cleared" if clear else "loaded"
+    payload["synthetic"] = True
+    print(json.dumps(payload, indent=2))
+    return 0
+
+
+def cmd_load_test_inventory(args) -> int:
+    return _test_inventory(args, clear=False)
+
+
+def cmd_clear_test_inventory(args) -> int:
+    return _test_inventory(args, clear=True)
+
+
 COMMANDS = {
     "migrate": cmd_migrate,
     "seed": cmd_seed,
@@ -217,6 +269,8 @@ COMMANDS = {
     "create-admin": cmd_create_admin,
     "check-config": cmd_check_config,
     "dispatch-notifications": cmd_dispatch_notifications,
+    "load-test-inventory": cmd_load_test_inventory,
+    "clear-test-inventory": cmd_clear_test_inventory,
 }
 
 
@@ -226,6 +280,11 @@ def main() -> int:
     # Only dispatch-notifications reads these; harmless for the other commands.
     parser.add_argument("--limit", type=int, default=None, help="max rows per cycle")
     parser.add_argument("--max-attempts", type=int, default=None, dest="max_attempts")
+    # Synthetic inventory. The confirmation flag is deliberately verbose: a short one
+    # is easy to add to a script by habit, which is exactly what must not happen.
+    parser.add_argument("--confirm-test-only", action="store_true", dest="confirm_test_only")
+    parser.add_argument("--sku", action="append", default=[], help="limit to these DEDUNET SKUs")
+    parser.add_argument("--quantity", type=int, default=25)
     args = parser.parse_args()
     return COMMANDS[args.command](args)
 

@@ -350,6 +350,14 @@ class Order(Base):
     # Idempotency key makes checkout safe to retry: a repeated request returns the
     # original order instead of creating a second one and charging twice.
     idempotency_key: Mapped[str] = mapped_column(String(80), unique=True, index=True)
+    # Provenance. Which commerce mode was in force when this order was placed.
+    #
+    # `LEGACY_UNCLASSIFIED` is the migration default and the honest answer for every order
+    # that predates the field: those orders were placed before modes existed, so calling
+    # them public would be a fabrication and calling them test would be a guess.
+    commerce_mode_at_checkout: Mapped[str] = mapped_column(
+        String(30), default="LEGACY_UNCLASSIFIED", server_default="LEGACY_UNCLASSIFIED", index=True
+    )
     placed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
 
     lines: Mapped[list["OrderLine"]] = relationship(

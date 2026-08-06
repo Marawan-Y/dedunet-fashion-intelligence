@@ -99,6 +99,27 @@ def record_audit(
     return entry
 
 
+# ------------------------------------------------------------------ notification identity
+#
+# Lifecycle messages carry the DEDUNET identity and, when the order was placed in a test
+# mode, say so in the SUBJECT. A test order that reads like a real confirmation is the one
+# notification defect a customer cannot detect for themselves.
+
+BRAND_DISPLAY_NAME = "DEDUNET"
+
+
+def _order_subject(order: Order, text: str) -> str:
+    """Brand the subject, and mark a non-public order unmistakably."""
+
+    subject = f"{BRAND_DISPLAY_NAME} — {text}"
+    mode = getattr(order, "commerce_mode_at_checkout", "") or ""
+    if mode != "PUBLIC_COMMERCE_MODE":
+        # Covers COMMERCE_TEST_MODE and LEGACY_UNCLASSIFIED. Anything not positively known
+        # to be public commerce is labelled, because the safe default is to over-disclose.
+        subject = f"[TEST ORDER] {subject}"
+    return subject
+
+
 def queue_notification(
     session: Session, customer_id: int, template: str, subject: str, body: str
 ) -> Notification:
@@ -611,6 +632,9 @@ def checkout(
 
     order = Order(
         order_number=f"FC-{secrets.token_hex(4).upper()}",
+        # Provenance recorded at the moment of purchase, not derived later. A mode change
+        # after the fact must never be able to reclassify an order that already happened.
+        commerce_mode_at_checkout=modes.current_mode(),
         customer_id=customer.id,
         status=OrderStatus.PENDING_PAYMENT,
         currency=breakdown.currency,
@@ -704,7 +728,7 @@ def checkout(
         session,
         customer.id,
         template="order_confirmation",
-        subject=f"Your order {order.order_number}",
+        subject=_order_subject(order, f"your order {order.order_number} is confirmed"),
         body=(
             f"Thank you for your order {order.order_number}. "
             f"Total {order.total_minor_units} minor units {order.currency}."
@@ -750,7 +774,7 @@ def fulfil_order(
         session,
         order.customer_id,
         template="order_shipped",
-        subject=f"Your order {order.order_number} has shipped",
+        subject=_order_subject(order, f"your order {order.order_number} has shipped"),
         body=f"Tracking number {shipment.tracking_number}.",
     )
     record_audit(
@@ -833,7 +857,7 @@ def approve_return(
         session,
         order.customer_id,
         template="refund_issued",
-        subject=f"Refund for {order.order_number}",
+        subject=_order_subject(order, f"refund for {order.order_number}"),
         body=f"We have refunded {refund.amount_minor_units} minor units.",
     )
     record_audit(
