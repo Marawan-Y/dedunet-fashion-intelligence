@@ -41,7 +41,7 @@ None of these has a **named human risk owner**. That remains outstanding (CTRL-0
 
 | Area | State | Note |
 |---|---|---|
-| Android / iOS applications | **BLOCKED** | An Expo `App.tsx` exists but has a peer-dependency conflict and has never been installed, built, type-checked or run. No build artifact, signing config, store metadata or device test exists. Do not describe the mobile app as delivered |
+| Android / iOS applications | **`NATIVE_PREVIEW_BUILD_EXTERNALLY_PENDING`** | Updated by Workstream F (2026-08-06). The peer-dependency conflict is resolved, the app is installed from a committed lockfile, type-checks clean, passes 101 tests and 18/18 guard mutations, and the full catalogue → cart → checkout → order journey was driven against a real API on Expo **web**. Still true: **no native binary exists** — no Expo account is available, so nothing has been built for Android or iOS, and there is no signing config, store metadata or device test. Do not describe the mobile app as built or shipped. See `evidence/workstream-f/WORKSTREAM_F_EVIDENCE.md` |
 | CI pipeline | **NOT EXECUTED** | A workflow file exists. No runner is available in this environment, so it has never run. A green pipeline is not evidenced |
 | Infrastructure as code | **NOT_STARTED** | No Terraform, Kubernetes or Helm. Docker Compose covers local only |
 | Staging / production deployment | **NOT_STARTED** | No environment has been provisioned or deployed to |

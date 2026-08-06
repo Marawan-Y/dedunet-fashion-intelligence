@@ -1,11 +1,29 @@
 {
   "expo": {
-    "name": "Origin Fashion PoC",
-    "slug": "origin-fashion-poc",
-    "version": "0.1.0",
+    "name": "DEDUNET",
+    "slug": "dedunet",
+    "owner": "Dedunet",
+    "version": "0.2.0",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
-    "ios": { "supportsTablet": true, "bundleIdentifier": "com.example.originfashionpoc" },
-    "android": { "package": "com.example.originfashionpoc" }
+    "scheme": "dedunet",
+    "platforms": ["ios", "android", "web"],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.dedunet.store"
+    },
+    "android": {
+      "package": "com.dedunet.store"
+    },
+    "web": {
+      "bundler": "metro",
+      "_comment": "output 'single' (SPA), not 'static'. Static rendering pre-renders routes via expo-router, which this app deliberately does not use; with 'static' the export fails on a missing expo-router import.",
+      "output": "single"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "72b0a18d-36dd-406f-a54b-ab481a95db88"
+      }
+    }
   }
 }
