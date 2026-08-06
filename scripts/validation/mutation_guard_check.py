@@ -69,7 +69,10 @@ TEST_RATE = "tests/test_rate_limit.py"
 TEST_NOTIFY = "tests/test_notifications.py"
 TEST_BACKUP = "tests/test_backup_guards.py"
 TEST_DEDUNET = "tests/test_dedunet_integration.py"
+TEST_CLOSURE = "tests/test_dedunet_closure.py"
 
+API = BACKEND / "app" / "commerce" / "api.py"
+SYNTHETIC = BACKEND / "app" / "commerce" / "synthetic_inventory.py"
 MODES = BACKEND / "app" / "commerce" / "modes.py"
 BRAND_BUILD = ROOT / "scripts" / "brand" / "build_brand_package.py"
 
@@ -741,6 +744,50 @@ MUTATIONS: tuple[Mutation, ...] = (
             f"{TEST_DEDUNET}::test_normalizer_refuses_non_zero_prototype_stock_rather_than_zeroing_it",
         ),
         covers=("a source that suddenly carries stock is a change to review, not to normalise away",),
+    ),
+    # ------------------------------------------------------- DEDUNET integration closure
+    # NOTE: the media route's traversal, containment, directory and media-type checks are
+    # deliberately REDUNDANT layers. Mutating any one of them individually is not observable
+    # through the HTTP surface, because another layer catches the same request -- the harness
+    # proved this by surviving two attempts. Rather than ship entries that can never be
+    # satisfied (which would make the harness report failure forever and destroy its signal),
+    # the behaviour is covered by test_unsafe_or_missing_media_paths_are_refused, which
+    # exercises 9 hostile paths end to end. Recorded in the closure evidence.
+    Mutation(
+        mutation_id="M58_synthetic_stock_requires_test_mode",
+        guard="synthetic inventory refuses outside COMMERCE_TEST_MODE",
+        target=SYNTHETIC,
+        original="    if mode != modes.COMMERCE_TEST:",
+        mutated="    if False:  # MUTATED: any mode may load fake stock",
+        tests=(f"{TEST_CLOSURE}::test_synthetic_inventory_refuses_preview_mode",),
+        covers=("fake stock in a brand preview makes a prototype look purchasable",),
+    ),
+    Mutation(
+        mutation_id="M59_synthetic_stock_requires_confirmation",
+        guard="synthetic inventory refuses without explicit confirmation",
+        target=SYNTHETIC,
+        original="    if not confirmed:",
+        mutated="    if False:  # MUTATED: no confirmation needed",
+        tests=(f"{TEST_CLOSURE}::test_synthetic_inventory_refuses_without_confirmation",),
+        covers=("a script run by accident must not load fake stock",),
+    ),
+    Mutation(
+        mutation_id="M60_legacy_hidden_in_preview",
+        guard="preview catalogue excludes the legacy fixture",
+        target=API,
+        original="        stmt = stmt.where(Product.external_product_id.is_not(None))",
+        mutated="        pass  # MUTATED: legacy leaks into the DEDUNET catalogue",
+        tests=(f"{TEST_CLOSURE}::test_preview_mode_shows_only_dedunet_products",),
+        covers=("the DEDUNET catalogue must be the DEDUNET catalogue",),
+    ),
+    Mutation(
+        mutation_id="M61_test_order_marked_in_notification",
+        guard="a non-public order is marked in the notification subject",
+        target=SERVICES,
+        original='        subject = f"[TEST ORDER] {subject}"',
+        mutated="        pass  # MUTATED: test order reads as a real confirmation",
+        tests=(f"{TEST_CLOSURE}::test_order_notifications_carry_the_dedunet_identity",),
+        covers=("a test order that reads like a real one is undetectable by the customer",),
     ),
 )
 

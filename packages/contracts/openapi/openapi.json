@@ -2602,6 +2602,47 @@
         ]
       }
     },
+    "/api/v1/media/{asset_path}": {
+      "get": {
+        "description": "Serve one brand or product asset.\n\nDeliberately narrow. Everything that is not an explicitly allowed file under the\ngenerated asset root is a 404 \u2014 including directories, dotfiles and anything whose\nresolved path escapes the root.",
+        "operationId": "get_media_api_v1_media__asset_path__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "asset_path",
+            "required": true,
+            "schema": {
+              "title": "Asset Path",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Media",
+        "tags": [
+          "commerce"
+        ]
+      }
+    },
     "/api/v1/orders/quote": {
       "post": {
         "operationId": "quote_order_api_v1_orders_quote_post",
