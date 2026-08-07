@@ -7,6 +7,7 @@ exception string, stack trace or provider payload to the client.
 
 from __future__ import annotations
 
+import os
 from pathlib import Path
 from typing import Annotated
 
@@ -62,7 +63,73 @@ def correlation_id(request: Request) -> str:
 # Served from the GENERATED package, never from `handoffs/incoming/`. The handoff is
 # checksum-protected evidence, and a file server pointed at it is one path-handling bug away
 # from serving something it must not.
-_MEDIA_ROOT = (Path(__file__).resolve().parents[2] / ".." / ".." / "packages" / "brand" / "assets").resolve()
+#
+# WHERE that package lives is configuration, not an assumption about the filesystem.
+# It used to be computed purely from `__file__`, which silently encoded "the API always runs
+# from a full repository checkout". In a container it resolved to `/packages/brand/assets` --
+# outside `/app`, a directory that could not exist, because the image build context was
+# `services/commerce-api` and `packages/` was never in it. Nothing failed loudly: the image
+# built, the container started, `/ready` returned 200, and every brand and product media URL
+# returned 404 in every containerised deployment.
+BRAND_MEDIA_ROOT_ENV = "BRAND_MEDIA_ROOT"
+
+def _checkout_media_root() -> Path | None:
+    """The checkout's asset directory, or None when this file is not in a checkout.
+
+    LAZY, and computed defensively. Written first as a module-level
+    `Path(__file__).resolve().parents[4]`, it raised IndexError on import inside the
+    container -- `/app/app/commerce/api.py` simply does not have four parents -- which
+    took the whole application down before the configured root could even be consulted.
+    That is the same module-level path assumption this change exists to remove, so it is
+    worth being explicit: there is no guaranteed repository above this file.
+    """
+
+    here = Path(__file__).resolve()
+    if len(here.parents) < 5:
+        return None
+    # app/commerce -> app -> commerce-api -> services -> repository root
+    return here.parents[4] / "packages" / "brand" / "assets"
+
+
+def resolve_media_root() -> Path | None:
+    """The directory brand and product assets are served from, or None if undeterminable.
+
+    Read at call time, not bound at import, so a test can vary it and so a deployment is
+    not required to set it before the module graph is imported.
+    """
+
+    configured = os.getenv(BRAND_MEDIA_ROOT_ENV, "").strip()
+    if configured:
+        return Path(configured).resolve()
+    checkout = _checkout_media_root()
+    return checkout.resolve() if checkout is not None else None
+
+
+class MediaRootUnavailable(Exception):
+    """The configured asset root is absent. Deployment fault, not a missing asset."""
+
+
+def assert_media_root() -> Path:
+    """Return the asset root, or raise if it is not there.
+
+    The distinction this preserves is the whole point: a MISSING ASSET is a 404, and a
+    MISSING ASSET ROOT is a deployment failure. Collapsing them into 404 is precisely how
+    an image shipped with no assets at all looked healthy for two days.
+    """
+
+    root = resolve_media_root()
+    if root is None:
+        raise MediaRootUnavailable(
+            f"{BRAND_MEDIA_ROOT_ENV} is not set and this installation is not inside a "
+            "repository checkout, so there is nowhere to serve brand assets from."
+        )
+    if not root.is_dir():
+        raise MediaRootUnavailable(
+            f"brand media root {root} does not exist. Set {BRAND_MEDIA_ROOT_ENV} to the "
+            "packaged asset directory, or run from a repository checkout containing "
+            "packages/brand/assets."
+        )
+    return root
 
 # Allow-list, not a deny-list. A deny-list has to anticipate every dangerous extension; an
 # allow-list only has to name the four types this package actually contains.
@@ -95,11 +162,19 @@ def get_media(asset_path: str) -> FileResponse:
     if any(segment.startswith(".") for segment in asset_path.split("/") if segment):
         raise HTTPException(status.HTTP_404_NOT_FOUND, "asset not found")
 
-    candidate = (_MEDIA_ROOT / asset_path).resolve()
+    # Resolved per request so the traversal and containment checks below run against the
+    # SAME root the file is read from, and so a misdeployment reports itself as 503
+    # rather than masquerading as 404 on every asset.
+    try:
+        media_root = assert_media_root()
+    except MediaRootUnavailable as exc:
+        raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, str(exc)) from exc
+
+    candidate = (media_root / asset_path).resolve()
 
     # The containment check is the real control; the checks above are cheap early exits.
     # `is_relative_to` compares resolved paths, so a symlink pointing outside is caught too.
-    if not candidate.is_relative_to(_MEDIA_ROOT):
+    if not candidate.is_relative_to(media_root):
         raise HTTPException(status.HTTP_404_NOT_FOUND, "asset not found")
 
     # A directory is a 404, not a listing. There is no index and no autoindex anywhere.

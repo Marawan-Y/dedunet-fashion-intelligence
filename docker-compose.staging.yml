@@ -46,7 +46,10 @@ services:
 
   api:
     build:
-      context: ./services/commerce-api
+      # Repository root, so the normalized brand package is reachable. Narrowed straight
+      # back down by services/commerce-api/Dockerfile.dockerignore, which is an allowlist.
+      context: .
+      dockerfile: services/commerce-api/Dockerfile
     env_file:
       - .env.staging
     environment:
@@ -113,7 +116,10 @@ services:
     # process would make /ready lie about a subsystem it does not check, and two API
     # replicas would double-send every message.
     build:
-      context: ./services/commerce-api
+      # Same image as the API, so the two can never drift apart in version. That means the
+      # same root context and the same allowlist.
+      context: .
+      dockerfile: services/commerce-api/Dockerfile
     env_file:
       - .env.staging
     environment:
@@ -155,6 +161,11 @@ services:
     build:
       context: .
       dockerfile: apps/web/Dockerfile
+      args:
+        # Staging publishes the API on 18080, not the client's default 18000. Without
+        # this the storefront would ask the wrong port and every product, and the brand
+        # mark with them, would fail to load.
+        API_BASE_URL: "http://127.0.0.1:${API_PORT:-18080}"
     depends_on:
       api:
         condition: service_healthy

@@ -20,7 +20,11 @@ services:
     restart: unless-stopped
 
   api:
-    build: ./services/commerce-api
+    build:
+      # Repository root, so the normalized brand package is reachable. Narrowed straight
+      # back down by services/commerce-api/Dockerfile.dockerignore, which is an allowlist.
+      context: .
+      dockerfile: services/commerce-api/Dockerfile
     env_file:
       - .env
     environment:

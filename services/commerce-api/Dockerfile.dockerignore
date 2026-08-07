@@ -1,0 +1,58 @@
+# Build-context allowlist for the API image.
+#
+# BuildKit reads `<dockerfile>.dockerignore` in preference to the context root's
+# `.dockerignore`, so this file governs the API build alone. The root `.dockerignore`
+# still governs the web image, whose needs are the exact opposite of this one's.
+#
+# The API build context is the REPOSITORY ROOT, because the runtime needs
+# `packages/brand/assets` and a context of `services/commerce-api` can never reach it.
+# Widening the context is what made the media 404 possible to fix; it is also what makes
+# it possible to ship `.git`, `.env` and the immutable Side A handoff by accident. So this
+# is written as DENY EVERYTHING, then allow the handful of paths the runtime actually
+# needs — an allowlist, matching the media route's own allow-list posture.
+#
+# Adding a file to the image therefore requires an explicit line here. That is the point.
+# The image contents are verified against this intent by
+# `scripts/validation/container_media_acceptance.py`, which inspects the built artifact
+# rather than trusting this file to be right.
+
+# ---- deny everything -----------------------------------------------------------------
+**
+
+# ---- allow: the service's runtime source and data ------------------------------------
+!services/commerce-api/requirements.txt
+!services/commerce-api/alembic.ini
+!services/commerce-api/manage.py
+!services/commerce-api/notification_worker.py
+!services/commerce-api/docker-entrypoint.sh
+!services/commerce-api/app
+!services/commerce-api/app/**
+!services/commerce-api/data
+!services/commerce-api/data/**
+!services/commerce-api/migrations
+!services/commerce-api/migrations/**
+
+# ---- allow: the normalized brand package, and ONLY its assets and manifests -----------
+# The immutable Side A handoff under handoffs/incoming/ is NOT here and must never be.
+# Runtime serves the generated package; the handoff is checksum-protected evidence.
+!packages/brand/assets
+!packages/brand/assets/**
+!packages/brand/assets.json
+!packages/brand/product-media.json
+
+# ---- allow: the asset verifier that makes the build fail on a missing asset -----------
+!scripts/brand/verify_packaged_assets.py
+
+# ---- re-deny things that could otherwise ride in on the allowances above --------------
+# Order matters: these come last, so they win over the `!` lines.
+services/commerce-api/tests
+services/commerce-api/tests/**
+**/__pycache__
+**/__pycache__/**
+**/*.pyc
+**/.pytest_cache
+**/*.sqlite3
+**/*.sqlite3-wal
+**/*.sqlite3-shm
+**/.env
+**/.env.*

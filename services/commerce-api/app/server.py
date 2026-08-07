@@ -83,6 +83,10 @@ SELECTABLE_PROXY_MODES = frozenset({PROXY_MODE_NONE, PROXY_MODE_EXPLICIT})
 # contract, not debug output.
 STARTUP_EVENT = "asgi_proxy_trust_boundary"
 
+# Emitted once at startup alongside the trust boundary. The acceptance harness asserts on
+# this line, so it is part of the contract rather than debug output.
+MEDIA_ROOT_EVENT = "brand_media_root"
+
 _logger = logging.getLogger("fashion_commerce")
 
 
@@ -242,6 +246,35 @@ def main(argv: list[str] | None = None) -> int:
     # One structured line describing what this process trusts. Printed before serving so
     # it is present even if the port is already in use.
     _logger.info(json.dumps(trust.as_dict()))
+
+    # Fail at BOOT if the asset root is not there, rather than serving a store whose every
+    # image is a 404. This is the check that would have caught an image built without
+    # packages/brand/assets: the container started, /ready returned 200 and the brand was
+    # simply invisible. A readiness probe cannot see that, because media is not a
+    # dependency /ready knows about.
+    # Imported OUTSIDE the try. Inside it, an import failure left MediaRootUnavailable
+    # unbound and the except clause raised UnboundLocalError over the real error.
+    from .commerce.api import BRAND_MEDIA_ROOT_ENV, MediaRootUnavailable, assert_media_root
+
+    try:
+        media_root = assert_media_root()
+    except MediaRootUnavailable as exc:
+        print(
+            json.dumps({"event": MEDIA_ROOT_EVENT, "status": "refused", "error": str(exc)}),
+            file=sys.stderr,
+        )
+        return 3
+    _logger.info(
+        json.dumps(
+            {
+                "event": MEDIA_ROOT_EVENT,
+                "media_root": str(media_root),
+                "configured_by": BRAND_MEDIA_ROOT_ENV
+                if os.getenv(BRAND_MEDIA_ROOT_ENV, "").strip()
+                else "repository checkout fallback",
+            }
+        )
+    )
 
     config = build_config(
         host=args.host,
