@@ -3,7 +3,15 @@
 **Artifact ID:** EV-BVS-001 · **Version:** 1.0 · **Owner:** Side B / platform
 **Status:** `AUTOMATED-TESTED`
 **Date:** 2026-08-07
-**Final status:** `BRANDED_VERTICAL_SLICE_CONDITIONALLY_VERIFIED`
+**Result of this document:** `BRANDED_VERTICAL_SLICE_CONDITIONALLY_VERIFIED`
+
+> **Superseded in part — this result is retained as the historical record.**
+> This document's conditional result was accepted by the manager and is **not** rewritten.
+> It was conditional on exactly three reproduced media defects, **L1, L2 and L3** (§6).
+> Those three were closed by a subsequent focused milestone; see
+> [`BRANDED_VERTICAL_SLICE_MEDIA_CLOSURE.md`](BRANDED_VERTICAL_SLICE_MEDIA_CLOSURE.md)
+> (`EV-BVS-002`). Limitations **L4–L8** below remain open and were deliberately carried
+> forward. Everything else recorded here was re-executed during that closure, not assumed.
 
 Every number below was produced by executing a command in this repository. Nothing is
 carried over from the continuation prompt or from an earlier evidence file without being

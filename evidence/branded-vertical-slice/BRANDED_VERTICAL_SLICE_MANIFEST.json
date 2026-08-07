@@ -5,7 +5,22 @@
   "owner": "Side B / platform",
   "readiness_status": "AUTOMATED-TESTED",
   "final_status": "BRANDED_VERTICAL_SLICE_CONDITIONALLY_VERIFIED",
-
+  "superseded_in_part": {
+    "note": "This conditional result is retained as the historical record and is not rewritten. It was conditional on L1, L2 and L3 only.",
+    "closed_by": "EV-BVS-002 — evidence/branded-vertical-slice/BRANDED_VERTICAL_SLICE_MEDIA_CLOSURE.md",
+    "limitations_closed": [
+      "L1",
+      "L2",
+      "L3"
+    ],
+    "limitations_still_open": [
+      "L4",
+      "L5",
+      "L6",
+      "L7",
+      "L8"
+    ]
+  },
   "takeover": {
     "git_root": "C:/Users/User/Desktop/Claude/Fashion_Commerce_Codex_Multi_Agent_Pack",
     "branch": "dedunet/repository-restructure-and-workstreams-a-f",
@@ -17,7 +32,6 @@
     "inherited_commit_preserved": true,
     "history_rewritten": false
   },
-
   "inherited_state_reverified": {
     "side_a_checksums": "54/54 verified, 0 missing, 0 mismatched",
     "side_a_result": "DEDUNET_HANDOFF_INTEGRITY_VERIFIED",
@@ -29,7 +43,6 @@
     "customer_facing_legacy_meret_meryt": 0,
     "public_commerce": "BLOCKED"
   },
-
   "proxy_header_finding": {
     "component": "uvicorn 0.35.0 ProxyHeadersMiddleware",
     "mechanism": "Config defaults proxy_headers=True; forwarded_allow_ips=None resolves to os.environ.get('FORWARDED_ALLOW_IPS','127.0.0.1'); the middleware sets scope['client']=(header_value, 0) for a trusted peer BEFORE application code runs",
@@ -41,7 +54,13 @@
       "control_pattern": "401 x10 then 429 x6",
       "spoofed_varied_xff_429_count": 0,
       "spoofed_pattern": "401 x16, never limited",
-      "malformed_xff": [429, 401, 401, 429, 401],
+      "malformed_xff": [
+        429,
+        401,
+        401,
+        429,
+        401
+      ],
       "ready_after": 200,
       "bypass_present": true
     },
@@ -49,16 +68,38 @@
       "command": "python -m app.server --host 127.0.0.1 --port 18300",
       "control_no_xff_429_count": 6,
       "spoofed_varied_xff_429_count": 16,
-      "malformed_xff": [429, 429, 429, 429, 429],
+      "malformed_xff": [
+        429,
+        429,
+        429,
+        429,
+        429
+      ],
       "ready_after": 200,
       "bypass_present": false
     },
     "local_staging_after_rebuild": {
-      "container_command": ["python", "-m", "app.server", "--host", "0.0.0.0", "--port", "8000", "--workers", "1"],
+      "container_command": [
+        "python",
+        "-m",
+        "app.server",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "8000",
+        "--workers",
+        "1"
+      ],
       "boundary_line_mode": "none",
       "control_429_count": 6,
       "spoofed_429_count": 16,
-      "malformed_xff": [429, 429, 429, 429, 429],
+      "malformed_xff": [
+        429,
+        429,
+        429,
+        429,
+        429
+      ],
       "ready": 200,
       "health": 200,
       "bypass_present": false
@@ -66,7 +107,6 @@
     "staging_previously_compromised": false,
     "staging_note": "Its uvicorn binds 0.0.0.0 and traffic arrives from the Docker bridge, which is not in forwarded_allow_ips, so the bypass did not reproduce there before the fix either. No claim of prior compromise is made."
   },
-
   "correction": {
     "layer_1": {
       "file": "services/commerce-api/app/server.py",
@@ -96,7 +136,6 @@
     "documentation": "docs/operations/RUNBOOKS.md R12",
     "conflict_register_entry": "CONFLICT-011"
   },
-
   "regression_test": {
     "file": "services/commerce-api/tests/test_proxy_boundary.py",
     "tests": 18,
@@ -116,24 +155,58 @@
       "future proxied deployment refusals: missing allowlist, hops < 1, missing boundary, wildcard, unknown mode"
     ]
   },
-
   "phases": {
-    "A_default_product_truth": { "passed": 13, "total": 13 },
-    "B_brand_preview_mode": { "passed": 14, "total": 14 },
-    "A_plus_B_combined": { "passed": 27, "total": 27 },
-    "C_synthetic_inventory": { "passed": 28, "total": 28 },
-    "C10_preview_blocks_with_stored_stock": { "passed": 5, "total": 5 },
-    "D_customer_journey": { "passed": 38, "total": 38 },
-    "E_admin_and_notifications": { "passed": 26, "total": 26 },
-    "F_rate_limiting": { "passed": 7, "total": 7 },
-    "F_session": { "passed": 6, "total": 6 },
-    "H_return_to_preview": { "passed": 9, "total": 9 },
-    "G_restore_value_parity": { "passed": 20, "total": 20 },
-    "G_restore_functional": { "passed": 20, "total": 20 },
+    "A_default_product_truth": {
+      "passed": 13,
+      "total": 13
+    },
+    "B_brand_preview_mode": {
+      "passed": 14,
+      "total": 14
+    },
+    "A_plus_B_combined": {
+      "passed": 27,
+      "total": 27
+    },
+    "C_synthetic_inventory": {
+      "passed": 28,
+      "total": 28
+    },
+    "C10_preview_blocks_with_stored_stock": {
+      "passed": 5,
+      "total": 5
+    },
+    "D_customer_journey": {
+      "passed": 38,
+      "total": 38
+    },
+    "E_admin_and_notifications": {
+      "passed": 26,
+      "total": 26
+    },
+    "F_rate_limiting": {
+      "passed": 7,
+      "total": 7
+    },
+    "F_session": {
+      "passed": 6,
+      "total": 6
+    },
+    "H_return_to_preview": {
+      "passed": 9,
+      "total": 9
+    },
+    "G_restore_value_parity": {
+      "passed": 20,
+      "total": 20
+    },
+    "G_restore_functional": {
+      "passed": 20,
+      "total": 20
+    },
     "total_executed_checks": 186,
     "total_failed": 0
   },
-
   "selected": {
     "hero_product": "DDN-TS01",
     "hero_slug": "the-source-tee",
@@ -142,7 +215,6 @@
     "price_minor_units": 7200,
     "currency": "EUR"
   },
-
   "synthetic_inventory": {
     "mode_required": "COMMERCE_TEST_MODE",
     "starting_quantity": 0,
@@ -165,7 +237,6 @@
       "public_mode_refusal_mechanism": "uncaught CommerceModeError traceback (fails closed; cosmetic defect, limitation L4)"
     }
   },
-
   "customer_journey": {
     "customer": "slice.customer.local@dedunet.example",
     "quantity": 2,
@@ -213,15 +284,14 @@
     "order_history_includes_order": true,
     "order_detail_truthful": true
   },
-
   "web_and_mobile": {
     "web": {
       "surface": "apps/web served on a loopback static origin, API on :18000",
-      "title": "DEDUNET \u2014 prototype storefront",
+      "title": "DEDUNET — prototype storefront",
       "products_listed": 5,
-      "hero_price_displayed": "\u20ac72.00",
+      "hero_price_displayed": "€72.00",
       "hero_availability_displayed": "23 available",
-      "origin_disclosure": "Intended production in EG \u2014 not verified, no origin claim is made",
+      "origin_disclosure": "Intended production in EG — not verified, no origin claim is made",
       "prototype_disclosure_present": true,
       "legacy_brand_text_rendered": false,
       "product_media_rendered": false,
@@ -231,10 +301,15 @@
       "surface": "expo export --platform web, served on :8081, API on :18000",
       "title": "DEDUNET",
       "products_listed": 5,
-      "hero_price_displayed": "\u20ac72.00",
-      "selected_variant_displayed": "XS \u00b7 Carbon \u2014 23 available",
+      "hero_price_displayed": "€72.00",
+      "selected_variant_displayed": "XS · Carbon — 23 available",
       "other_variants_displayed": "Out of stock",
-      "gallery_roles": ["Front", "Back", "Detail", "In context"],
+      "gallery_roles": [
+        "Front",
+        "Back",
+        "Detail",
+        "In context"
+      ],
       "media_images_loaded": 4,
       "media_images_broken": 0,
       "media_natural_size": "1200x1500",
@@ -251,7 +326,6 @@
       "note": "Mobile resolves media against API_BASE and renders the gallery. The web client renders a letter placeholder and its root-relative brand-mark URL resolves against the web origin. See limitations L2 and L3."
     }
   },
-
   "administration": {
     "admin_identifies_dedunet": true,
     "admin_sees_test_order": true,
@@ -261,11 +335,10 @@
     "customer_sees_updated_state": "shipped",
     "legacy_items_separately_classified_and_hidden": true
   },
-
   "notification": {
     "id": 1,
     "template": "order_confirmation",
-    "subject": "[TEST ORDER] DEDUNET \u2014 your order FC-037F5FAF is confirmed",
+    "subject": "[TEST ORDER] DEDUNET — your order FC-037F5FAF is confirmed",
     "dedunet_identity": true,
     "test_order_indicated": true,
     "stable_key": "order_confirmation",
@@ -283,7 +356,6 @@
     "real_inbox_delivery_claimed": false,
     "external_delivery": "EXTERNAL_SMTP_DELIVERY_PENDING"
   },
-
   "rate_limiting_and_session": {
     "normal_requests_below_limit": true,
     "burst_pattern": "401 x10 then 429",
@@ -292,7 +364,13 @@
     "spoofed_total": 16,
     "retry_after_seconds": 6,
     "retry_after_browser_readable": true,
-    "exposed_headers": ["X-Correlation-ID", "Retry-After", "X-RateLimit-Limit", "X-RateLimit-Remaining", "X-RateLimit-Reset"],
+    "exposed_headers": [
+      "X-Correlation-ID",
+      "Retry-After",
+      "X-RateLimit-Limit",
+      "X-RateLimit-Remaining",
+      "X-RateLimit-Reset"
+    ],
     "cors_origin_scoped": true,
     "ready": 200,
     "health": 200,
@@ -304,7 +382,6 @@
     "limiter_weakened": false,
     "limits_raised": false
   },
-
   "backup_and_restore": {
     "backup_name": "dedunet_slice-20260807T004046Z",
     "format": "postgresql custom",
@@ -343,7 +420,6 @@
     "status": "LOCAL_BACKUP_AND_RESTORE_REHEARSAL_VERIFIED",
     "production_disaster_recovery_claimed": false
   },
-
   "cleanup": {
     "synthetic_inventory_removed_via_approved_command": true,
     "selected_stock_after": 0,
@@ -356,7 +432,6 @@
     "committed_evidence_preserved": true,
     "working_tree_clean": true
   },
-
   "regressions": {
     "side_a_checksums": "54/54",
     "brand_drift": "NORMALIZATION_VERIFIED",
@@ -379,7 +454,6 @@
     "preserved_fixture_checksums": "both match the values CI asserts",
     "git_cleanliness": "clean"
   },
-
   "visible_counts": {
     "dedunet_products": 5,
     "dedunet_variants": 62,
@@ -387,15 +461,11 @@
     "product_media_records": 18,
     "active_customer_facing_meret_meryt": 0
   },
-
   "mutations": {
     "mutations_run": 61,
     "detected": 61,
     "survived": 0,
     "inherited": 59,
-    "added": 2,
-    "harness_exit_code": 0,
-    "existing_guards_preserved": true,
     "added": [
       {
         "mutation": "M62_asgi_proxy_headers_disabled_explicitly",
@@ -416,6 +486,8 @@
         "restored": true
       }
     ],
+    "harness_exit_code": 0,
+    "existing_guards_preserved": true,
     "anchor_repair": {
       "mutation": "M22_xff_not_trusted_by_default",
       "cause": "the layer-2 quarantine changed the text the anchor matched",
@@ -423,7 +495,6 @@
       "resolution": "anchor updated to the new four-line form; M22 re-verified as DETECTED"
     }
   },
-
   "limitations": [
     "L1 brand and product media do not serve in any Docker deployment: _MEDIA_ROOT resolves outside the API image build context, so packages/brand/assets cannot be in the image. Pre-existing and unrelated to this milestone's correction.",
     "L2 the web client renders product media as a letter placeholder; the gallery was mobile-only in f17dad3, so web and mobile do not agree on media",
@@ -434,21 +505,27 @@
     "L7 rate-limit buckets are process-local; MULTI_REPLICA_DEPLOYMENT_BLOCKED_PENDING_SHARED_OR_GATEWAY_RATE_LIMITING",
     "L8 no Git remote exists (CONFLICT-010, owner decision)"
   ],
-
   "preserved_external_blockers": [
     "EAS_PROJECT_CONFIGURATION_VERIFIED",
     "NATIVE_PREVIEW_BUILD_EXTERNALLY_PENDING",
     "EXTERNAL_SMTP_DELIVERY_PENDING",
     "PUBLIC_COMMERCIAL_LAUNCH_BLOCKED"
   ],
-
   "scope_exclusions_honoured": [
-    "real SMTP provider", "hosted cloud deployment", "Cloudflare changes",
-    "Apple Developer enrolment", "Google Play enrolment", "EAS authentication",
-    "native store submission", "live payments", "real inventory", "real fulfilment",
-    "public commerce", "trademark clearance", "manufacturing claims"
+    "real SMTP provider",
+    "hosted cloud deployment",
+    "Cloudflare changes",
+    "Apple Developer enrolment",
+    "Google Play enrolment",
+    "EAS authentication",
+    "native store submission",
+    "live payments",
+    "real inventory",
+    "real fulfilment",
+    "public commerce",
+    "trademark clearance",
+    "manufacturing claims"
   ],
-
   "rollback": {
     "whole_milestone": "git revert --no-commit 3835aa0..HEAD && git commit",
     "proxy_header_correction_only": "git revert 3835aa0",
@@ -456,7 +533,6 @@
     "note": "after any revert, rebuild the staging image; the running container carries the corrected entrypoint",
     "committed_fixtures_modified": false
   },
-
   "commit_range": {
     "inherited_preserved": "d6c6973",
     "continuation": [
@@ -468,6 +544,235 @@
     ],
     "squashed_or_rewritten_inherited_history": false
   },
-
+  "media_closure": {
+    "artifact_id": "EV-BVS-002",
+    "document": "evidence/branded-vertical-slice/BRANDED_VERTICAL_SLICE_MEDIA_CLOSURE.md",
+    "starting_head": "91f7f44",
+    "closes": [
+      "L1",
+      "L2",
+      "L3"
+    ],
+    "l1_baseline": {
+      "resolved_runtime_media_root": "/packages/brand/assets (outside /app)",
+      "ls_app_packages": "No such file or directory",
+      "asset_files_in_image": 0,
+      "registered_assets_200": "0/31",
+      "product_media_200": "0/18",
+      "ddn_ts01_media_urls": [
+        404,
+        404,
+        404,
+        404
+      ],
+      "payload_media_records": 4,
+      "acceptance_total": "23/29"
+    },
+    "l2_baseline": {
+      "references_to_product_media_in_app_js": 0,
+      "placeholder": "product.name.slice(0, 1)",
+      "product_images_rendered": 0,
+      "pdp_media_text": "T"
+    },
+    "l3_baseline": {
+      "markup": "root-relative /api/v1/media/... for brand mark and favicon",
+      "from_web_origin_13500": 404,
+      "from_api_origin_18000": "200 image/svg+xml",
+      "from_shipped_nginx_13080": 404
+    },
+    "docker_correction": {
+      "build_context": "repository root",
+      "ignore_file": "services/commerce-api/Dockerfile.dockerignore (BuildKit per-Dockerfile, deny-all then allow)",
+      "verification_stage": "separate stage verifies assets by SHA-256; runtime copies only --from that stage",
+      "build_fails_on_missing_asset": true,
+      "build_failure_proof": "removing DDN-TS01-FRONT stops the build with PACKAGED_BRAND_ASSETS_FAILED",
+      "side_a_handoff_in_image": false,
+      "read_only_runtime_filesystem_preserved": true,
+      "writable_asset_directory_added": false
+    },
+    "runtime_media_root": {
+      "variable": "BRAND_MEDIA_ROOT",
+      "docker_value": "/app/brand-assets",
+      "local_fallback": "packages/brand/assets in the repository checkout",
+      "host_specific_absolute_path_used": false,
+      "bind_mount_required": false,
+      "validated_at_startup": true,
+      "startup_event": "brand_media_root",
+      "missing_root_status": 503,
+      "missing_asset_status": 404
+    },
+    "container_inspection": {
+      "media_root": "/app/brand-assets",
+      "asset_files": 31,
+      "asset_bytes_vs_manifest_sha256": "31/31 match, 0 missing, 0 unexpected, 0 mismatched",
+      "app_contents": [
+        "alembic.ini",
+        "app",
+        "brand-assets",
+        "data",
+        "manage.py",
+        "migrations",
+        "notification_worker.py",
+        "requirements.txt",
+        "var"
+      ],
+      "absent": [
+        ".git",
+        ".env",
+        ".env.staging",
+        "evidence",
+        "backup dumps",
+        "Side A handoff",
+        "docs",
+        "tests",
+        "node_modules",
+        "__pycache__",
+        "*.pyc",
+        "*.sqlite3"
+      ],
+      "real_secret_values_present": false,
+      "image_size_before": "73.6 MB",
+      "image_size_after": "73.7 MB"
+    },
+    "container_media_acceptance": {
+      "before": {
+        "passed": 23,
+        "total": 29
+      },
+      "after": {
+        "passed": 29,
+        "total": 29
+      },
+      "registered_assets_200": "31/31",
+      "assets_correct_type_nosniff_and_bytes": "31/31",
+      "product_media_200": "18/18",
+      "ddn_ts01_media_urls": [
+        200,
+        200,
+        200,
+        200
+      ],
+      "ddn_ts01_ordering": [
+        "front",
+        "back",
+        "detail",
+        "lifestyle"
+      ],
+      "hostile_paths_refused": "9/9",
+      "directory_listing": "unavailable",
+      "verified_over_container_network": "worker -> http://api:8000 returned 200 image/svg+xml nosniff"
+    },
+    "web_resolver": {
+      "module": "apps/web/media-url.js",
+      "tests": 11,
+      "cases_covered": [
+        "same-origin development",
+        "split-origin web/API",
+        "API base with trailing slash",
+        "media path with leading slash",
+        "absolute URL",
+        "missing or malformed path"
+      ],
+      "returns_empty_string_for_unusable_input": true,
+      "traversal_refused_client_side": true
+    },
+    "web_brand_mark": {
+      "mechanism": "normalized API asset-serving route via data-asset hydration",
+      "local_checkout": "200, loaded",
+      "split_origin": "200, loaded, storefront origin never appears in a media URL",
+      "docker_staging": "200, loaded from http://127.0.0.1:18080",
+      "mime_type": "image/svg+xml",
+      "alt_text": "DEDUNET",
+      "legacy_brand_fallback": false,
+      "staging_api_base": "generated apps/web/config.js from the API_BASE_URL build argument"
+    },
+    "web_gallery": {
+      "tests": 12,
+      "media_rendered": 4,
+      "ordering": "API order preserved, not re-sorted",
+      "alt_text": "Side A wording verbatim, role-derived fallback",
+      "concept_labelled": true,
+      "one_media_record": "renders without a thumbnail strip",
+      "zero_media": "renders nothing rather than an empty frame",
+      "failed_image": "degrades to readable text, no broken-image UI",
+      "placeholder_retained_as_fallback": true,
+      "measured_images_loaded": 5,
+      "measured_images_broken": 0,
+      "web_only_media_source": false
+    },
+    "cross_surface_parity": {
+      "external_product_id": "DDN-TS01",
+      "price_minor_units": 7200,
+      "variants": 18,
+      "media_records": 4,
+      "media_order": "0:front, 1:back, 2:detail, 3:lifestyle",
+      "media_status": "PROTOTYPE_CONCEPT",
+      "api_web_mobile_content_identical": true,
+      "layouts_differ": true
+    },
+    "commerce_behaviour_preserved": {
+      "phases_rerun_total": 137,
+      "phases_failed": 0,
+      "brand_preview_mode": "media visible, cart-add 409, checkout blocked, zero effective sellability",
+      "commerce_test_mode": "synthetic inventory works, DDN-SRC-CAR-XS transacted, order COMMERCE_TEST_MODE",
+      "public_commerce_mode": "refused"
+    },
+    "backup_and_restore_after_change": {
+      "backup": "dedunet_slice-20260807T080512Z",
+      "sha256": "b228ff9a21b549b4543693b99283dd417411b2c8f2230677ae162259b32bc45a",
+      "schema_parity": "PASS",
+      "value_parity": "20/20",
+      "functional": "20/20",
+      "product_media_parity": "18 -> 18",
+      "order_mode_parity": "COMMERCE_TEST_MODE preserved",
+      "catalogue": "5 / 62 / 62",
+      "source_untouched": true
+    },
+    "new_limitation": {
+      "L9": "the catalogue grid's lazy thumbnails could not be observed loading under browser automation; their URLs were verified to serve 200 and to load when fetched eagerly. The product gallery, which is the parity requirement, is eager and fully verified."
+    },
+    "mutations": {
+      "run": 68,
+      "detected": 68,
+      "survived": 0,
+      "new_media_mutations": [
+        "M64",
+        "M65",
+        "M66",
+        "M67",
+        "M68",
+        "M69",
+        "M70"
+      ],
+      "m70_first_survived": "removing the route nosniff was masked by the global middleware; the guarding test now calls the handler directly"
+    },
+    "regression": {
+      "side_a": "54/54",
+      "brand_drift": "NORMALIZATION_VERIFIED",
+      "packaged_assets": "PACKAGED_BRAND_ASSETS_VERIFIED",
+      "sqlite": "301 passed, 2 skipped",
+      "postgresql": "303 passed",
+      "backend_mutations": "68/68",
+      "mobile_tests": "117 passed",
+      "mobile_mutations": "18/18",
+      "mobile_typecheck": "clean",
+      "expo_web_export": "succeeded",
+      "openapi": "NO_DRIFT",
+      "container_media": "18/18 product media, 31/31 assets",
+      "phases": "137/137",
+      "secret_scan": "clean",
+      "personal_data_scan": "clean",
+      "customer_facing_meret_meryt": 0
+    },
+    "final_status": "BRANDED_VERTICAL_SLICE_VERIFIED",
+    "limitations_still_open": [
+      "L4",
+      "L5",
+      "L6",
+      "L7",
+      "L8",
+      "L9"
+    ]
+  },
   "final_readiness_review_started": false
 }
