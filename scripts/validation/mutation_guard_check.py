@@ -388,7 +388,16 @@ MUTATIONS: tuple[Mutation, ...] = (
         mutation_id="M22_xff_not_trusted_by_default",
         guard="X-Forwarded-For ignored unless a proxy count is configured",
         target=RATE_LIMIT,
-        original="    if trusted_proxy_count <= 0:\n        return direct\n",
+        # Anchor updated when the rewritten-peer quarantine was added below the guard.
+        # The harness caught the stale anchor by refusing to run (0 matches) rather than
+        # silently skipping the mutation, which is the behaviour that makes an anchor
+        # worth having.
+        original=(
+            "    if trusted_proxy_count <= 0:\n"
+            "        if _peer_was_rewritten_upstream(request):\n"
+            "            return REWRITTEN_PEER_KEY\n"
+            "        return direct\n"
+        ),
         mutated="    if False:  # MUTATED: XFF trusted unconditionally\n        return direct\n",
         tests=(f"{TEST_RATE}::test_spoofed_forwarded_for_does_not_mint_a_fresh_bucket",),
         covers=("trusting XFF unconditionally makes the limiter trivially bypassable",),
