@@ -11,7 +11,11 @@
     <!-- This build must never be indexed: it is a non-public demonstration with
          fictional products and sandbox payments. -->
     <meta name="robots" content="noindex, nofollow" />
-    <link rel="icon" type="image/svg+xml" href="/api/v1/media/assets/brand-prototype/logos/favicon.svg" />
+    <!-- data-asset, not href. The API is a different origin from this storefront in every
+         supported topology, so a root-relative path resolves against the storefront and
+         404s. media-url.js assigns the real href once the API base is known. -->
+    <link rel="icon" type="image/svg+xml"
+          data-asset="assets/brand-prototype/logos/favicon.svg" />
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
@@ -24,7 +28,7 @@
 
     <header class="site">
       <a class="brand" href="#/catalog" aria-label="DEDUNET home">
-        <img class="brand__mark" src="/api/v1/media/assets/brand-prototype/logos/logo-primary.svg"
+        <img class="brand__mark" data-asset="assets/brand-prototype/logos/logo-primary.svg"
              alt="DEDUNET" width="132" height="28" />
       </a>
       <nav class="nav" aria-label="Main">
@@ -48,6 +52,11 @@
       </p>
     </footer>
 
+    <!-- config.js first: it may set window.DEDUNET_API_BASE, which media-url.js reads.
+         Before app.js: app.js takes its API base from that module, so there is one
+         definition of where the API lives rather than one per call site. -->
+    <script src="config.js"></script>
+    <script src="media-url.js"></script>
     <script src="brand.generated.js"></script>
     <script src="app.js"></script>
   </body>

@@ -15,6 +15,12 @@ handoffs/
 packages/
 *.md
 
+# Build definitions are not runtime content. `COPY apps/web` was shipping apps/web/Dockerfile
+# into the served directory, where nginx would happily hand it to anyone who asked.
+**/Dockerfile
+**/Dockerfile.*
+**/.dockerignore
+
 # Local artefacts
 **/__pycache__/
 **/*.pyc

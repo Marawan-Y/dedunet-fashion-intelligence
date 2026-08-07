@@ -97,10 +97,54 @@ main { max-width: 1080px; margin: 0 auto; padding: 2rem 1.25rem 4rem; }
 
 .crumbs { margin-bottom: 1.25rem; font-size: 0.85rem; }
 .pdp { display: grid; grid-template-columns: 1fr 1fr; gap: 2.5rem; align-items: start; }
+/* The placeholder styling is RETAINED, not deleted: it is still the fallback when a
+   product genuinely has no media, and when an image fails to load. */
 .pdp__media {
   aspect-ratio: 3 / 4; background: linear-gradient(150deg, var(--sand), var(--clay));
   border-radius: var(--radius); display: grid; place-items: center;
   font-family: var(--font-display); font-size: 6rem; color: var(--bone);
+}
+/* With real media the container stops being a fixed-ratio placeholder tile and becomes a
+   plain column, so the images set their own height. */
+.pdp__media:has(.pdp__figure) {
+  aspect-ratio: auto; background: none; display: block; font-size: inherit;
+}
+.pdp__figure { margin: 0; }
+/* aspect-ratio, NOT height:auto. A lazy image that has not loaded yet has no intrinsic
+   size, so height:auto collapsed the thumbnails to 0px — which meant they never entered
+   the viewport, so lazy loading never fired, so they never gained a size. Reserving the
+   box breaks that deadlock and removes the layout shift when each image arrives.
+   4/5 is the real 1200x1500 ratio of these assets; `contain` because concept artwork
+   must not be cropped to fit a frame. */
+.pdp__image {
+  width: 100%; aspect-ratio: 4 / 5; object-fit: contain; display: block;
+  border-radius: var(--radius); background: var(--sand);
+}
+.pdp__figcaption {
+  font-size: 0.75rem; letter-spacing: 0.04em; text-transform: uppercase;
+  color: rgba(18, 16, 14, 0.55); margin: 0.35rem 0 0;
+}
+.pdp__thumbs {
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  gap: 0.6rem; margin-top: 0.6rem;
+}
+.pdp__image-missing {
+  font-size: 0.8rem; color: rgba(18, 16, 14, 0.6); margin: 0;
+  padding: 1rem; border: 1px dashed rgba(18, 16, 14, 0.25); border-radius: var(--radius);
+}
+.pdp__media-note {
+  font-size: 0.78rem; color: rgba(18, 16, 14, 0.6); margin: 0.6rem 0 0; font-style: italic;
+}
+/* The placeholder tile centres its single letter with `place-items: center`, which means
+   a child does NOT stretch — so `height: 100%` on the image resolved against an
+   unstretched box and collapsed it to zero. With a real image the tile becomes a plain
+   block and the image carries the ratio itself. */
+.card__media:has(.card__image) {
+  background: none; font-size: inherit; display: block; aspect-ratio: auto;
+}
+.card__image {
+  width: 100%; aspect-ratio: 3 / 4; object-fit: cover;
+  border-radius: var(--radius); display: block;
 }
 .pdp__price { font-size: 1.3rem; font-weight: 600; }
 

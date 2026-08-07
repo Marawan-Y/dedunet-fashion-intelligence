@@ -15,8 +15,18 @@
  * and string operations only — no division, so no binary float ever touches an amount.
  */
 
-const API_BASE =
-  window.FASHION_POC_API_BASE ?? `${window.location.protocol}//${window.location.hostname}:18000`;
+/* One definition of where the API lives, shared with asset URL resolution. Data requests
+   and asset requests drifting apart is how the brand mark ended up pointing at the
+   storefront origin while every data call went to the API. */
+const API_BASE = window.DedunetAssets.apiBase();
+
+/* Resolve an API-backed asset (brand mark, product media) to an absolute URL on the API
+   origin. Never build one of these by string concatenation at a call site. */
+const assetUrl = (path) => window.DedunetAssets.assetUrl(path, API_BASE);
+
+/* The markup declares WHICH brand assets it wants; this assigns WHERE they live, now that
+   the API base is known. Runs immediately: these elements are in the initial HTML. */
+window.DedunetAssets.hydrateAssetElements(document, API_BASE);
 
 const MINOR_UNIT_EXPONENTS = { EUR: 2 };
 const CURRENCY_SYMBOLS = { EUR: "€" };
@@ -76,6 +86,115 @@ function el(tag, attrs = {}, children = []) {
     node.appendChild(typeof child === "string" ? document.createTextNode(child) : child);
   }
   return node;
+}
+
+/* ---------------------------------------------------------------- product media
+ *
+ * Consumes the SAME `product.media` the mobile Gallery consumes. There is deliberately no
+ * web-only media source: two clients deriving imagery from two places is how they end up
+ * disagreeing about what a product looks like.
+ *
+ * The API already returns media in a deterministic order (sort_order, then asset_id), so
+ * this preserves the server's order rather than imposing its own. Sorting here would mean
+ * two surfaces could order the same product differently.
+ */
+
+/* Alt text, in the order of how much it is worth trusting: Side A's own wording, then a
+   role-derived description, then the product name. Never empty on a meaningful image, and
+   never invented detail about a garment nobody has photographed. */
+function mediaAltText(item, product) {
+  if (item.alt_text && item.alt_text.trim()) return item.alt_text.trim();
+  const role = (item.role || "").trim();
+  return role ? `${product.name} — ${role} view (concept artwork)` : `${product.name} (concept artwork)`;
+}
+
+function mediaFigure(item, product, { primary = false } = {}) {
+  const url = assetUrl(item.url || item.path);
+  if (!url) return null;
+
+  const image = el("img", {
+    class: primary ? "pdp__image pdp__image--primary" : "pdp__image",
+    src: url,
+    alt: mediaAltText(item, product),
+    // Eager for ALL of them, not just the primary. This is one product's four small
+    // concept SVGs, which is exactly what the customer opened the page to look at;
+    // deferring three of them below the fold buys nothing and made the gallery's state
+    // depend on scroll position. The catalogue grid still lazy-loads, because that is a
+    // list that grows.
+    loading: "eager",
+    decoding: "async",
+  });
+
+  /* A failed image must degrade to readable text, not to the browser's broken-image
+     glyph. The glyph tells a customer nothing and looks like a defect in the product. */
+  image.addEventListener("error", () => {
+    const fallback = el("p", {
+      class: "pdp__image-missing",
+      text: `${mediaAltText(item, product)} — image unavailable`,
+    });
+    if (image.parentNode) image.parentNode.replaceChild(fallback, image);
+  });
+
+  return el("figure", { class: primary ? "pdp__figure pdp__figure--primary" : "pdp__figure" }, [
+    image,
+    el("figcaption", { class: "pdp__figcaption", text: (item.role || "view").replace(/^\w/, (c) => c.toUpperCase()) }),
+  ]);
+}
+
+function productGallery(product) {
+  const media = Array.isArray(product.media) ? product.media.filter((m) => m && (m.url || m.path)) : [];
+
+  /* Zero media renders NOTHING rather than an empty frame or a placeholder pretending to
+     be an image. The prototype disclosure below already tells the customer what this is. */
+  if (!media.length) return null;
+
+  const [first, ...rest] = media;
+  const children = [mediaFigure(first, product, { primary: true })];
+
+  if (rest.length) {
+    children.push(
+      el(
+        "div",
+        { class: "pdp__thumbs" },
+        rest.map((item) => mediaFigure(item, product)).filter(Boolean)
+      )
+    );
+  }
+
+  /* Concept status comes from the data, so it cannot say "concept artwork" about a real
+     photograph later, nor stay silent about a concept now. */
+  const concept = media.some((m) => (m.status || "").toUpperCase() === "PROTOTYPE_CONCEPT");
+  if (concept) {
+    children.push(el("p", { class: "pdp__media-note", text: "Concept artwork — not product photography." }));
+  }
+
+  return el("div", { class: "pdp__media" }, children.filter(Boolean));
+}
+
+/* Card thumbnail: the front image if there is one, otherwise the existing initial. */
+function cardMedia(product) {
+  const media = Array.isArray(product.media) ? product.media.filter((m) => m && (m.url || m.path)) : [];
+  const front = media.find((m) => (m.role || "").toLowerCase() === "front") || media[0];
+  if (!front) {
+    return el("div", { class: "card__media", "aria-hidden": "true", text: product.name.slice(0, 1) });
+  }
+  const url = assetUrl(front.url || front.path);
+  if (!url) {
+    return el("div", { class: "card__media", "aria-hidden": "true", text: product.name.slice(0, 1) });
+  }
+  const image = el("img", {
+    class: "card__image",
+    src: url,
+    alt: mediaAltText(front, product),
+    loading: "lazy",
+    decoding: "async",
+  });
+  const wrapper = el("div", { class: "card__media" }, [image]);
+  image.addEventListener("error", () => {
+    wrapper.textContent = product.name.slice(0, 1);
+    wrapper.setAttribute("aria-hidden", "true");
+  });
+  return wrapper;
 }
 
 function headers(extra = {}) {
@@ -205,7 +324,7 @@ async function viewCatalog() {
       const cheapest = Math.min(...product.variants.map((v) => v.price_minor_units));
       const inStock = product.variants.some((v) => v.available > 0);
       return el("a", { class: "card", href: `#/product/${product.slug}` }, [
-        el("div", { class: "card__media", "aria-hidden": "true", text: product.name.slice(0, 1) }),
+        cardMedia(product),
         el("h2", { class: "card__title", text: product.name }),
         el("p", { class: "card__meta", text: product.collection || product.category }),
         el("p", { class: "card__price", text: money(cheapest, product.currency) }),
@@ -289,7 +408,8 @@ async function viewProduct(slug) {
     el("nav", { class: "crumbs" }, [el("a", { href: "#/catalog", text: "← Collection" })]),
     evidenceBanner(product),
     el("div", { class: "pdp" }, [
-      el("div", { class: "pdp__media", "aria-hidden": "true", text: product.name.slice(0, 1) }),
+      productGallery(product) ||
+        el("div", { class: "pdp__media", "aria-hidden": "true", text: product.name.slice(0, 1) }),
       el("div", { class: "pdp__info" }, [
         el("h1", { text: product.name }),
         price,
