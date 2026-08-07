@@ -68,6 +68,13 @@ TEST_API = "tests/test_api.py"
 TEST_MONEY = "tests/test_money_integrity.py"
 TEST_RATE = "tests/test_rate_limit.py"
 TEST_PROXY = "tests/test_proxy_boundary.py"
+TEST_MEDIA_ROOT = "tests/test_media_root.py"
+TEST_WEB_RESOLVER = "tests/test_web_media_resolver.py"
+TEST_WEB_GALLERY = "tests/test_web_gallery.py"
+
+WEB_MEDIA_URL = ROOT / "apps" / "web" / "media-url.js"
+WEB_APP = ROOT / "apps" / "web" / "app.js"
+BRAND_VERIFY = ROOT / "scripts" / "brand" / "verify_packaged_assets.py"
 TEST_NOTIFY = "tests/test_notifications.py"
 TEST_BACKUP = "tests/test_backup_guards.py"
 TEST_DEDUNET = "tests/test_dedunet_integration.py"
@@ -846,6 +853,131 @@ MUTATIONS: tuple[Mutation, ...] = (
             "the server option lives on a command line; a bare `uvicorn app.main:app` or "
             "FORWARDED_ALLOW_IPS in the environment restores the unsafe default without "
             "touching this repository",
+        ),
+    ),
+    # ---- deployable brand/product media ----------------------------------------
+    #
+    # Every one of these guards a behaviour that was ONCE ACTUALLY BROKEN in a way no
+    # existing test could see: the image shipped without assets, the media root was
+    # computed from __file__, the web client asked the storefront origin for API assets,
+    # and the product page rendered a letter instead of four photographs.
+    Mutation(
+        mutation_id="M64_missing_asset_root_is_not_silently_404",
+        guard="an absent media root is a deployment failure, not a missing asset",
+        target=API,
+        original=(
+            "    if not root.is_dir():\n"
+            "        raise MediaRootUnavailable(\n"
+            "            f\"brand media root {root} does not exist. Set {BRAND_MEDIA_ROOT_ENV} to the \"\n"
+        ),
+        mutated=(
+            "    if False:  # MUTATED: an absent root is tolerated\n"
+            "        raise MediaRootUnavailable(\n"
+            "            f\"brand media root {root} does not exist. Set {BRAND_MEDIA_ROOT_ENV} to the \"\n"
+        ),
+        tests=(f"{TEST_MEDIA_ROOT}::test_a_missing_root_is_503_not_404",),
+        covers=(
+            "when a missing root and a missing asset both return 404, an image built with "
+            "no assets at all serves nothing while reporting itself healthy",
+        ),
+    ),
+    Mutation(
+        mutation_id="M65_packaged_assets_verified_before_shipping",
+        guard="the build-time verifier detects an asset missing from the package",
+        target=BRAND_VERIFY,
+        original=(
+            "        if not candidate.is_file():\n"
+            "            missing.append(entry[\"asset_id\"])\n"
+            "            continue\n"
+        ),
+        mutated="        if False:  # MUTATED: absent assets are not reported\n            pass\n",
+        tests=(f"{TEST_MEDIA_ROOT}::test_the_verifier_detects_a_missing_asset",),
+        covers=(
+            "this verifier is what makes the Docker build FAIL rather than producing an "
+            "image that starts cleanly and serves no brand at all",
+        ),
+    ),
+    Mutation(
+        mutation_id="M66_web_media_resolves_against_the_api_origin",
+        guard="API-relative asset paths resolve against the configured API base",
+        target=WEB_MEDIA_URL,
+        original=(
+            "    var normalised = path.charAt(0) === \"/\" ? path : \"/\" + path;\n"
+            "    if (normalised.indexOf(MEDIA_PREFIX) === 0) {\n"
+            "      return origin + normalised;\n"
+            "    }\n"
+        ),
+        mutated=(
+            "    var normalised = path.charAt(0) === \"/\" ? path : \"/\" + path;\n"
+            "    if (normalised.indexOf(MEDIA_PREFIX) === 0) {\n"
+            "      return normalised;  // MUTATED: relative to the storefront origin\n"
+            "    }\n"
+        ),
+        tests=(f"{TEST_WEB_RESOLVER}::test_split_origin_web_and_api",),
+        covers=(
+            "a root-relative media URL resolves against the storefront, where nothing is "
+            "mounted, and 404s in every deployed topology",
+        ),
+    ),
+    Mutation(
+        mutation_id="M67_brand_mark_asset_resolution",
+        guard="data-asset elements are pointed at the resolved API URL",
+        target=WEB_MEDIA_URL,
+        original=(
+            "      if (node.tagName === \"LINK\") {\n"
+            "        node.setAttribute(\"href\", url);\n"
+            "      } else {\n"
+            "        node.setAttribute(\"src\", url);\n"
+            "      }\n"
+            "      hydrated += 1;\n"
+        ),
+        mutated="      continue;  // MUTATED: brand mark is never resolved\n",
+        tests=(f"{TEST_WEB_RESOLVER}::test_hydrate_assigns_src_and_href_from_data_asset",),
+        covers=("without hydration the brand mark and favicon have no src at all",),
+    ),
+    Mutation(
+        mutation_id="M68_web_product_gallery_renders_media",
+        guard="the product page renders real media, not the initial placeholder",
+        target=WEB_APP,
+        original="  if (!media.length) return null;\n",
+        mutated="  return null;  // MUTATED: always fall back to the placeholder letter\n",
+        tests=(f"{TEST_WEB_GALLERY}::test_all_four_media_records_are_rendered",),
+        covers=(
+            "the storefront rendered product.name.slice(0, 1) while the API offered four "
+            "ordered media records with Side A alt text",
+        ),
+    ),
+    Mutation(
+        mutation_id="M69_web_gallery_preserves_api_ordering",
+        guard="media is rendered in the server's order",
+        target=WEB_APP,
+        original="  const [first, ...rest] = media;\n",
+        mutated="  const [first, ...rest] = media.slice().reverse();  // MUTATED: order inverted\n",
+        tests=(f"{TEST_WEB_GALLERY}::test_api_ordering_is_preserved",),
+        covers=(
+            "re-ordering client-side makes web and mobile show one product's images "
+            "differently while both claim to render the same catalogue",
+        ),
+    ),
+    Mutation(
+        mutation_id="M70_media_responses_set_nosniff",
+        guard="brand assets are served with X-Content-Type-Options: nosniff",
+        target=API,
+        original='            "X-Content-Type-Options": "nosniff",',
+        mutated="            # MUTATED: nosniff removed",
+        tests=(
+            f"{TEST_MEDIA_ROOT}::test_the_media_route_sets_nosniff_itself_not_only_the_global_middleware",
+        ),
+        covers=(
+            "these are prototype SVGs, which are active content; without nosniff a browser "
+            "may re-interpret a response as something more dangerous than declared",
+        ),
+        notes=(
+            "First aimed at the request-level test, and SURVIVED: main.py's access-log "
+            "middleware stamps nosniff on every response, so removing the route's own "
+            "header changed nothing observable through the app. The redundancy is real "
+            "defence in depth; the guarding test now calls the handler directly so the "
+            "route's own header is asserted with no middleware in the path."
         ),
     ),
 )

@@ -66,6 +66,24 @@ def test_assets_are_served_from_the_configured_root(monkeypatch):
     assert response.headers["x-content-type-options"] == "nosniff"
 
 
+def test_the_media_route_sets_nosniff_itself_not_only_the_global_middleware():
+    """Both layers set nosniff, so neither is detectable through the app.
+
+    `main.correlation_and_access_log` stamps `X-Content-Type-Options` on EVERY response,
+    and the media route sets it again on its own `FileResponse`. That redundancy is
+    deliberate defence in depth — but it also means a request-level assertion passes when
+    either one is removed, which let a mutation of the route's header survive.
+
+    So this asserts the route's OWN header by calling the handler directly, with no
+    middleware in the path. The request-level test above still covers the combination.
+    """
+
+    response = commerce_api.get_media("assets/brand-prototype/logos/logo-primary.svg")
+
+    assert response.headers["x-content-type-options"] == "nosniff", dict(response.headers)
+    assert response.media_type == "image/svg+xml"
+
+
 def test_a_missing_asset_under_a_valid_root_is_404(monkeypatch):
     response = client.get("/api/v1/media/assets/brand-prototype/logos/not-a-real-asset.svg")
     assert response.status_code == 404
