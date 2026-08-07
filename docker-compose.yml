@@ -32,6 +32,10 @@ services:
       # produces a working curl and a broken storefront.
       CORS_ORIGINS: "http://localhost:${STOREFRONT_PORT:-13000},http://127.0.0.1:${STOREFRONT_PORT:-13000}"
       DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-commerce}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set}@db:5432/${POSTGRES_DB:-commerce}
+      # Same reason as the staging stack: compose forwards no arbitrary shell variable, so
+      # without this line the mode can never be switched from the command line. Empty
+      # default preserves the existing behaviour (modes.DEFAULT_MODE applies).
+      COMMERCE_MODE: ${COMMERCE_MODE:-}
     depends_on:
       db:
         condition: service_healthy

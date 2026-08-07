@@ -55,6 +55,19 @@ services:
     environment:
       APP_ENV: staging
       DATABASE_URL: postgresql+psycopg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+      # Declared so it can actually be overridden. Without this line COMMERCE_MODE never
+      # reaches the container at all -- compose does not forward arbitrary shell variables
+      # -- so `COMMERCE_MODE=BRAND_PREVIEW_MODE docker compose up -d api` silently did
+      # nothing and staging always ran the default. A tester would believe they were in
+      # brand preview while the store was in commerce-test mode.
+      #
+      # Empty default, NOT a literal mode: an empty value is falsy in modes.current_mode(),
+      # which then applies DEFAULT_MODE. That preserves the previously verified staging
+      # behaviour exactly while making the documented switch work:
+      #
+      #   COMMERCE_MODE=BRAND_PREVIEW_MODE docker compose -f docker-compose.staging.yml \
+      #     --env-file .env.staging up -d api
+      COMMERCE_MODE: ${COMMERCE_MODE:-}
       # No demo customer, administrator, product or order. The administrator is created
       # manually with `manage.py create-admin`, never by the entrypoint.
       SEED_DEMO_DATA: "0"
