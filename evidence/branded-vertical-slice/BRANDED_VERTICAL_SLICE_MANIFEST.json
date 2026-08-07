@@ -1,0 +1,473 @@
+{
+  "artifact_id": "EV-BVS-001",
+  "version": "1.0",
+  "generated_at": "2026-08-07",
+  "owner": "Side B / platform",
+  "readiness_status": "AUTOMATED-TESTED",
+  "final_status": "BRANDED_VERTICAL_SLICE_CONDITIONALLY_VERIFIED",
+
+  "takeover": {
+    "git_root": "C:/Users/User/Desktop/Claude/Fashion_Commerce_Codex_Multi_Agent_Pack",
+    "branch": "dedunet/repository-restructure-and-workstreams-a-f",
+    "starting_head": "d6c6973",
+    "inherited_partial_commit": "d6c6973",
+    "inherited_verified_integration_commit": "66c3100",
+    "working_tree_at_takeover": "clean",
+    "git_remotes": 0,
+    "inherited_commit_preserved": true,
+    "history_rewritten": false
+  },
+
+  "inherited_state_reverified": {
+    "side_a_checksums": "54/54 verified, 0 missing, 0 mismatched",
+    "side_a_result": "DEDUNET_HANDOFF_INTEGRITY_VERIFIED",
+    "brand_package_drift": "NORMALIZATION_VERIFIED",
+    "dedunet_products": 5,
+    "dedunet_variants": 62,
+    "dedunet_unique_skus": 62,
+    "product_media_records": 18,
+    "customer_facing_legacy_meret_meryt": 0,
+    "public_commerce": "BLOCKED"
+  },
+
+  "proxy_header_finding": {
+    "component": "uvicorn 0.35.0 ProxyHeadersMiddleware",
+    "mechanism": "Config defaults proxy_headers=True; forwarded_allow_ips=None resolves to os.environ.get('FORWARDED_ALLOW_IPS','127.0.0.1'); the middleware sets scope['client']=(header_value, 0) for a trusted peer BEFORE application code runs",
+    "why_application_config_was_insufficient": "app/rate_limit.py reads request.client.host, which the ASGI server had already replaced; the true peer is not recoverable afterwards",
+    "why_the_existing_suite_missed_it": "fastapi.testclient.TestClient builds the ASGI scope itself and never installs ProxyHeadersMiddleware, so test_rate_limit.py and mutation M22 stayed green",
+    "reproduction_before_fix": {
+      "command": "python -m uvicorn app.main:app --port 18300",
+      "control_no_xff_429_count": 6,
+      "control_pattern": "401 x10 then 429 x6",
+      "spoofed_varied_xff_429_count": 0,
+      "spoofed_pattern": "401 x16, never limited",
+      "malformed_xff": [429, 401, 401, 429, 401],
+      "ready_after": 200,
+      "bypass_present": true
+    },
+    "measurement_after_fix": {
+      "command": "python -m app.server --host 127.0.0.1 --port 18300",
+      "control_no_xff_429_count": 6,
+      "spoofed_varied_xff_429_count": 16,
+      "malformed_xff": [429, 429, 429, 429, 429],
+      "ready_after": 200,
+      "bypass_present": false
+    },
+    "local_staging_after_rebuild": {
+      "container_command": ["python", "-m", "app.server", "--host", "0.0.0.0", "--port", "8000", "--workers", "1"],
+      "boundary_line_mode": "none",
+      "control_429_count": 6,
+      "spoofed_429_count": 16,
+      "malformed_xff": [429, 429, 429, 429, 429],
+      "ready": 200,
+      "health": 200,
+      "bypass_present": false
+    },
+    "staging_previously_compromised": false,
+    "staging_note": "Its uvicorn binds 0.0.0.0 and traffic arrives from the Docker bridge, which is not in forwarded_allow_ips, so the bypass did not reproduce there before the fix either. No claim of prior compromise is made."
+  },
+
+  "correction": {
+    "layer_1": {
+      "file": "services/commerce-api/app/server.py",
+      "behaviour": "passes proxy_headers=False and forwarded_allow_ips=[] explicitly in both modes",
+      "default_mode": "none",
+      "explicit_mode_requires": [
+        "TRUSTED_PROXY_IPS (wildcard '*' refused)",
+        "RATE_LIMIT_TRUSTED_PROXY_COUNT >= 1",
+        "TRUSTED_PROXY_NETWORK_BOUNDARY"
+      ],
+      "startup_line_event": "asgi_proxy_trust_boundary"
+    },
+    "layer_2": {
+      "file": "services/commerce-api/app/rate_limit.py",
+      "function": "_peer_was_rewritten_upstream",
+      "signal": "scope['client'] port == 0, which ProxyHeadersMiddleware writes because it cannot recover the forwarded client's source port; a real TCP peer never has source port 0",
+      "behaviour": "such requests share one quarantine bucket, so a forger gains nothing and cannot exhaust a genuine client's bucket"
+    },
+    "launch_paths_updated": [
+      "services/commerce-api/Dockerfile",
+      "docker-compose.staging.yml",
+      "README.md",
+      "docs/operations/RUNBOOKS.md",
+      "apps/mobile/README.md"
+    ],
+    "safe_startup_command": "python -m app.server --host 127.0.0.1 --port 18000",
+    "documentation": "docs/operations/RUNBOOKS.md R12",
+    "conflict_register_entry": "CONFLICT-011"
+  },
+
+  "regression_test": {
+    "file": "services/commerce-api/tests/test_proxy_boundary.py",
+    "tests": 18,
+    "launches_real_server_process": true,
+    "covers": [
+      "explicit boundary logged by the real supported command",
+      "control burst reaches the threshold and returns 429",
+      "varied spoofed X-Forwarded-For mints no fresh bucket",
+      "direct peer remains the limiter identity with and without the header",
+      "malformed forwarded headers do not crash the API",
+      "Retry-After present, readable and exposed cross-origin",
+      "correlation ID present on the 429",
+      "/ready never throttled",
+      "registration has its own bucket",
+      "a deliberately proxy-trusting server still cannot be bypassed (layer 2)",
+      "a forger cannot exhaust a direct client's bucket",
+      "future proxied deployment refusals: missing allowlist, hops < 1, missing boundary, wildcard, unknown mode"
+    ]
+  },
+
+  "phases": {
+    "A_default_product_truth": { "passed": 13, "total": 13 },
+    "B_brand_preview_mode": { "passed": 14, "total": 14 },
+    "A_plus_B_combined": { "passed": 27, "total": 27 },
+    "C_synthetic_inventory": { "passed": 28, "total": 28 },
+    "C10_preview_blocks_with_stored_stock": { "passed": 5, "total": 5 },
+    "D_customer_journey": { "passed": 38, "total": 38 },
+    "E_admin_and_notifications": { "passed": 26, "total": 26 },
+    "F_rate_limiting": { "passed": 7, "total": 7 },
+    "F_session": { "passed": 6, "total": 6 },
+    "H_return_to_preview": { "passed": 9, "total": 9 },
+    "G_restore_value_parity": { "passed": 20, "total": 20 },
+    "G_restore_functional": { "passed": 20, "total": 20 },
+    "total_executed_checks": 186,
+    "total_failed": 0
+  },
+
+  "selected": {
+    "hero_product": "DDN-TS01",
+    "hero_slug": "the-source-tee",
+    "selected_sku": "DDN-SRC-CAR-XS",
+    "variant_id": 1,
+    "price_minor_units": 7200,
+    "currency": "EUR"
+  },
+
+  "synthetic_inventory": {
+    "mode_required": "COMMERCE_TEST_MODE",
+    "starting_quantity": 0,
+    "loaded_quantity": 25,
+    "quantity_after_repeat_load": 25,
+    "quantity_after_cleanup": 0,
+    "quantity_after_reload_for_journey": 25,
+    "final_cleanup_quantity": 0,
+    "inventory_status_when_loaded": "synthetic_test_stock",
+    "inventory_status_when_cleared": "prototype_unavailable",
+    "variants_touched": 1,
+    "unrelated_skus_with_stock": 0,
+    "other_products_with_stock": 0,
+    "evidence_states_changed": false,
+    "loaded_at_startup": false,
+    "refusals": {
+      "without_confirmation": "refused, nothing written",
+      "in_brand_preview_mode": "refused, nothing written",
+      "in_public_commerce_mode": "refused, nothing written",
+      "public_mode_refusal_mechanism": "uncaught CommerceModeError traceback (fails closed; cosmetic defect, limitation L4)"
+    }
+  },
+
+  "customer_journey": {
+    "customer": "slice.customer.local@dedunet.example",
+    "quantity": 2,
+    "unit_price_minor_units": 7200,
+    "subtotal_minor_units": 14400,
+    "tax_minor_units": 2299,
+    "tax_model": "VAT-inclusive: total = subtotal - discount + shipping; tax is a component",
+    "total_minor_units": 14400,
+    "currency": "EUR",
+    "declined": {
+      "payment_token": "pm_decline",
+      "http_status": 402,
+      "created_successful_order": false,
+      "consumed_cart": false,
+      "stock_released_to": 25,
+      "retained_as": "cancelled order (audit trail of the attempt)"
+    },
+    "successful": {
+      "payment_token": "pm_success",
+      "http_status": 201,
+      "order_number": "FC-037F5FAF",
+      "replayed": false,
+      "commerce_mode_at_checkout": "COMMERCE_TEST_MODE",
+      "is_test_order": true
+    },
+    "idempotency": {
+      "declined_intent": "slice-decline-1786062795",
+      "successful_intent": "slice-success-1786062795",
+      "intents_distinct": true,
+      "success_replayed_the_decline": false,
+      "replaying_success_key_returns_same_order": true,
+      "second_order_created_on_replay": false
+    },
+    "inventory": {
+      "stock_before": 25,
+      "stock_after": 23,
+      "decrement_exact": true,
+      "overselling": false,
+      "over_quantity_add_http": 409
+    },
+    "cart": {
+      "converted_cart_status": "converted",
+      "new_token_issued_for_next_purchase": true
+    },
+    "order_history_includes_order": true,
+    "order_detail_truthful": true
+  },
+
+  "web_and_mobile": {
+    "web": {
+      "surface": "apps/web served on a loopback static origin, API on :18000",
+      "title": "DEDUNET \u2014 prototype storefront",
+      "products_listed": 5,
+      "hero_price_displayed": "\u20ac72.00",
+      "hero_availability_displayed": "23 available",
+      "origin_disclosure": "Intended production in EG \u2014 not verified, no origin claim is made",
+      "prototype_disclosure_present": true,
+      "legacy_brand_text_rendered": false,
+      "product_media_rendered": false,
+      "brand_mark_loaded": false
+    },
+    "mobile": {
+      "surface": "expo export --platform web, served on :8081, API on :18000",
+      "title": "DEDUNET",
+      "products_listed": 5,
+      "hero_price_displayed": "\u20ac72.00",
+      "selected_variant_displayed": "XS \u00b7 Carbon \u2014 23 available",
+      "other_variants_displayed": "Out of stock",
+      "gallery_roles": ["Front", "Back", "Detail", "In context"],
+      "media_images_loaded": 4,
+      "media_images_broken": 0,
+      "media_natural_size": "1200x1500",
+      "concept_artwork_labelled": true,
+      "legacy_brand_text_rendered": false
+    },
+    "agreement": {
+      "product": true,
+      "variant": true,
+      "price": true,
+      "stock": true,
+      "origin_and_legal_disclosure": true,
+      "media": false,
+      "note": "Mobile resolves media against API_BASE and renders the gallery. The web client renders a letter placeholder and its root-relative brand-mark URL resolves against the web origin. See limitations L2 and L3."
+    }
+  },
+
+  "administration": {
+    "admin_identifies_dedunet": true,
+    "admin_sees_test_order": true,
+    "admin_labels_test_order": true,
+    "admin_sees_synthetic_inventory_classification": true,
+    "approved_transition": "fulfil -> shipped, tracking number issued",
+    "customer_sees_updated_state": "shipped",
+    "legacy_items_separately_classified_and_hidden": true
+  },
+
+  "notification": {
+    "id": 1,
+    "template": "order_confirmation",
+    "subject": "[TEST ORDER] DEDUNET \u2014 your order FC-037F5FAF is confirmed",
+    "dedunet_identity": true,
+    "test_order_indicated": true,
+    "stable_key": "order_confirmation",
+    "status_before": "queued",
+    "status_after": "sent",
+    "attempts": 1,
+    "channel": "console",
+    "claim_token_after": "",
+    "claimed_at_after": null,
+    "claim_expires_at_after": null,
+    "rows_deleted": 0,
+    "stale_worker_fencing_intact": "mutations M32-M41 detected",
+    "erased_customer_suppression_intact": "mutation M28 detected",
+    "maximum_attempt_behaviour_intact": "mutation M30 detected",
+    "real_inbox_delivery_claimed": false,
+    "external_delivery": "EXTERNAL_SMTP_DELIVERY_PENDING"
+  },
+
+  "rate_limiting_and_session": {
+    "normal_requests_below_limit": true,
+    "burst_pattern": "401 x10 then 429",
+    "spoofed_xff_bypass": false,
+    "spoofed_429_count": 16,
+    "spoofed_total": 16,
+    "retry_after_seconds": 6,
+    "retry_after_browser_readable": true,
+    "exposed_headers": ["X-Correlation-ID", "Retry-After", "X-RateLimit-Limit", "X-RateLimit-Remaining", "X-RateLimit-Reset"],
+    "cors_origin_scoped": true,
+    "ready": 200,
+    "health": 200,
+    "worker_affects_api_readiness": false,
+    "forged_session": 401,
+    "empty_bearer": 401,
+    "forged_signature_valid_shape": 401,
+    "missing_session": 401,
+    "limiter_weakened": false,
+    "limits_raised": false
+  },
+
+  "backup_and_restore": {
+    "backup_name": "dedunet_slice-20260807T004046Z",
+    "format": "postgresql custom",
+    "size_bytes": 61218,
+    "sha256": "bf60c0495fa14109be69e8dc547ae557bd42083d8197425ddede9a5fd7017491",
+    "checksum_verified_before_restore": true,
+    "restored_into": "dedunet_slice_rehearsal",
+    "restored_into_new_database": true,
+    "migrations_run_before_parity": false,
+    "schema_parity": "PASS",
+    "value_parity": "20/20",
+    "functional_checks": "20/20",
+    "migration_revision": "a7c31f9be402",
+    "preserved": {
+      "dedunet_products": 5,
+      "dedunet_variants": 62,
+      "dedunet_skus": 62,
+      "product_media": 18,
+      "brand_and_evidence_states": "hash identical",
+      "synthetic_inventory_classification": "DDN-SRC-CAR-XS=synthetic_test_stock:23/0",
+      "test_customer": true,
+      "cart_state": "converted,open",
+      "orders": 2,
+      "order_lines": 2,
+      "commerce_mode_at_checkout": "COMMERCE_TEST_MODE",
+      "reservations": "RELEASED, COMMITTED",
+      "sandbox_payment_state": "DECLINED, AUTHORIZED",
+      "notifications": "2 sent, attempts=1, no residual claim",
+      "indexes": "identical",
+      "foreign_keys": "identical",
+      "check_constraints": "identical",
+      "unique_constraints": "identical",
+      "primary_keys": "identical"
+    },
+    "cleanup": "rehearsal database dropped; source dedunet_slice untouched",
+    "status": "LOCAL_BACKUP_AND_RESTORE_REHEARSAL_VERIFIED",
+    "production_disaster_recovery_claimed": false
+  },
+
+  "cleanup": {
+    "synthetic_inventory_removed_via_approved_command": true,
+    "selected_stock_after": 0,
+    "inventory_status_after": "prototype_unavailable",
+    "mode_after": "BRAND_PREVIEW_MODE",
+    "cart_add_blocked": 409,
+    "checkout_blocked": true,
+    "test_order_evidence_retained": true,
+    "rehearsal_database_removed": true,
+    "committed_evidence_preserved": true,
+    "working_tree_clean": true
+  },
+
+  "regressions": {
+    "side_a_checksums": "54/54",
+    "brand_drift": "NORMALIZATION_VERIFIED",
+    "sqlite_suite": "267 passed, 2 skipped",
+    "postgresql_suite": "269 passed",
+    "mobile_typecheck": "clean",
+    "mobile_tests": "117 passed, 9 suites",
+    "mobile_mutations": "18/18 detected, 0 survived",
+    "mobile_dependency_matrix": "up to date",
+    "expo_web_export": "succeeded, 230 modules",
+    "openapi_export_and_drift": "30 paths, no drift",
+    "staging_readiness": "healthy, /ready 200, /health 200",
+    "rate_limit_smoke": "control 429 x6",
+    "proxy_header_spoofing_test": "spoofed 429 x16, bypass_present false",
+    "notification_worker_smoke": "started, console sender, API readiness unaffected",
+    "asset_serving_smoke": "unsafe paths refused 404; legitimate assets 404 in containers (limitation L1)",
+    "secret_scan": "no .env in history; none tracked",
+    "personal_data_scan": "no real emails, phone numbers or IBANs in tracked text",
+    "active_meret_meryt_scan": "0 customer-facing",
+    "preserved_fixture_checksums": "both match the values CI asserts",
+    "git_cleanliness": "clean"
+  },
+
+  "visible_counts": {
+    "dedunet_products": 5,
+    "dedunet_variants": 62,
+    "dedunet_unique_skus": 62,
+    "product_media_records": 18,
+    "active_customer_facing_meret_meryt": 0
+  },
+
+  "mutations": {
+    "mutations_run": 61,
+    "detected": 61,
+    "survived": 0,
+    "inherited": 59,
+    "added": 2,
+    "harness_exit_code": 0,
+    "existing_guards_preserved": true,
+    "added": [
+      {
+        "mutation": "M62_asgi_proxy_headers_disabled_explicitly",
+        "guard": "app/server.py states proxy_headers=False and an empty forwarder allowlist",
+        "expected_failing_test": "tests/test_proxy_boundary.py::test_supported_server_states_its_proxy_boundary_explicitly",
+        "actual_failing_test": "tests/test_proxy_boundary.py::test_supported_server_states_its_proxy_boundary_explicitly",
+        "intended_reason": "AssertionError: the ASGI server would interpret forwarded headers (assert True is False)",
+        "failed_by_import_or_startup_error": false,
+        "restored": true
+      },
+      {
+        "mutation": "M63_rewritten_peer_is_not_trusted",
+        "guard": "a peer the ASGI server rewrote from a forwarded header is quarantined",
+        "expected_failing_test": "tests/test_proxy_boundary.py::test_unsafe_server_still_cannot_be_bypassed",
+        "actual_failing_test": "tests/test_proxy_boundary.py::test_unsafe_server_still_cannot_be_bypassed",
+        "intended_reason": "varied X-Forwarded-For minted a fresh bucket per request: [401 x16] - the original bypass signature",
+        "failed_by_import_or_startup_error": false,
+        "restored": true
+      }
+    ],
+    "anchor_repair": {
+      "mutation": "M22_xff_not_trusted_by_default",
+      "cause": "the layer-2 quarantine changed the text the anchor matched",
+      "harness_behaviour": "refused to run with 'anchor matched 0 times' rather than silently skipping",
+      "resolution": "anchor updated to the new four-line form; M22 re-verified as DETECTED"
+    }
+  },
+
+  "limitations": [
+    "L1 brand and product media do not serve in any Docker deployment: _MEDIA_ROOT resolves outside the API image build context, so packages/brand/assets cannot be in the image. Pre-existing and unrelated to this milestone's correction.",
+    "L2 the web client renders product media as a letter placeholder; the gallery was mobile-only in f17dad3, so web and mobile do not agree on media",
+    "L3 the web client's brand mark and favicon use root-relative /api/v1/media/... and 404 in every split-origin topology",
+    "L4 load-test-inventory in PUBLIC_COMMERCE_MODE surfaces an uncaught traceback; fails closed, cosmetic",
+    "L5 orders.status is varchar(15) with no enum or CHECK constraint; validity is application-enforced, identical in source and restored",
+    "L6 runbook R11 still states no notification dispatcher exists (CONFLICT-012)",
+    "L7 rate-limit buckets are process-local; MULTI_REPLICA_DEPLOYMENT_BLOCKED_PENDING_SHARED_OR_GATEWAY_RATE_LIMITING",
+    "L8 no Git remote exists (CONFLICT-010, owner decision)"
+  ],
+
+  "preserved_external_blockers": [
+    "EAS_PROJECT_CONFIGURATION_VERIFIED",
+    "NATIVE_PREVIEW_BUILD_EXTERNALLY_PENDING",
+    "EXTERNAL_SMTP_DELIVERY_PENDING",
+    "PUBLIC_COMMERCIAL_LAUNCH_BLOCKED"
+  ],
+
+  "scope_exclusions_honoured": [
+    "real SMTP provider", "hosted cloud deployment", "Cloudflare changes",
+    "Apple Developer enrolment", "Google Play enrolment", "EAS authentication",
+    "native store submission", "live payments", "real inventory", "real fulfilment",
+    "public commerce", "trademark clearance", "manufacturing claims"
+  ],
+
+  "rollback": {
+    "whole_milestone": "git revert --no-commit 3835aa0..HEAD && git commit",
+    "proxy_header_correction_only": "git revert 3835aa0",
+    "return_to_takeover_commit": "git checkout d6c6973",
+    "note": "after any revert, rebuild the staging image; the running container carries the corrected entrypoint",
+    "committed_fixtures_modified": false
+  },
+
+  "commit_range": {
+    "inherited_preserved": "d6c6973",
+    "continuation": [
+      "3835aa0 fix: make ASGI proxy-header trust explicit and fail closed",
+      "c1cb745 test: complete DEDUNET commerce-test customer, admin and notification journey",
+      "0809955 test: verify branded backup and isolated restore",
+      "ee4b5d3 fix: repair the M22 mutation anchor after the proxy-header quarantine",
+      "docs: complete branded vertical-slice evidence"
+    ],
+    "squashed_or_rewritten_inherited_history": false
+  },
+
+  "final_readiness_review_started": false
+}
