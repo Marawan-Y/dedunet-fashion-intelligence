@@ -218,17 +218,54 @@ treat the data as unprotected.
 
 ## R11 — Queue backlog
 
-Notifications accumulate in the `notifications` outbox with `status = 'queued'`.
+**Symptoms:** rows in the `notifications` outbox stay at `status = 'queued'` and the count grows.
 
-**There is currently no dispatcher.** Every notification ever created is still queued; this is
-expected, not an incident. Rows growing is not evidence of a delivery failure, because delivery
-was never implemented.
+> Corrected 2026-08-07. This section previously read *"There is currently no dispatcher …
+> delivery was never implemented"*, which stopped being true when Workstream B shipped one
+> (`4a2c548`, `054fd47`, `c1f0188`). An operator following the old text would have concluded a
+> real backlog was expected and stopped investigating. Recorded as CONFLICT-012.
 
-```sql
-SELECT status, COUNT(*) FROM notifications GROUP BY status;
-```
+A dispatcher **does** exist: `services/commerce-api/notification_worker.py`, run as a separate
+`notification-worker` container in `docker-compose.staging.yml`. It never runs inside the API
+process — a delivery thread there would make `/ready` lie about a subsystem it does not check,
+and two API replicas would double-send every message.
 
-When a dispatcher is built it must be idempotent and must not delete rows on failure.
+1. Break the count down by state. A healthy queue drains; `queued` should not grow monotonically.
+   ```sql
+   SELECT status, COUNT(*) FROM notifications GROUP BY status;
+   ```
+2. Is the worker alive and cycling? It logs one structured line per lifecycle event.
+   ```bash
+   docker compose -f docker-compose.staging.yml --env-file .env.staging logs --tail 50 notification-worker
+   ```
+   `{"event": "started", ...}` then quiet is normal — it sleeps
+   `NOTIFICATION_WORKER_INTERVAL_SECONDS` between bounded cycles. Repeated
+   `{"event": "cycle_failed", ...}` is the real signal; the `error` field names the cause.
+   A single `cycle_failed` mentioning *"the database system is starting up"* immediately after a
+   restart is the expected startup race, not an incident — the next cycle recovers.
+3. Run one bounded cycle by hand to see the outcome directly:
+   ```bash
+   docker compose -f docker-compose.staging.yml --env-file .env.staging exec api python manage.py dispatch-notifications
+   ```
+   It prints `{"dispatched": {"sent": N, "failed": N, "retried": N, "suppressed": N,
+   "claimed": N, "ownership_lost": N}}`.
+4. Rows stuck in `sending` are **claimed**, not lost. A worker killed mid-send leaves a claim that
+   expires after `NOTIFICATION_CLAIM_TTL_SECONDS`, after which another worker may recover it.
+   `claim_expires_at` is compared against the DATABASE clock, never a worker-local timer.
+   ```sql
+   SELECT id, status, attempts, claimed_at, claim_expires_at FROM notifications
+   WHERE status = 'sending' ORDER BY claimed_at;
+   ```
+   Do not clear claims by hand while a worker is running; let the lease expire.
+5. `suppressed` counts notifications for erased customers. That is correct behaviour, not a failure.
+6. A row that reached `NOTIFICATION_MAX_ATTEMPTS` stops being retried and keeps its `last_error`.
+   It is **never deleted** — the row is the record that a message was owed.
+
+**Delivery channel:** `NOTIFICATION_CHANNEL=console` in every current environment. Nothing is sent
+to a real mailbox and no inbox delivery is claimed — `EXTERNAL_SMTP_DELIVERY_PENDING`. A growing
+queue with a console sender means the worker is not running, not that mail is failing.
+
+**Confirm fixed:** `queued` drains on the next cycle and `sent` increases by the same amount.
 
 ---
 

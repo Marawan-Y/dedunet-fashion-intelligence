@@ -378,4 +378,18 @@ correction would obscure both.
 **Risk:** Medium. No runtime impact; misleads incident response.
 
 **Owner:** Technical lead
-**Approval status:** OPEN — recorded by the successor agent 2026-08-07.
+**Approval status:** RESOLVED — corrected during the team-acceptance readiness review,
+2026-08-07. R11 now documents the delivered worker: how to read its structured lifecycle
+log, how to run one bounded cycle by hand, how claimed rows in `sending` expire against the
+DATABASE clock rather than a worker-local timer, that `suppressed` counts erased customers and
+is correct behaviour, and that a row at maximum attempts is never deleted. Every command in the
+rewritten section was executed against the running staging stack before it was written down:
+the compose `logs` invocation, `compose exec api python manage.py dispatch-notifications`
+(returned `{"sent": 0, ...}`), and both SQL statements (returned `sent | 3` and zero rows in
+`sending`). The section also records that a single `cycle_failed` naming *"the database system
+is starting up"* immediately after a restart is the expected startup race, because that is
+exactly what was observed when Docker restarted mid-review and it would otherwise read as an
+incident.
+
+CONFLICT-009 remains OPEN: it covers `docs/KNOWN_LIMITATIONS.md` and `README.md`, which are a
+larger rewrite and were deliberately not pulled into a readiness review.

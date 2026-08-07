@@ -1,0 +1,190 @@
+{
+  "artifact_id": "EV-REL-002",
+  "version": "1.0",
+  "generated_at": "2026-08-07",
+  "owner": "Orchestrator (controller)",
+  "readiness_status": "AUTOMATED-TESTED",
+  "decision": "READY_FOR_TEAM_ACCEPTANCE_TESTING",
+  "decision_document": "docs/system-of-record/TEAM_ACCEPTANCE_READINESS_DECISION.md",
+  "evidence_document": "evidence/release/TEAM_ACCEPTANCE_READINESS_EVIDENCE.md",
+  "team_test_script": "docs/operations/TEAM_ACCEPTANCE_TEST_SCRIPT.md",
+  "public_launch": "PUBLIC_COMMERCIAL_LAUNCH_BLOCKED",
+  "hosted_deployment_started": false,
+
+  "starting_state": {
+    "git_root": "C:/Users/User/Desktop/Claude/Fashion_Commerce_Codex_Multi_Agent_Pack",
+    "branch": "dedunet/repository-restructure-and-workstreams-a-f",
+    "reviewed_head": "fc7bdeb",
+    "working_tree_at_start": "clean",
+    "repository_identity_confirmed": true
+  },
+
+  "milestone_ledger": [
+    { "milestone": "Repository restructuring", "commit": "f7af320", "expected": "RESTRUCTURE_VERIFIED", "found": "RESTRUCTURE_VERIFIED", "reconciled": true },
+    { "milestone": "Workstream A - PostgreSQL", "commit": "d143c12", "expected": "WORKSTREAM_A_VERIFIED", "found": "WORKSTREAM_A_VERIFIED", "reconciled": true },
+    { "milestone": "Workstream C - rate limiting", "commit": "48cd58a", "expected": "WORKSTREAM_C_VERIFIED", "found": "WORKSTREAM_C_VERIFIED", "reconciled": true },
+    { "milestone": "Workstream E - local staging", "commit": "efe168f", "expected": "WORKSTREAM_E_VERIFIED", "found": "WORKSTREAM_E_VERIFIED", "reconciled": true },
+    { "milestone": "Workstream B - notifications", "commit": "4a2c548 -> 054fd47 -> c1f0188", "expected": "WORKSTREAM_B_VERIFIED_WITH_LEASE_FENCING", "found": "WORKSTREAM_B_VERIFIED_WITH_LEASE_FENCING", "reconciled": true },
+    { "milestone": "Workstream D - backup and restore", "commit": "d8e2f04", "expected": "WORKSTREAM_D_VERIFIED + LOCAL_BACKUP_AND_RESTORE_REHEARSAL_VERIFIED", "found": "both located", "reconciled": true },
+    { "milestone": "Workstream F - mobile", "commit": "02a5796", "expected": "WORKSTREAM_F_ACCEPTED_FOR_DEDUNET_INTEGRATION", "found": "WORKSTREAM_F_CONDITIONALLY_VERIFIED", "reconciled": false, "discrepancy": "The expected token does not exist anywhere in the repository. Recorded status is conditional solely on NATIVE_PREVIEW_BUILD_EXTERNALLY_PENDING. Reported, not retro-fitted; no evidence file was edited to manufacture the token." },
+    { "milestone": "DEDUNET integration", "commit": "66c3100", "expected": "DEDUNET_INTEGRATION_VERIFIED", "found": "DEDUNET_INTEGRATION_VERIFIED", "reconciled": true },
+    { "milestone": "Branded vertical slice", "commit": "fc7bdeb", "expected": "BRANDED_VERTICAL_SLICE_VERIFIED", "found": "BRANDED_VERTICAL_SLICE_VERIFIED", "reconciled": true }
+  ],
+
+  "baseline_values": {
+    "side_a_checksums": "54/54",
+    "dedunet_products": 5,
+    "dedunet_variants": 62,
+    "dedunet_unique_skus": 62,
+    "product_media_relations": 18,
+    "registered_brand_assets": 31,
+    "container_assets": "31/31",
+    "container_product_media": "18/18",
+    "customer_facing_legacy_meret_meryt": 0,
+    "brand_drift": "NO_DRIFT",
+    "proxy_boundary_tests": 18,
+    "sqlite": "307 passed, 2 skipped",
+    "postgresql": "309 passed",
+    "backend_mutations": "68/68, 0 survived",
+    "mobile": "117 passed",
+    "mobile_mutations": "18/18, 0 survived",
+    "git": "clean",
+    "count_delta_explanation": "SQLite 301->307 and PostgreSQL 303->309: +6 from tests/test_compose_mode_switch.py, the regression guard added with the L11 blocking-defect fix. No test was weakened, skipped or relaxed."
+  },
+
+  "capability_groups": {
+    "repository_and_governance": { "capabilities": 7, "blocking_team_acceptance": 0, "notes": "CONFLICT-009 and CONFLICT-010 remain open; neither blocks local acceptance" },
+    "database": { "capabilities": 11, "blocking_team_acceptance": 0, "alembic_head": "a7c31f9be402", "migration_cycle": "clean upgrade, populated downgrade to base, re-upgrade" },
+    "security": { "capabilities": 12, "blocking_team_acceptance": 0 },
+    "rate_limiting": { "capabilities": 7, "blocking_team_acceptance": 0, "single_process_constraint": "documented, not solved" },
+    "notifications": { "capabilities": 12, "blocking_team_acceptance": 0, "external_delivery": "EXTERNAL_SMTP_DELIVERY_PENDING" },
+    "backup_and_recovery": { "capabilities": 13, "blocking_team_acceptance": 0, "status": "LOCAL_BACKUP_AND_RESTORE_REHEARSAL_VERIFIED", "production_dr_claimed": false },
+    "local_staging": { "capabilities": 12, "blocking_team_acceptance": 0 },
+    "web": { "capabilities": 15, "blocking_team_acceptance": 0 },
+    "mobile": { "capabilities": 14, "blocking_team_acceptance": 0, "native_binary": "NATIVE_PREVIEW_BUILD_EXTERNALLY_PENDING" },
+    "admin": { "capabilities": 8, "blocking_team_acceptance": 0 },
+    "brand_integration": { "capabilities": 11, "blocking_team_acceptance": 0 },
+    "commerce_modes": { "capabilities": 3, "blocking_team_acceptance": 0 }
+  },
+
+  "commerce_modes": {
+    "BRAND_PREVIEW_MODE": { "catalogue_visible": true, "products": 5, "real_media_visible": true, "checkout_blocked": true, "payment_invoked": false, "effective_stock": 0, "cart_add_http": 409 },
+    "COMMERCE_TEST_MODE": { "synthetic_inventory_explicit": true, "sandbox_payment_only": true, "orders_marked": "COMMERCE_TEST_MODE", "notifications_labelled": "[TEST ORDER]", "cleanup_available": true },
+    "PUBLIC_COMMERCE_MODE": { "reachable_by_configuration": false, "container_starts": true, "ready_returns": 200, "commerce_request_returns": 500, "refusal": "CommerceModeError naming pending legal clearance and unverified origin", "limitation": "L10" }
+  },
+
+  "regression_results": {
+    "side_a": "54/54",
+    "brand_drift": "NORMALIZATION_VERIFIED",
+    "container_build": "succeeds; PACKAGED_BRAND_ASSETS_VERIFIED in build log",
+    "container_asset_verification": "31/31, bytes match manifest SHA-256",
+    "container_security_scan": "clean; read-only rootfs enforced; 73.7 MB",
+    "container_media_acceptance": "29/29",
+    "sqlite": "307 passed, 2 skipped",
+    "postgresql": "309 passed",
+    "backend_mutations": "68/68 detected, 0 survived",
+    "proxy_boundary": "18 passed",
+    "concurrency": "9 passed, 1 skipped",
+    "web_media_resolver": "11 passed",
+    "web_gallery": "12 passed",
+    "admin_frontend_security": "6 passed",
+    "mobile_clean_install": "npm ci from committed lockfile",
+    "mobile_dependency_matrix": "up to date",
+    "mobile_typescript": "clean",
+    "mobile_tests": "117 passed",
+    "mobile_mutations": "18/18",
+    "expo_web_export": "Exported: dist",
+    "openapi_drift": "NO_DRIFT (30 paths)",
+    "staging_readiness": "/ready 200, /health 200, storefront 200",
+    "preview_journey": "B 14/14, C.10 5/5",
+    "commerce_test_journey": "C 28/28, D 38/38, E 26/26",
+    "notification_worker_smoke": "0 failed cycles; graceful SIGTERM after 66 cycles",
+    "rate_limit_smoke": "control 429 x6, spoofed 429 x16, bypass_present false",
+    "backup": "dedunet_slice-20260807T190328Z, 61226 bytes, custom format",
+    "checksum": "fe215cf0ae5fea329dade0a3f9d654d93fd33e3e8d3b25dbd3f967a6eeb7f304, verified before restore",
+    "isolated_restore": "schema parity PASS",
+    "restored_functional": "values 20/20, functional 20/20",
+    "secret_scan": "clean",
+    "personal_data_scan": "clean",
+    "legacy_brand_scan": "0 customer-facing",
+    "git_cleanliness": "clean"
+  },
+
+  "limitations": [
+    { "id": "L4", "summary": "load-test-inventory in PUBLIC_COMMERCE_MODE prints a traceback rather than the JSON refusal", "classification": "NON_BLOCKING_TECH_DEBT", "assessment": "operator ergonomics only; refusal is correct, non-zero exit, nothing written" },
+    { "id": "L5", "summary": "orders.status is varchar(15) with no DB CHECK", "classification": ["NON_BLOCKING_TECH_DEBT", "BLOCKS_PUBLIC_LAUNCH"], "assessment": "all six writes are OrderStatus enum constants in services.py; the only client-supplied order_status is a read-side filter at api.py:695-700; no reachable invalid write via API or admin; described as application-enforced, never DB-enforced" },
+    { "id": "L6", "summary": "runbook R11 claimed no notification dispatcher exists", "classification": "RESOLVED", "assessment": "rewritten against the delivered worker; every command executed against the running stack before being written down; CONFLICT-012 closed" },
+    { "id": "L7", "summary": "rate limiter is process-local", "classification": ["BLOCKS_HOSTED_STAGING", "BLOCKS_PUBLIC_LAUNCH"], "assessment": "valid for one API process and one replica, which is the verified configuration; multi-replica rate limiting is a hosted-scaling requirement and is explicitly not solved" },
+    { "id": "L8", "summary": "no Git remote", "classification": ["NON_BLOCKING_TECH_DEBT", "BLOCKS_PUBLIC_LAUNCH"], "assessment": "local acceptance needs none; CI has never executed and no second person can obtain the work; single-copy governance risk; no remote invented" },
+    { "id": "L9", "summary": "catalogue-grid lazy thumbnails not observed loading under automation", "classification": "NOT_A_DEFECT", "assessment": "proven automation artifact: 0 requestAnimationFrame frames in 2s, visibilityState hidden, IntersectionObserver never fired; fetch of the same URL returns 200 and a fresh Image() loads at 1200px; eager images load in the same pane. No product code changed." },
+    { "id": "L10", "summary": "PUBLIC_COMMERCE_MODE: API starts, /ready 200, commerce requests 500", "classification": ["NON_BLOCKING_TECH_DEBT", "BLOCKS_PUBLIC_LAUNCH"], "assessment": "block intact and fail-closed; nothing browsable, cartable or buyable. Readiness must not report healthy when the configured mode makes the app unable to serve." },
+    { "id": "L11", "summary": "COMMERCE_MODE undeclared in both compose files, so the mode could not be switched in any deployed stack", "classification": "RESOLVED", "commit": "1e657bf", "assessment": "before: COMMERCE_MODE=[] in container, 6 products, cart-add HTTP 200. after: [BRAND_PREVIEW_MODE], 5 products, cart-add HTTP 409. Regression-tested and demonstrated to fail without the fix." }
+  ],
+
+  "human_prerequisites": {
+    "risk_owner_acceptance": "ASSIGNMENT_RECORDED — HUMAN ACCEPTANCE PENDING",
+    "brand_legal_status": "LEGAL_CLEARANCE_PENDING",
+    "verified_product_existence": "not sufficient for real commercial claims",
+    "verified_origin": "UNVERIFIED (country_of_origin XX, intended EG)",
+    "verified_material_composition": "stated intention, not tested",
+    "approved_commercial_pricing": "not approved",
+    "privacy_legal_review": "not performed",
+    "blocks_team_acceptance": false
+  },
+
+  "external_prerequisites": {
+    "expo": { "organization": "Dedunet", "eas_project_id": "72b0a18d-36dd-406f-a54b-ab481a95db88", "status": ["EAS_PROJECT_CONFIGURATION_VERIFIED", "NATIVE_PREVIEW_BUILD_EXTERNALLY_PENDING"] },
+    "apple": "DEFERRED — PUBLISHER IDENTITY PENDING",
+    "google_play": "DEFERRED — PUBLISHER IDENTITY PENDING",
+    "smtp": "EXTERNAL_SMTP_DELIVERY_PENDING",
+    "hosted_cloud": "DEFERRED — LOCAL STAGING ONLY",
+    "live_payment_provider": "not activated",
+    "real_inventory": "not loaded",
+    "real_fulfilment": "not established",
+    "blocks_team_acceptance": false
+  },
+
+  "team_acceptance_independence": {
+    "requires_public_dns": false,
+    "requires_real_payments": false,
+    "requires_real_stock": false,
+    "requires_live_smtp": false,
+    "requires_apple_publishing": false,
+    "requires_google_publishing": false,
+    "requires_trademark_clearance": false,
+    "requires_docker": true,
+    "requires_python_3_12_plus": true,
+    "requires_node_20_plus": true
+  },
+
+  "public_launch_blockers": [
+    "trademark and legal brand clearance",
+    "verified product existence",
+    "verified origin",
+    "verified material composition",
+    "approved commercial pricing",
+    "real inventory",
+    "real fulfilment process",
+    "live payment provider",
+    "external SMTP and deliverability",
+    "hosted infrastructure",
+    "TLS and public networking",
+    "multi-replica architecture with shared or gateway rate limiting (L7)",
+    "monitoring and alerting",
+    "offsite and scheduled backup",
+    "production RPO/RTO definition and rehearsal",
+    "Apple and Google publisher identity if native apps launch publicly",
+    "risk-owner acceptance",
+    "privacy and legal review",
+    "database-level status constraints and similar hardening (L5)",
+    "readiness must not report healthy when the mode blocks serving (L10)",
+    "a Git remote for governance and CI (L8)"
+  ],
+
+  "corrections_during_review": [
+    { "commit": "1e657bf", "type": "implementation", "reason": "blocking defect L11 — acceptance steps 6, 7, 8, 17, 18 were unperformable", "regression_test": "services/commerce-api/tests/test_compose_mode_switch.py", "demonstrated_to_fail_without_fix": true },
+    { "commit": "this commit", "type": "documentation", "reason": "runbook R11 correction (L6), CONFLICT-012 closure, readiness documents" }
+  ],
+
+  "final_readiness_decision": "READY_FOR_TEAM_ACCEPTANCE_TESTING"
+}
