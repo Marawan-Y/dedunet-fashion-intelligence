@@ -299,3 +299,83 @@ result the program depends on. It does not block Workstream F.
 **Approval status:** OPEN — recorded by the successor agent 2026-08-06. Awaiting owner decision.
 Explicitly **not** actioned: adding a remote would publish a repository whose personal-data and
 secret posture the owner has not cleared for that purpose.
+
+---
+
+## CONFLICT-011 — Rate-limit documentation described a protection the deployment did not have
+
+**Files:** `services/commerce-api/app/rate_limit.py` (docstring and `client_key`),
+`docs/side-b/SIDE_B_LAUNCH_BLOCKER_AUDIT.md`, `evidence/workstream-c/WORKSTREAM_C_EVIDENCE.md`,
+`README.md`, `docs/operations/RUNBOOKS.md`, `apps/mobile/README.md`,
+`services/commerce-api/Dockerfile`, `docker-compose.staging.yml`
+
+**Conflicting values:** `rate_limit.client_key` documents that `X-Forwarded-For` "is IGNORED by
+default", and Workstream C's evidence recorded that property as verified. Both statements were
+true of the function and false of the running system on one supported topology. uvicorn installs
+`ProxyHeadersMiddleware` by default (`proxy_headers=True`, `forwarded_allow_ips` defaulting to
+`127.0.0.1`) and rewrites `scope["client"]` from the header before any application code executes,
+so on the documented development command — `python -m uvicorn app.main:app --port 18000` — the
+limiter bucketed on an attacker-chosen value.
+
+Measured on this repository at commit `d6c6973`, before any correction:
+
+| burst | result |
+|---|---|
+| 16 logins, no `X-Forwarded-For` | `401` ×10 then `429` ×6 |
+| 16 logins, a different `X-Forwarded-For` each | `401` ×16 — never limited |
+
+The gap was not detectable by the existing suite: `fastapi.testclient.TestClient` builds the ASGI
+scope directly and never installs that middleware, so `tests/test_rate_limit.py` — including
+`test_spoofed_forwarded_for_does_not_mint_a_fresh_bucket` and mutation `M22` — passed throughout.
+
+**Affected systems:** login and registration rate limiting on any directly-reached deployment;
+the credential-stuffing and PBKDF2 CPU-exhaustion controls those buckets exist to provide.
+
+**Proposed resolution:** Applied, not deferred. Two layers, each independently mutation-tested:
+`app/server.py` states `proxy_headers=False` and an empty forwarder allowlist explicitly on every
+committed launch path (`M62`); `rate_limit._peer_was_rewritten_upstream` quarantines a peer the
+server rewrote anyway, which survives a bare `uvicorn app.main:app` (`M63`).
+`tests/test_proxy_boundary.py` launches real server processes because the defect is unreachable
+in-process. Documented in `RUNBOOKS.md` R12.
+
+**Reason:** The correction is narrow and the defect was reproduced before and after. Recording it
+here rather than only in the evidence file because the affected claim appears in Workstream C's
+evidence, which is otherwise treated as settled by later work.
+
+**Risk:** Was High on any loopback-reached deployment; Low after the correction. Docker staging
+was **not** affected and this was re-verified, not assumed: its uvicorn binds `0.0.0.0` and traffic
+arrives from the Docker bridge, which is not in `forwarded_allow_ips`. No evidence supports a claim
+that staging was ever compromised, and none is made.
+
+**Owner:** Technical lead
+**Approval status:** RESOLVED — corrected and regression-tested by the successor agent 2026-08-07.
+Workstream C's evidence file is left unedited; this entry is the correction of record.
+
+---
+
+## CONFLICT-012 — Runbook R11 states no notification dispatcher exists
+
+**Files:** `docs/operations/RUNBOOKS.md` §R11
+
+**Conflicting values:** R11 states "**There is currently no dispatcher.** Every notification ever
+created is still queued … delivery was never implemented." Workstream B delivered
+`services/commerce-api/notification_worker.py`, a separate worker container in
+`docker-compose.staging.yml`, claim-lease fencing with a persisted expiry, and
+`manage.py dispatch-notifications`. Evidence: `evidence/workstream-b/WORKSTREAM_B_EVIDENCE.md` and
+`WORKSTREAM_B_LEASE_FENCING_EVIDENCE.md`.
+
+**Affected systems:** incident response. An operator following R11 during a real backlog would
+conclude the queue growing is expected and stop investigating.
+
+**Proposed resolution:** Rewrite R11 against the delivered worker. Grouped with CONFLICT-009,
+which is the same class of defect (honesty documents lagging delivered workstreams) and should be
+corrected in one documentation commit rather than piecemeal.
+
+**Reason:** Found while adding R12 during the branded vertical slice. Not corrected here: R11 is
+outside this milestone's scope, and mixing an unrelated documentation rewrite into a security
+correction would obscure both.
+
+**Risk:** Medium. No runtime impact; misleads incident response.
+
+**Owner:** Technical lead
+**Approval status:** OPEN — recorded by the successor agent 2026-08-07.

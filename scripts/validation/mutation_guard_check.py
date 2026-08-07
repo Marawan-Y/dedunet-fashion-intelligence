@@ -56,6 +56,7 @@ CANDIDATE_ACTIVATION = BACKEND / "app" / "candidate_activation.py"
 SCHEMAS = BACKEND / "app" / "schemas.py"
 MONEY = BACKEND / "app" / "money.py"
 RATE_LIMIT = BACKEND / "app" / "rate_limit.py"
+SERVER = BACKEND / "app" / "server.py"
 MAIN = BACKEND / "app" / "main.py"
 NOTIFICATIONS = BACKEND / "app" / "commerce" / "notifications.py"
 SERVICES = BACKEND / "app" / "commerce" / "services.py"
@@ -66,6 +67,7 @@ TEST_CANDIDATE = "tests/test_candidate_activation.py"
 TEST_API = "tests/test_api.py"
 TEST_MONEY = "tests/test_money_integrity.py"
 TEST_RATE = "tests/test_rate_limit.py"
+TEST_PROXY = "tests/test_proxy_boundary.py"
 TEST_NOTIFY = "tests/test_notifications.py"
 TEST_BACKUP = "tests/test_backup_guards.py"
 TEST_DEDUNET = "tests/test_dedunet_integration.py"
@@ -788,6 +790,54 @@ MUTATIONS: tuple[Mutation, ...] = (
         mutated="        pass  # MUTATED: test order reads as a real confirmation",
         tests=(f"{TEST_CLOSURE}::test_order_notifications_carry_the_dedunet_identity",),
         covers=("a test order that reads like a real one is undetectable by the customer",),
+    ),
+    # ---- ASGI proxy-header trust boundary --------------------------------------
+    #
+    # Two layers, mutated separately because a mutation that both layers survive would
+    # prove neither. Layer 1 keeps uvicorn's ProxyHeadersMiddleware out of the stack;
+    # layer 2 refuses a peer address the server rewrote anyway. Both guarding tests
+    # launch a REAL server process over a real socket -- the in-process TestClient never
+    # installs that middleware, which is why tests/test_rate_limit.py stayed green
+    # throughout the period when a real `uvicorn app.main:app` was trivially bypassable.
+    Mutation(
+        mutation_id="M62_asgi_proxy_headers_disabled_explicitly",
+        guard="app/server.py states proxy_headers=False and an empty forwarder allowlist",
+        target=SERVER,
+        original=(
+            "            proxy_headers=False,\n"
+            "            forwarded_allow_ips=(),\n"
+        ),
+        mutated=(
+            "            proxy_headers=True,  # MUTATED: back to the uvicorn default\n"
+            '            forwarded_allow_ips=("127.0.0.1",),  # MUTATED: loopback trusted\n'
+        ),
+        tests=(f"{TEST_PROXY}::test_supported_server_states_its_proxy_boundary_explicitly",),
+        covers=(
+            "uvicorn defaults to proxy_headers=True and forwarded_allow_ips=127.0.0.1, so "
+            "a loopback client can rewrite its own address with X-Forwarded-For and mint a "
+            "fresh rate-limit bucket per request",
+        ),
+        notes=(
+            "The end-to-end spoofing tests deliberately still pass under this mutation: "
+            "layer 2 holds when layer 1 is removed, which is the point of having both. "
+            "M63 mutates layer 2 to prove it independently."
+        ),
+    ),
+    Mutation(
+        mutation_id="M63_rewritten_peer_is_not_trusted",
+        guard="a peer the ASGI server rewrote from a forwarded header is quarantined",
+        target=RATE_LIMIT,
+        original=(
+            "        if _peer_was_rewritten_upstream(request):\n"
+            "            return REWRITTEN_PEER_KEY\n"
+        ),
+        mutated="        pass  # MUTATED: a header-asserted peer is accepted as the identity\n",
+        tests=(f"{TEST_PROXY}::test_unsafe_server_still_cannot_be_bypassed",),
+        covers=(
+            "the server option lives on a command line; a bare `uvicorn app.main:app` or "
+            "FORWARDED_ALLOW_IPS in the environment restores the unsafe default without "
+            "touching this repository",
+        ),
     ),
 )
 

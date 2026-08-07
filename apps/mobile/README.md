@@ -27,7 +27,7 @@ when reproducing a result.
 Start the API first, from the repository root:
 
 ```bash
-cd services/commerce-api && python -m uvicorn app.main:app --port 18000
+cd services/commerce-api && python -m app.server --port 18000
 ```
 
 Then:
@@ -56,7 +56,7 @@ The API allows only the origins in `CORS_ORIGINS`. For the web preview, include 
 origin explicitly — never a wildcard:
 
 ```bash
-CORS_ORIGINS="http://localhost:8081,http://127.0.0.1:8081" python -m uvicorn app.main:app --port 18000
+CORS_ORIGINS="http://localhost:8081,http://127.0.0.1:8081" python -m app.server --port 18000
 ```
 
 ## Checks

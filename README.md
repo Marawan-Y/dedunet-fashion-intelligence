@@ -49,7 +49,7 @@ python manage.py bootstrap
 # Terminal 1 — API on :18000
 APP_ENV=development \
 CORS_ORIGINS="http://localhost:13000,http://127.0.0.1:13000" \
-python -m uvicorn app.main:app --port 18000
+python -m app.server --port 18000
 
 # Terminal 2 — static clients on :13000, served from .
 python -m http.server 13000 --bind 127.0.0.1   # from the repository root

@@ -29,6 +29,7 @@ from dataclasses import dataclass
 
 __all__ = [
     "Decision",
+    "REWRITTEN_PEER_KEY",
     "TokenBucketLimiter",
     "client_key",
     "get_limiter",
@@ -169,6 +170,38 @@ def limit_for(method: str, path: str, *, has_cart_token: bool) -> Rule | None:
     return RULES["default"]
 
 
+# Bucket key used when the ASGI server has already replaced the peer address from a
+# forwarded header that this application does not trust. See _peer_was_rewritten_upstream.
+REWRITTEN_PEER_KEY = "_forwarded_peer_untrusted"
+
+
+def _peer_was_rewritten_upstream(request) -> bool:
+    """True when the ASGI server replaced ``scope['client']`` from a forwarded header.
+
+    SECOND LAYER, not the fix. The fix is ``app/server.py``, which configures the server
+    never to interpret forwarded headers unless a real proxy is declared. This exists
+    because that configuration lives on a command line, and a command line can be
+    bypassed -- ``uvicorn app.main:app`` run by hand, or ``FORWARDED_ALLOW_IPS`` set in
+    the environment, both restore uvicorn's unsafe default without touching this repo.
+
+    Detection is exact rather than heuristic. uvicorn's ``ProxyHeadersMiddleware`` cannot
+    recover the forwarded client's source port, so it writes a literal
+    ``scope["client"] = (host, 0)``. A real TCP peer never has source port 0: it is
+    reserved and a connecting socket is always assigned a real ephemeral port. Port 0 in
+    an inbound scope therefore means "this address was asserted by a header", not
+    "this address is who connected".
+
+    The true peer is unrecoverable at this point -- the middleware overwrote it and the
+    scope keeps no copy -- so this cannot restore the correct key. What it can do is
+    refuse to honour the forged one: every such request shares ONE bucket. An attacker
+    varying the header gains nothing, and no legitimate client's bucket can be exhausted
+    on their behalf, because a legitimate direct client keys on its real address.
+    """
+
+    client = getattr(request, "client", None)
+    return client is not None and getattr(client, "port", None) == 0
+
+
 def client_key(request, *, trusted_proxy_count: int | None = None) -> str:
     """Derive the bucket key for a request.
 
@@ -178,6 +211,12 @@ def client_key(request, *, trusted_proxy_count: int | None = None) -> str:
     declares how many proxies actually sit in front, via
     ``RATE_LIMIT_TRUSTED_PROXY_COUNT``, and then only the entry that many hops from the
     right — the rightmost entries are the ones your own infrastructure appended.
+
+    This check runs LATE — after the ASGI server has already built the scope. It is
+    therefore not sufficient on its own, because an ASGI server configured to interpret
+    forwarded headers has by then replaced ``request.client`` with a header value.
+    ``app/server.py`` is what stops that happening; ``_peer_was_rewritten_upstream``
+    below contains the damage if something starts the server without it.
     """
     if trusted_proxy_count is None:
         try:
@@ -187,6 +226,8 @@ def client_key(request, *, trusted_proxy_count: int | None = None) -> str:
 
     direct = request.client.host if request.client else "unknown"
     if trusted_proxy_count <= 0:
+        if _peer_was_rewritten_upstream(request):
+            return REWRITTEN_PEER_KEY
         return direct
 
     forwarded = request.headers.get("x-forwarded-for", "")

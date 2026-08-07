@@ -21,8 +21,12 @@ because an action was taken; it is closed when the symptom is gone and evidence 
 3. Database unreachable → R2. Fixture missing → restore from version control.
 4. If the process will not start at all, run it in the foreground to see the traceback:
    ```bash
-   python -m uvicorn app.main:app --port 18000
+   python -m app.server --port 18000
    ```
+   Use `app.server`, never `python -m uvicorn app.main:app`. The bare uvicorn CLI defaults
+   to `proxy_headers=True` with `forwarded_allow_ips=127.0.0.1`, which lets any loopback
+   client rewrite its own address via `X-Forwarded-For` and bypass the rate limiter. See
+   R12.
 5. A `RuntimeError` about `SESSION_SECRET` is intentional: outside development the app refuses to
    sign sessions with the known development secret. Set a real secret.
 
@@ -225,3 +229,67 @@ SELECT status, COUNT(*) FROM notifications GROUP BY status;
 ```
 
 When a dispatcher is built it must be idempotent and must not delete rows on failure.
+
+---
+
+## R12 — Proxy trust boundary and rate-limit identity
+
+**Symptoms:** the rate limiter appears not to engage; a burst that should return 429 keeps
+returning 401/200; `X-RateLimit-Remaining` never falls.
+
+### Why application-level proxy-hop configuration was not enough
+
+`app/rate_limit.py` buckets on `request.client.host` and ignores `X-Forwarded-For` unless
+`RATE_LIMIT_TRUSTED_PROXY_COUNT` is raised. That code is correct and it is **read too
+late**. uvicorn ships `ProxyHeadersMiddleware` enabled (`proxy_headers=True`) and, with
+`forwarded_allow_ips` unset, trusts `127.0.0.1`. For a loopback client it rewrites
+`scope["client"]` from the header *before any application code runs*, so the limiter
+buckets on an attacker-chosen value and does so faithfully. Reproduced against
+`python -m uvicorn app.main:app --port 18300`:
+
+| burst | result |
+|---|---|
+| 16 logins, no `X-Forwarded-For` | `401` ×10 then `429` ×6 — limiter works |
+| 16 logins, a different `X-Forwarded-For` each | `401` ×16 — never limited |
+
+uvicorn does not validate the value either: `X-Forwarded-For: not-an-ip` is accepted as a
+client identity. The real peer is unrecoverable afterwards — the middleware overwrites it
+and the scope keeps no copy — so this cannot be repaired inside the application.
+
+### Current configuration (unproxied — local and local staging)
+
+Nothing sits in front of the API. `TRUSTED_PROXY_MODE` is unset or `none`, which makes
+`app/server.py` pass `proxy_headers=False` **and** `forwarded_allow_ips=[]` explicitly.
+No forwarded header is interpreted, from any peer, including loopback.
+
+**The exact safe startup command:**
+
+```bash
+python -m app.server --host 127.0.0.1 --port 18000
+```
+
+Never `python -m uvicorn app.main:app` and never the bare `uvicorn` CLI: both inherit the
+trusting defaults above. Confirm what a running process actually trusts — it logs one
+structured line at startup:
+
+```json
+{"event": "asgi_proxy_trust_boundary", "mode": "none", "proxy_headers": false, "forwarded_allow_ips": [], "trusted_proxy_hops": 0}
+```
+
+### Requirements before putting a reverse proxy in front
+
+`TRUSTED_PROXY_MODE=explicit` refuses to start unless **all** of these are set:
+
+| Variable | Requirement |
+|---|---|
+| `TRUSTED_PROXY_IPS` | The proxy addresses/networks. `*` is refused. |
+| `RATE_LIMIT_TRUSTED_PROXY_COUNT` | `>= 1`. How many hops your own infrastructure appends. |
+| `TRUSTED_PROXY_NETWORK_BOUNDARY` | One line stating what stops anything else reaching this port. |
+
+The last one is not paperwork. An allowlist of source addresses is not a boundary if any
+host can connect and claim that address; something — a security group, a private network,
+mTLS — has to enforce it, and whoever raises this setting has to name it.
+
+**Confirm fixed:** `tests/test_proxy_boundary.py` launches the real supported server
+process and asserts that varied and malformed `X-Forwarded-For` values do not mint fresh
+buckets. Run it after any change to a startup path.

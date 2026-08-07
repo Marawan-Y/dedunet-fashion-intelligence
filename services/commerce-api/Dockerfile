@@ -24,4 +24,8 @@ RUN mkdir -p /app/var
 
 EXPOSE 8000
 ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# app.server, NOT the bare `uvicorn` CLI. uvicorn defaults to proxy_headers=True with
+# forwarded_allow_ips="127.0.0.1", so the bare CLI lets any loopback client set its own
+# address via X-Forwarded-For and mint a fresh rate-limit bucket per request. app.server
+# states proxy trust explicitly and defaults to interpreting no forwarded header at all.
+CMD ["python", "-m", "app.server", "--host", "0.0.0.0", "--port", "8000"]

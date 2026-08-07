@@ -61,15 +61,22 @@ services:
       # Local staging has no trusted proxy in front of it. Raising this without a real,
       # tested proxy chain would let any client spoof its bucket key.
       RATE_LIMIT_TRUSTED_PROXY_COUNT: "0"
+      # And the SERVER must agree, because this setting is read too late to help on its
+      # own: uvicorn's ProxyHeadersMiddleware rewrites the peer address from
+      # X-Forwarded-For before any application code runs. `none` means the ASGI server
+      # interprets no forwarded header from any peer. See app/server.py.
+      TRUSTED_PROXY_MODE: "none"
       # Writes no .pyc, which is what makes read_only viable below.
       PYTHONDONTWRITEBYTECODE: "1"
       PYTHONUNBUFFERED: "1"
     depends_on:
       db:
         condition: service_healthy
-    # Exactly ONE uvicorn process and ONE worker. Stated explicitly rather than relying
-    # on the image default, so the constraint is visible in the deployed configuration.
-    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "1"]
+    # Exactly ONE process and ONE worker. Stated explicitly rather than relying on the
+    # image default, so the constraint is visible in the deployed configuration.
+    # app.server, not the bare `uvicorn` CLI: it passes proxy_headers and
+    # forwarded_allow_ips explicitly instead of inheriting uvicorn's trusting defaults.
+    command: ["python", "-m", "app.server", "--host", "0.0.0.0", "--port", "8000", "--workers", "1"]
     ports:
       - "${API_PORT:-18080}:8000"
     volumes:
