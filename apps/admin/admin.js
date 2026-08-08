@@ -10,8 +10,12 @@
  * and produces a server-side audit record. None of them complete silently.
  */
 
-const API_BASE =
-  window.FASHION_POC_API_BASE ?? `${window.location.protocol}//${window.location.hostname}:18000`;
+/* One definition of where the API lives, resolved by api-config.js from the generated
+   config.js. Previously computed inline here against a hard-coded :18000, which meant the
+   staging portal asked a port nothing listens on and every request failed as
+   "Failed to fetch" before an administrator could sign in. No deployment's port belongs in
+   application logic. */
+const API_BASE = window.DedunetAdminConfig.apiBase();
 
 const MINOR_UNIT_EXPONENTS = { EUR: 2 };
 const CURRENCY_SYMBOLS = { EUR: "€" };

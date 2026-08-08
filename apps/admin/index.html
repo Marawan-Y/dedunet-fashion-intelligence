@@ -33,6 +33,12 @@
     <div id="banner" aria-live="polite"></div>
     <main id="main" tabindex="-1"></main>
 
+    <!-- config.js first: it may set window.DEDUNET_API_BASE, which api-config.js resolves.
+         Both before admin.js, which takes its API base from that module — so there is one
+         definition of where the API lives rather than one hard-coded per call site.
+         Mirrors the storefront's config.js + media-url.js ordering. -->
+    <script src="config.js"></script>
+    <script src="api-config.js"></script>
     <script src="brand.generated.js"></script>
     <script src="admin.js"></script>
   </body>

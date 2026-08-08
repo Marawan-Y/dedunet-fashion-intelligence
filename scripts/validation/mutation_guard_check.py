@@ -75,6 +75,8 @@ TEST_WEB_GALLERY = "tests/test_web_gallery.py"
 WEB_MEDIA_URL = ROOT / "apps" / "web" / "media-url.js"
 WEB_APP = ROOT / "apps" / "web" / "app.js"
 BRAND_VERIFY = ROOT / "scripts" / "brand" / "verify_packaged_assets.py"
+ADMIN_API_CONFIG = ROOT / "apps" / "admin" / "api-config.js"
+TEST_ADMIN_CONFIG = "tests/test_admin_api_config.py"
 TEST_NOTIFY = "tests/test_notifications.py"
 TEST_BACKUP = "tests/test_backup_guards.py"
 TEST_DEDUNET = "tests/test_dedunet_integration.py"
@@ -978,6 +980,27 @@ MUTATIONS: tuple[Mutation, ...] = (
             "header changed nothing observable through the app. The redundancy is real "
             "defence in depth; the guarding test now calls the handler directly so the "
             "route's own header is asserted with no middleware in the path."
+        ),
+    ),
+    # ---- team-acceptance defect: admin API origin -------------------------------
+    Mutation(
+        mutation_id="M71_admin_honours_runtime_api_configuration",
+        guard="the admin portal resolves its API from the generated runtime config",
+        target=ADMIN_API_CONFIG,
+        original=(
+            "    var configured = scope.FASHION_POC_API_BASE || scope.DEDUNET_API_BASE;\n"
+            "    if (configured) return validate(configured);\n"
+        ),
+        mutated=(
+            "    var configured = null;  // MUTATED: runtime configuration ignored\n"
+            "    if (configured) return validate(configured);\n"
+        ),
+        tests=(f"{TEST_ADMIN_CONFIG}::test_staging_configuration_resolves_to_the_staging_api_origin",),
+        covers=(
+            "human acceptance testing found the staging admin portal unusable: it resolved "
+            "the API inline against a hard-coded :18000 with no config seam, so every "
+            "request died as 'Failed to fetch' before anyone could sign in, while the API "
+            "was published on :18080",
         ),
     ),
 )

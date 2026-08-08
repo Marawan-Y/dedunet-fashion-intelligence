@@ -14,11 +14,17 @@ COPY apps/web/nginx.conf /etc/nginx/conf.d/default.conf
 # image self-describing. Empty means "use the client's default", which is the page host on
 # the development API port — correct for docker-compose.yml, wrong for staging, whose API
 # is published on 18080.
+# BOTH clients get the same generated config. The admin previously had no config seam at
+# all and resolved :18000 inline, so the staging portal asked a port nothing listens on and
+# failed with "Failed to fetch" before an administrator could sign in. One build argument
+# now configures both, so they cannot disagree about where the API is.
 ARG API_BASE_URL=""
 RUN if [ -n "$API_BASE_URL" ]; then \
-      printf '/* generated at build time from API_BASE_URL */\nwindow.DEDUNET_API_BASE = "%s";\n' \
-        "$API_BASE_URL" > /usr/share/nginx/html/storefront/config.js; \
-      echo "storefront API base: $API_BASE_URL"; \
+      for surface in storefront admin; do \
+        printf '/* generated at build time from API_BASE_URL */\nwindow.DEDUNET_API_BASE = "%s";\n' \
+          "$API_BASE_URL" > "/usr/share/nginx/html/$surface/config.js"; \
+        echo "$surface API base: $API_BASE_URL"; \
+      done; \
     else \
-      echo "storefront API base: client default (page host on port 18000)"; \
+      echo "storefront and admin API base: client default (page host on port 18000)"; \
     fi
