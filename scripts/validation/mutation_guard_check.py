@@ -76,7 +76,9 @@ WEB_MEDIA_URL = ROOT / "apps" / "web" / "media-url.js"
 WEB_APP = ROOT / "apps" / "web" / "app.js"
 BRAND_VERIFY = ROOT / "scripts" / "brand" / "verify_packaged_assets.py"
 ADMIN_API_CONFIG = ROOT / "apps" / "admin" / "api-config.js"
+ADMIN_JS = ROOT / "apps" / "admin" / "admin.js"
 TEST_ADMIN_CONFIG = "tests/test_admin_api_config.py"
+TEST_ADMIN_PROVENANCE = "tests/test_admin_order_provenance.py"
 TEST_NOTIFY = "tests/test_notifications.py"
 TEST_BACKUP = "tests/test_backup_guards.py"
 TEST_DEDUNET = "tests/test_dedunet_integration.py"
@@ -1001,6 +1003,33 @@ MUTATIONS: tuple[Mutation, ...] = (
             "the API inline against a hard-coded :18000 with no config seam, so every "
             "request died as 'Failed to fetch' before anyone could sign in, while the API "
             "was published on :18080",
+        ),
+    ),
+    # ---- team-acceptance defect: admin test-order label -------------------------
+    Mutation(
+        mutation_id="M72_admin_labels_test_orders",
+        guard="the admin Orders row identifies a synthetic order as a test order",
+        target=ADMIN_JS,
+        original=(
+            "  return order.is_test_order === true "
+            "|| order.commerce_mode_at_checkout === TEST_COMMERCE_MODE;\n"
+        ),
+        mutated="  return false;  // MUTATED: provenance never reaches the operator\n",
+        tests=(
+            f"{TEST_ADMIN_PROVENANCE}::test_the_acceptance_order_is_labelled_a_test_order",
+        ),
+        covers=(
+            "human acceptance testing found the admin Orders page listing the synthetic "
+            "order FC-FAFBAB8A exactly as it would list a real one -- paid, EUR 80.90, with "
+            "a Fulfil button and no mention of COMMERCE_TEST_MODE or is_test_order anywhere "
+            "on the page, so an operator could not tell sandbox commerce from real commerce "
+            "before acting on it",
+        ),
+        notes=(
+            "Aimed at the predicate rather than at the marker builder, because the predicate "
+            "is the guard: the backend provenance was already correct and already being "
+            "sent, and the defect was entirely that nothing read it. Neutralising it "
+            "reproduces the original symptom exactly."
         ),
     ),
 )

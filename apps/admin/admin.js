@@ -20,6 +20,10 @@ const API_BASE = window.DedunetAdminConfig.apiBase();
 const MINOR_UNIT_EXPONENTS = { EUR: 2 };
 const CURRENCY_SYMBOLS = { EUR: "€" };
 
+/* The mode the API records on an order placed against the sandbox. Matched exactly and in
+   one place, so a near-miss spelling cannot quietly stop an order being labelled. */
+const TEST_COMMERCE_MODE = "COMMERCE_TEST_MODE";
+
 /* One-time migration of browser storage keys from the legacy brand prefix.
    Renaming a key without moving its value signs every existing session out and silently
    discards a live cart, so the old value is carried across once and then removed. */
@@ -157,6 +161,44 @@ function viewLogin() {
   render(form);
 }
 
+/* -------------------------------------------------------------- order provenance */
+
+/**
+ * Is this a synthetic acceptance order rather than real commerce?
+ *
+ * The API states it twice: `is_test_order` is the derived boolean and
+ * `commerce_mode_at_checkout` is the mode recorded at the moment the order was placed.
+ * Either alone is enough here, so a payload carrying only one of them — an older record, a
+ * narrowed projection — is still labelled rather than silently passing as real.
+ *
+ * Deliberately strict on both. Only an exact `true` and the exact mode string count: the
+ * string "false" and the number 0 are both truthy or falsy in ways that would either brand
+ * a real order or hide a synthetic one, and only one of those two mistakes is recoverable.
+ */
+function isTestOrder(order) {
+  if (!order) return false;
+  return order.is_test_order === true || order.commerce_mode_at_checkout === TEST_COMMERCE_MODE;
+}
+
+/**
+ * The operator-facing marker for a synthetic order, or `null` for a real one.
+ *
+ * Without it a sandbox order and a genuine customer order are visually identical in this
+ * table — same status, same total, same Fulfil button — and the backend provenance that
+ * distinguishes them is never shown to the person deciding whether to press it.
+ */
+function testOrderMarker(order) {
+  if (!isTestOrder(order)) return null;
+  const mode =
+    typeof order.commerce_mode_at_checkout === "string" ? order.commerce_mode_at_checkout.trim() : "";
+  return el("div", { class: "provenance" }, [
+    el("span", { class: "tag tag--test", text: "TEST ORDER" }),
+    // The raw mode string, not a friendlier paraphrase: it is the wording the audit record
+    // and the acceptance script both use, so an operator can match them without translating.
+    mode ? el("span", { class: "provenance__mode", text: mode }) : null,
+  ]);
+}
+
 async function viewOrders() {
   if (!requireAuth()) return;
   render(el("p", { class: "muted", text: "Loading orders…" }));
@@ -178,6 +220,9 @@ async function viewOrders() {
       el("td", {}, [
         el("strong", { text: order.order_number }),
         el("br"),
+        // Between the order number and its lines, so reading the row top-to-bottom reaches
+        // the provenance before the eye arrives at the Fulfil button.
+        testOrderMarker(order),
         el("span", { class: "muted", text: order.lines.map((l) => `${l.quantity}× ${l.sku}`).join(", ") }),
       ]),
       el("td", {}, [el("span", { class: "tag tag--ok", text: order.status })]),

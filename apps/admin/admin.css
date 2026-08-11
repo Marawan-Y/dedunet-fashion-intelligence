@@ -6,3 +6,12 @@ main { max-width: 1240px; }
 .inline input { padding: 0.4rem 0.5rem; border: 1px solid var(--line); border-radius: var(--radius); font: inherit; }
 .table td { vertical-align: middle; }
 .table td button { margin-right: 0.35rem; }
+
+/* Test-order provenance. A synthetic acceptance order is otherwise indistinguishable from a
+   real one in this table, and its row carries a Fulfil button. Amber rather than the green
+   of tag--ok, bordered and bold, so it reads as a caution and not as another status. */
+.provenance { display: flex; gap: 0.4rem; align-items: center; flex-wrap: wrap; margin: 0.2rem 0 0.3rem; }
+.tag--test { background: #f6e2c2; color: #6b3f14; border: 1px solid #b07a34; font-weight: 700; }
+/* 7:1 against the badge, 7.9:1 against the page. Never the sole carrier of the meaning
+   either — "TEST ORDER" is text, so it survives colour blindness and a screen reader. */
+.provenance__mode { font-size: 0.7rem; letter-spacing: 0.06em; color: #6b3f14; }
