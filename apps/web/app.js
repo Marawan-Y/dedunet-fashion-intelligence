@@ -204,10 +204,53 @@ function headers(extra = {}) {
   return base;
 }
 
+/* ------------------------------------------------------------------ session policy
+ *
+ * Human acceptance found a customer whose stored token had expired still being shown
+ * "Signed in as customer", while `/api/v1/me/orders` answered 401 "invalid or expired
+ * session" and the orders page reported "You have no orders yet." -- a page stating, on the
+ * strength of a rejected request, that the customer had never ordered anything.
+ *
+ * One rule, in one place: the server rejecting an authenticated request is the only thing
+ * that ends a session on this client. The mobile client already works this way
+ * (`store.ts` -> `handleFailure`); this is the same policy, not a second invention.
+ */
+
+/** Forget the customer session. The cart is deliberately kept -- the basket is the device's. */
+function clearCustomerAuth() {
+  state.token = "";
+  state.role = "";
+  localStorage.removeItem("dedunet_token");
+  localStorage.removeItem("dedunet_role");
+}
+
+/**
+ * Should this failure end the session?
+ *
+ * ONLY a 401 answered to a request that actually carried our credentials. Everything else
+ * is the network, the server or a limiter having a bad moment, and none of them are
+ * evidence about the token:
+ *
+ *   transport failure  fetch rejects; there is no response and no status to read
+ *   429                the request was never evaluated
+ *   5xx                the server failed to answer, not refused to
+ *   403                authenticated fine, just not permitted
+ *   401 unauthenticated  a failed sign-in attempt; there is no session to end
+ *
+ * Signing a customer out because their train went into a tunnel is a worse defect than the
+ * one being fixed, so the condition is narrow on purpose.
+ */
+function isSessionRejection(status, sentCredentials) {
+  return status === 401 && sentCredentials;
+}
+
 async function api(path, options = {}) {
+  const requestHeaders = headers(options.headers);
+  const sentCredentials = Boolean(requestHeaders["Authorization"]);
+
   const response = await fetch(`${API_BASE}${path}`, {
     ...options,
-    headers: headers(options.headers),
+    headers: requestHeaders,
   });
   const raw = await response.text();
   let body = null;
@@ -222,6 +265,12 @@ async function api(path, options = {}) {
         `Request failed (${response.status})`
     );
     error.status = response.status;
+    if (isSessionRejection(response.status, sentCredentials)) {
+      clearCustomerAuth();
+      // Marked so a caller can tell "your session ended" from "that request failed", and
+      // so no caller has to re-derive the rule from the status code.
+      error.sessionExpired = true;
+    }
     throw error;
   }
   return body;
@@ -676,6 +725,7 @@ async function viewOrder(orderNumber) {
   try {
     order = await api(`/api/v1/me/orders/${encodeURIComponent(orderNumber)}`);
   } catch (error) {
+    if (error.sessionExpired) return requireSignIn();
     return render(emptyState(error.message, "My orders", "#/orders"));
   }
 
@@ -734,7 +784,19 @@ async function viewOrders() {
     return;
   }
   loading();
-  const orders = await api("/api/v1/me/orders").catch(() => []);
+
+  let orders;
+  try {
+    orders = await api("/api/v1/me/orders");
+  } catch (error) {
+    // `.catch(() => [])` here previously turned every failure -- including the 401 that
+    // ends the session -- into an empty list, so a rejected request rendered as "You have
+    // no orders yet." That is not a degraded message; it is a false statement about the
+    // customer's history, and it hid the expiry that caused it.
+    if (error.sessionExpired) return requireSignIn();
+    return render(emptyState(error.message, "Browse the collection", "#/catalog"));
+  }
+
   if (!orders.length) return render(emptyState("You have no orders yet.", "Browse the collection", "#/catalog"));
   render(
     el("h1", { text: "My orders" }),
@@ -749,6 +811,19 @@ async function viewOrders() {
       )
     )
   );
+}
+
+/**
+ * Send an expired session to the account page and say why.
+ *
+ * `clearCustomerAuth()` has already run by the time this is called, so the account view
+ * renders its signed-out form rather than "Signed in as ..." -- the stale state the human
+ * tester saw. The banner is what turns a silent redirect into an explanation.
+ */
+function requireSignIn() {
+  location.hash = "#/account";
+  route();
+  setBanner("Your session has expired. Please sign in again.", "info");
 }
 
 function viewAccount() {
@@ -778,11 +853,10 @@ function viewAccount() {
         class: "btn btn--quiet",
         type: "button",
         text: "Sign out",
+        // The same clearing the server-side rejection performs. Two copies of "what it
+        // means to be signed out" is how one of them ends up forgetting a key.
         onclick: () => {
-          state.token = "";
-          state.role = "";
-          localStorage.removeItem("dedunet_token");
-          localStorage.removeItem("dedunet_role");
+          clearCustomerAuth();
           location.hash = "#/catalog";
           route();
         },

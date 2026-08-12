@@ -79,6 +79,9 @@ ADMIN_API_CONFIG = ROOT / "apps" / "admin" / "api-config.js"
 ADMIN_JS = ROOT / "apps" / "admin" / "admin.js"
 TEST_ADMIN_CONFIG = "tests/test_admin_api_config.py"
 TEST_ADMIN_PROVENANCE = "tests/test_admin_order_provenance.py"
+TEST_MODE_DISCLOSURE = "tests/test_commerce_mode_disclosure.py"
+TEST_STOREFRONT_NOTICE = "tests/test_storefront_mode_notice.py"
+TEST_SESSION_EXPIRY = "tests/test_storefront_session_expiry.py"
 TEST_NOTIFY = "tests/test_notifications.py"
 TEST_BACKUP = "tests/test_backup_guards.py"
 TEST_DEDUNET = "tests/test_dedunet_integration.py"
@@ -1030,6 +1033,61 @@ MUTATIONS: tuple[Mutation, ...] = (
             "is the guard: the backend provenance was already correct and already being "
             "sent, and the defect was entirely that nothing read it. Neutralising it "
             "reproduces the original symptom exactly."
+        ),
+    ),
+    # ---- post-acceptance issue A: mode-aware disclosure -------------------------
+    Mutation(
+        mutation_id="M73_commerce_modes_do_not_share_disclosure_copy",
+        guard="each commerce mode discloses itself in its own words",
+        target=MODES,
+        original="    COMMERCE_TEST: COMMERCE_TEST_DISCLOSURE,\n",
+        mutated="    COMMERCE_TEST: PREVIEW_DISCLOSURE,  # MUTATED: modes share copy\n",
+        tests=(
+            f"{TEST_MODE_DISCLOSURE}::test_no_sentence_is_reused_between_the_two_modes",
+            f"{TEST_MODE_DISCLOSURE}::test_preview_copy_never_appears_in_test_mode",
+        ),
+        covers=(
+            "human acceptance completed a full sandbox journey -- synthetic stock, cart, "
+            "declined payment, successful payment, fulfilment -- underneath a storefront "
+            "banner reading 'Preview only. Nothing here is available to purchase', because "
+            "the disclosure could not tell which commerce mode it was in",
+        ),
+        notes=(
+            "Collapses commerce-test onto the preview wording, which is the acceptance "
+            "symptom exactly rather than an arbitrary edit. The storefront and mobile "
+            "renderers are guarded separately, against fixed payloads, so a collapse in "
+            "either layer is caught by the layer that owns it."
+        ),
+    ),
+    # ---- post-acceptance issue B: stale customer auth after 401 -----------------
+    Mutation(
+        mutation_id="M74_expired_session_is_cleared_on_401",
+        guard="an authoritative 401 ends the customer session on the storefront",
+        target=WEB_APP,
+        original=(
+            "    if (isSessionRejection(response.status, sentCredentials)) {\n"
+            "      clearCustomerAuth();\n"
+        ),
+        mutated=(
+            "    if (false) {  // MUTATED: an expired session is never cleared\n"
+            "      clearCustomerAuth();\n"
+        ),
+        tests=(
+            f"{TEST_SESSION_EXPIRY}::test_the_account_view_no_longer_claims_the_customer_is_signed_in",
+            f"{TEST_SESSION_EXPIRY}::test_an_expired_session_clears_the_stored_token",
+        ),
+        covers=(
+            "human acceptance found a customer whose stored token had expired still shown "
+            "'Signed in as customer' while /api/v1/me/orders answered 401 'invalid or "
+            "expired session', with the orders page reporting 'You have no orders yet' -- a "
+            "false claim about the customer's history made on the strength of a request the "
+            "server had refused",
+        ),
+        notes=(
+            "Aimed at the clearing, not at the predicate. `isSessionRejection` is narrow on "
+            "purpose and its own tests cover the statuses that must NOT sign a customer "
+            "out; what this proves is that the narrow condition is actually wired to the "
+            "state change, which is the half that was missing."
         ),
     ),
 )
