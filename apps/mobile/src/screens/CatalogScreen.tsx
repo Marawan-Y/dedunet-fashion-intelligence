@@ -12,19 +12,21 @@ import { Pressable, Text, View } from "react-native";
 
 import { describeFailure } from "../api/client";
 import type { Product } from "../api/types";
-import { BRAND, SANDBOX_NOTICE } from "../brand";
+import { BRAND, commerceNotice } from "../brand";
 import { formatMinorUnits, lowestPriceMinorUnits } from "../money";
 import type { AppState } from "../store";
 import { Banner, Body, Card, EmptyState, Heading, Loading, Screen, styles } from "../ui";
 
 export function CatalogScreen({ app }: { app: AppState }) {
-  const { catalog, loadCatalog, navigate } = app;
+  const { catalog, loadCatalog, navigate, commerceMode } = app;
 
   return (
     <Screen>
       <Heading>{BRAND.name}</Heading>
       <Body muted>{BRAND.tagline}</Body>
-      <Banner tone="warning" message={SANDBOX_NOTICE} testID="sandbox-notice" />
+      {/* What THIS deployment can do, in the server's words. Until it answers, the
+          mode-independent fallback — never a guess at a mode. */}
+      <Banner tone="warning" message={commerceNotice(commerceMode)} testID="sandbox-notice" />
 
       {catalog.status === "loading" || catalog.status === "idle" ? (
         <Loading label="Loading the collection…" testID="catalog-loading" />

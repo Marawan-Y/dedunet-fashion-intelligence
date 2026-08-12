@@ -13,6 +13,29 @@
  * invented.
  */
 
+// --------------------------------------------------------- commerce mode (api.py:303)
+
+/**
+ * What the deployment can and cannot do, and the wording it must be disclosed in.
+ *
+ * The copy is served rather than written here on purpose. Human acceptance found the web
+ * storefront announcing "nothing here is available to purchase" while running in
+ * COMMERCE_TEST_MODE. Two clients each keeping their own sentences is how one of them stays
+ * wrong after the other is fixed.
+ *
+ * `mode` is null when the configured mode is unknown or refused, which is a distinct
+ * outcome from either working mode and must never render as ordinary commerce.
+ */
+export type CommerceMode = {
+  mode: "BRAND_PREVIEW_MODE" | "COMMERCE_TEST_MODE" | null;
+  headline: string;
+  detail: string[];
+  purchasable: boolean;
+  /** "none" — no payment call is reachable. "sandbox" — the sandbox adapter. Never "real". */
+  payments: "none" | "sandbox";
+  public_commerce_enabled: boolean;
+};
+
 // ------------------------------------------------------------------ catalog (api.py:191)
 
 export type Variant = {

@@ -8,9 +8,13 @@
  * CONFLICT-008 forbids.
  *
  * IMPORTANT: this is a technical placeholder palette, not the Side A brand token set.
- * Importing `data/brand-prototype/brand-tokens.json`, the fonts, the media and the
- * campaign copy is the NEXT milestone (DEDUNET platform integration) and is explicitly
- * out of scope for Workstream F.
+ * Importing `data/brand-prototype/brand-tokens.json` and the fonts is still outstanding.
+ *
+ * Status note, 2026-08-12: this comment used to say the media and campaign copy were
+ * outstanding too, and that the whole import was "the NEXT milestone (DEDUNET platform
+ * integration)". That milestone has since landed. The client renders the DEDUNET catalogue
+ * and DDN-TS01's four ordered media through `components/Gallery.tsx`, and human acceptance
+ * confirmed it (Test 3B). Only the tokens and fonts remain.
  */
 
 export type BrandPalette = {
@@ -52,11 +56,32 @@ export const BRAND: Brand = {
 };
 
 /**
- * Shown wherever the build could be mistaken for a real shop.
+ * Shown wherever the build could be mistaken for a real shop, BEFORE the deployment has
+ * said which commerce mode it is in — and afterwards if it could not be reached.
  *
- * KNOWN_LIMITATIONS and the Side A validation report both state that checkout is
- * prototype-only and that payments run against a sandbox adapter. The application must
- * say so on screen, not only in documentation.
+ * Deliberately says only what is true in every permitted mode. It used to assert that
+ * "payments run against a sandbox adapter", which overstates BRAND_PREVIEW_MODE, where no
+ * payment call is reachable at all. The mode-specific wording is served by
+ * `/api/v1/commerce/mode` so that this client and the web storefront cannot disagree about
+ * what a mode means; see `commerceNotice`.
  */
 export const SANDBOX_NOTICE =
-  "Prototype build. Payments run against a sandbox adapter — no card is charged and nothing ships.";
+  "Prototype build. No real card is charged and no real order is fulfilled.";
+
+/**
+ * The disclosure to show for a resolved commerce mode, or the mode-independent fallback.
+ *
+ * The server supplies both the mode and its wording; this only chooses between "we know"
+ * and "we do not". Composing the sentences here would put a second author in charge of what
+ * COMMERCE_TEST_MODE means to a customer.
+ */
+export function commerceNotice(
+  disclosure: { headline?: string; detail?: string[] } | null | undefined
+): string {
+  const headline = typeof disclosure?.headline === "string" ? disclosure.headline.trim() : "";
+  const detail = Array.isArray(disclosure?.detail)
+    ? disclosure.detail.filter((line) => typeof line === "string" && line.trim())
+    : [];
+  if (!headline || detail.length === 0) return SANDBOX_NOTICE;
+  return [headline, ...detail].join(" ");
+}

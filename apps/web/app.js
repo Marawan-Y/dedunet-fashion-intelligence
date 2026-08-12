@@ -227,6 +227,50 @@ async function api(path, options = {}) {
   return body;
 }
 
+/* ------------------------------------------------------- commerce-mode disclosure
+ *
+ * The top notice must state what THIS deployment can actually do. It used to be a fixed
+ * sentence in the markup saying nothing was available to purchase, which was false in
+ * COMMERCE_TEST_MODE -- synthetic stock is purchasable there and sandbox checkout
+ * completes. Human acceptance found it saying so while placing a sandbox order.
+ *
+ * The mode and its wording both come from the API. Deriving either here would mean two
+ * clients each deciding what a mode means, and inferring the mode from the catalogue --
+ * "there is stock, so we must be in test mode" -- would make the disclosure a guess about
+ * inventory rather than a statement about configuration.
+ */
+
+/** Render the disclosure for a mode. Text only: this is a notice, not a template. */
+function renderCommerceNotice(disclosure) {
+  const host = document.getElementById("commerce-mode-notice");
+  if (!host) return null;
+
+  const headline = typeof disclosure?.headline === "string" ? disclosure.headline.trim() : "";
+  const detail = Array.isArray(disclosure?.detail)
+    ? disclosure.detail.filter((line) => typeof line === "string" && line.trim())
+    : [];
+
+  /* A response we cannot read leaves the shipped sentence alone. It is true in every
+     permitted mode, so saying nothing new is safer than saying something unverified. */
+  if (!headline || !detail.length) return null;
+
+  host.replaceChildren(
+    el("strong", { class: "notice__headline", text: headline }),
+    ...detail.map((line) => el("span", { class: "notice__line", text: line }))
+  );
+  return host;
+}
+
+async function loadCommerceNotice() {
+  try {
+    renderCommerceNotice(await api("/api/v1/commerce/mode"));
+  } catch {
+    /* Deliberately silent. The mode notice is a disclosure, not a feature: if the call
+       fails the shipped sentence still stands, and an error banner about it would push a
+       transport problem in front of a customer who can do nothing with it. */
+  }
+}
+
 function setBanner(message, kind = "info") {
   const host = document.getElementById("banner");
   host.replaceChildren();
@@ -897,3 +941,7 @@ function route() {
 
 window.addEventListener("hashchange", route);
 window.addEventListener("DOMContentLoaded", route);
+/* Once, at boot: the mode is a property of the deployment, not of the page being viewed.
+   Not awaited by `route`, so a slow or unreachable API delays the disclosure but never the
+   catalogue. */
+window.addEventListener("DOMContentLoaded", loadCommerceNotice);

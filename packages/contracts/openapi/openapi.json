@@ -2369,6 +2369,30 @@
         ]
       }
     },
+    "/api/v1/commerce/mode": {
+      "get": {
+        "description": "What this deployment is, so a client can say so truthfully.\n\nUnauthenticated and read-only: the disclosure is for every visitor, and a storefront\nbanner must be right before anyone signs in. It reveals nothing that the behaviour of\nthe cart and checkout endpoints does not already reveal.\n\nA refused or unknown mode answers 200 with the BLOCKED disclosure rather than 500.\n`current_mode()` raises for PUBLIC_COMMERCE_MODE, and a client that receives an\nunexplained error has no way to say anything honest -- it would fall back to whatever\nits markup shipped with, which is precisely the defect this closes. The refusal itself\nis untouched: every purchase path still calls `current_mode()` and still raises.",
+        "operationId": "commerce_mode_api_v1_commerce_mode_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Commerce Mode Api V1 Commerce Mode Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Commerce Mode",
+        "tags": [
+          "commerce"
+        ]
+      }
+    },
     "/api/v1/me": {
       "delete": {
         "operationId": "erase_me_api_v1_me_delete",

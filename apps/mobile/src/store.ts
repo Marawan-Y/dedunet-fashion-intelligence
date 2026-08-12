@@ -13,7 +13,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { ApiError } from "./api/client";
 import * as api from "./api/commerce";
-import type { Cart, Order, Product } from "./api/types";
+import type { Cart, CommerceMode, Order, Product } from "./api/types";
 import { defaultApiBase } from "./config";
 import * as storage from "./storage";
 
@@ -61,6 +61,8 @@ export function useAppStore() {
   const [cart, setCart] = useState<Cart | null>(null);
   const [route, setRoute] = useState<Route>({ name: "catalog" });
   const [catalog, setCatalog] = useState<CatalogState>({ status: "idle" });
+  /** null until the deployment has told us what it is. Never defaulted to a mode. */
+  const [commerceMode, setCommerceMode] = useState<CommerceMode | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [lastOrder, setLastOrder] = useState<Order | null>(null);
   /** True when the last checkout returned an EXISTING order rather than placing a new one. */
@@ -132,6 +134,31 @@ export function useAppStore() {
     if (!booted) return;
     void loadCatalog();
   }, [booted, loadCatalog]);
+
+  // -------------------------------------------------------------------- commerce mode
+
+  /**
+   * Ask the deployment what it is.
+   *
+   * A failure leaves `commerceMode` null, and the catalogue screen then shows its
+   * mode-independent notice. It deliberately does NOT go through `handleFailure`: this is
+   * an unauthenticated disclosure call, so a 401 from it says nothing about the customer's
+   * session and must not end one.
+   */
+  const loadCommerceMode = useCallback(async () => {
+    try {
+      setCommerceMode(await api.getCommerceMode(apiBase));
+    } catch {
+      setCommerceMode(null);
+    }
+  }, [apiBase]);
+
+  // Per API base, like the catalogue: pointing the app at another deployment must not keep
+  // showing the previous one's disclosure.
+  useEffect(() => {
+    if (!booted) return;
+    void loadCommerceMode();
+  }, [booted, loadCommerceMode]);
 
   // ----------------------------------------------------------------------------- cart
 
@@ -296,6 +323,8 @@ export function useAppStore() {
     removeLine,
     catalog,
     loadCatalog,
+    commerceMode,
+    loadCommerceMode,
     route,
     navigate,
     notice,

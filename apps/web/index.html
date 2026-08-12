@@ -4,9 +4,12 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>DEDUNET — prototype storefront</title>
+    <!-- Mode-independent, for the same reason the notice below is: a static tag cannot know
+         which commerce mode the deployment is in, and "nothing is available to purchase"
+         was false in COMMERCE_TEST_MODE. -->
     <meta
       name="description"
-      content="DEDUNET prototype storefront. Preview only — nothing is available to purchase."
+      content="DEDUNET prototype storefront. No real card is charged and no real order is fulfilled."
     />
     <!-- This build must never be indexed: it is a non-public demonstration with
          fictional products and sandbox payments. -->
@@ -21,9 +24,15 @@
   <body>
     <a class="skip" href="#main">Skip to content</a>
 
-    <p class="notice" role="note">
-      Prototype storefront. Preview only — nothing here is available to purchase, and no
-      real order is placed or card charged.
+    <!-- The shipped text is what is true in EVERY permitted mode, because at this point the
+         page does not yet know which one it is in. app.js replaces it with the mode's own
+         disclosure as soon as /api/v1/commerce/mode answers. It previously shipped
+         "nothing here is available to purchase" and never revised it, which was a false
+         statement in COMMERCE_TEST_MODE, where synthetic stock is purchasable and sandbox
+         checkout completes. If the mode cannot be resolved this text stays, so the fallback
+         claims nothing that could turn out to be wrong. -->
+    <p class="notice" role="note" id="commerce-mode-notice">
+      DEDUNET prototype storefront. No real card is charged and no real order is fulfilled.
     </p>
 
     <header class="site">

@@ -300,6 +300,28 @@ def login(body: LoginRequest, session: Annotated[Session, Depends(get_session)])
 # --------------------------------------------------------------------------- discovery
 
 
+@router.get("/commerce/mode")
+def commerce_mode() -> dict:
+    """What this deployment is, so a client can say so truthfully.
+
+    Unauthenticated and read-only: the disclosure is for every visitor, and a storefront
+    banner must be right before anyone signs in. It reveals nothing that the behaviour of
+    the cart and checkout endpoints does not already reveal.
+
+    A refused or unknown mode answers 200 with the BLOCKED disclosure rather than 500.
+    `current_mode()` raises for PUBLIC_COMMERCE_MODE, and a client that receives an
+    unexplained error has no way to say anything honest -- it would fall back to whatever
+    its markup shipped with, which is precisely the defect this closes. The refusal itself
+    is untouched: every purchase path still calls `current_mode()` and still raises.
+    """
+
+    try:
+        mode = modes.current_mode()
+    except modes.CommerceModeError:
+        mode = None
+    return modes.describe(mode)
+
+
 @router.get("/catalog/products")
 def list_products(
     session: Annotated[Session, Depends(get_session)],

@@ -48,6 +48,11 @@ a { color: inherit; }
   margin: 0; padding: 0.6rem 1.25rem; background: var(--ink); color: var(--bone);
   font-size: 0.8rem; letter-spacing: 0.06em; text-align: center;
 }
+/* The mode disclosure is a headline plus separate statements. Laid out as wrapping inline
+   items so each sentence stays a whole phrase on a narrow screen instead of breaking
+   mid-clause -- these are the sentences that say whether money is real. */
+.notice__headline { font-weight: 700; }
+.notice__headline, .notice__line { display: inline-block; margin: 0 0.35rem; }
 
 .site {
   display: flex; align-items: center; justify-content: space-between; gap: 1rem;

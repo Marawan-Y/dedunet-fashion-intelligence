@@ -178,9 +178,13 @@ const MUTATIONS = [
   },
   {
     id: "M15",
-    why: "the sandbox notice is dropped, so a prototype looks like a real shop",
+    why: "the commerce notice is dropped, so a prototype looks like a real shop",
+    // Anchor updated when the notice became mode aware: the message is now
+    // commerceNotice(commerceMode) rather than the fixed SANDBOX_NOTICE constant. The guard
+    // is unchanged -- a catalogue screen must always disclose what this build is -- and the
+    // guarding test still fails on the same missing testID.
     file: "src/screens/CatalogScreen.tsx",
-    find: `      <Banner tone="warning" message={SANDBOX_NOTICE} testID="sandbox-notice" />`,
+    find: `      <Banner tone="warning" message={commerceNotice(commerceMode)} testID="sandbox-notice" />`,
     replace: ``,
     test: "src/__tests__/screens.test.tsx",
     expect: "sandbox-notice",

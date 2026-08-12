@@ -11,6 +11,7 @@ import { ApiError, request } from "./client";
 import type {
   Cart,
   CheckoutResult,
+  CommerceMode,
   Order,
   PriceBreakdown,
   Product,
@@ -87,6 +88,31 @@ function cartHeader(cartToken: string | null): Record<string, string> {
 
 function authHeader(accessToken: string): Record<string, string> {
   return { Authorization: `Bearer ${accessToken}` };
+}
+
+// ----------------------------------------------------------------------- commerce mode
+
+/**
+ * What this deployment is, and the exact words it must be disclosed in.
+ *
+ * Validated as strictly as any other payload: a disclosure the app cannot trust must fail
+ * loudly rather than render half a sentence about whether money is real. `mode` is allowed
+ * to be null -- that is the server saying its configured mode is not permitted, which the
+ * caller must show as such and never as ordinary commerce.
+ */
+export async function getCommerceMode(
+  baseUrl: string,
+  signal?: AbortSignal
+): Promise<CommerceMode> {
+  const body = await request<unknown>(baseUrl, "/api/v1/commerce/mode", { signal });
+  if (!isObject(body)) malformed("commerce mode");
+  if (typeof body.headline !== "string" || body.headline === "") malformed("commerce mode");
+  if (!Array.isArray(body.detail) || body.detail.some((line) => typeof line !== "string")) {
+    malformed("commerce mode");
+  }
+  if (body.mode !== null && typeof body.mode !== "string") malformed("commerce mode");
+  if (body.payments !== "none" && body.payments !== "sandbox") malformed("commerce mode");
+  return body as unknown as CommerceMode;
 }
 
 // ------------------------------------------------------------------------------ catalog
