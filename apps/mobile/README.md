@@ -1,11 +1,20 @@
 # DEDUNET mobile
 
-Expo-managed React Native client for the commerce API. **Prototype only** — payments run
-against a sandbox adapter, no card is charged and nothing is fulfilled.
+Expo-managed React Native client for the commerce API. **Prototype only** — no real card is
+charged and no real order is fulfilled. What the client can do depends on the deployment's
+commerce mode: `BRAND_PREVIEW_MODE` reaches no payment call at all, `COMMERCE_TEST_MODE`
+uses the sandbox adapter against synthetic stock. The catalogue screen states which, in the
+server's own words, from `GET /api/v1/commerce/mode`.
 
-Status: `WORKSTREAM_F` · `EAS_PROJECT_CONFIGURATION_VERIFIED` ·
-`NATIVE_PREVIEW_BUILD_EXTERNALLY_PENDING`. No native binary has been produced. See
-`evidence/workstream-f/WORKSTREAM_F_EVIDENCE.md`.
+Status: `LOCAL_TEAM_ACCEPTANCE_PASSED` · `EAS_PROJECT_CONFIGURATION_VERIFIED` ·
+`NATIVE_PREVIEW_BUILD_EXTERNALLY_PENDING`. The Expo/React Native **web** preview was
+exercised and passed in human acceptance (Test 3B); **no native binary has been produced**,
+and that remains externally pending. See
+`evidence/team-acceptance/LOCAL_TEAM_ACCEPTANCE_CLOSEOUT.md` for the acceptance result and
+`evidence/workstream-f/WORKSTREAM_F_EVIDENCE.md` for the original workstream record.
+
+`PUBLIC_COMMERCIAL_LAUNCH_BLOCKED` is unchanged. Local acceptance is not a launch
+authorization.
 
 ## Requirements
 
@@ -104,6 +113,14 @@ the `/cart/quote` or order total, because VAT is a component of the gross, not a
 
 **Failures are distinct.** Network, timeout, 401, 402, 409, 429, 5xx and malformed each have
 their own outcome and their own message. A dropped connection must never sign a customer out.
+Only a 401 clears the session, once, in `store.handleFailure`; mutation `M7` proves it, and
+the web storefront was aligned to this policy after human acceptance found it showing
+"Signed in as customer" against an expired token.
+
+**The deployment says what it is.** The catalogue notice is the server's wording for the
+server's mode, never a fixed string and never inferred from stock — a client reasoning
+"there is inventory, so this must be commerce-test" would be right today and wrong the first
+time a preview catalogue carries a non-zero count.
 
 ## Known limitations
 
@@ -115,9 +132,17 @@ their own outcome and their own message. A dropped connection must never sign a 
   revocation list. A real deployment wants `expo-secure-store`.
 - No update-quantity endpoint exists, so decreasing a line is DELETE followed by POST and is
   not atomic. See `setCartItemQuantity`.
-- The Side A DEDUNET brand tokens, fonts, media, catalogue and copy are **not** imported.
-  That is the next milestone.
-- Seed data still carries legacy `MRT-*` SKUs and product names; those are server-side seed
-  values, out of scope for this workstream.
+- The Side A DEDUNET brand **tokens and fonts** are not imported. `src/brand.ts` still
+  carries the technical placeholder palette, and adopting the Side A token set remains
+  outstanding work.
+  *Corrected 2026-08-12:* this entry previously also claimed the DEDUNET **media, catalogue
+  and copy** were not imported. That is no longer true and had been superseded by the
+  DEDUNET integration and branded vertical slice: the client renders the five-product
+  DEDUNET catalogue and DDN-TS01's four ordered media through `components/Gallery.tsx`,
+  re-confirmed in human acceptance Test 3B. Only the token/font half of the original
+  statement still stands.
+- The customer-facing catalogue is the DEDUNET catalogue. The legacy `MRT-*` fixture rows
+  still exist server-side because existing orders reference them as financial records, and
+  `BRAND_PREVIEW_MODE` filters them out of everything a customer can see.
 - `npm run deps:check` compares against the SDK matrix *as published today*; a newly released
   Expo patch will make it report an update even though the lockfile is correct.

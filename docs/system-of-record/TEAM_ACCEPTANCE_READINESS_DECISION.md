@@ -1,14 +1,59 @@
 # DEDUNET — Team acceptance readiness decision
 
-**Artifact ID:** SOR-TAR-001 · **Version:** 1.0 · **Owner:** Orchestrator (controller)
-**Date:** 2026-08-07
-**Reviewed commit:** `fc7bdeb`
+**Artifact ID:** SOR-TAR-001 · **Version:** 1.1 · **Owner:** Orchestrator (controller)
+**Original decision:** 2026-08-07 at `fc7bdeb` · **Status updated:** 2026-08-12
 **Evidence:** [`evidence/release/TEAM_ACCEPTANCE_READINESS_EVIDENCE.md`](../../evidence/release/TEAM_ACCEPTANCE_READINESS_EVIDENCE.md)
 · [`TEAM_ACCEPTANCE_READINESS_MATRIX.json`](../../evidence/release/TEAM_ACCEPTANCE_READINESS_MATRIX.json)
+· [`evidence/team-acceptance/LOCAL_TEAM_ACCEPTANCE_CLOSEOUT.md`](../../evidence/team-acceptance/LOCAL_TEAM_ACCEPTANCE_CLOSEOUT.md)
 
 ---
 
-## 1. Executive decision
+## 0. Current status — supersedes §1
+
+# `LOCAL_TEAM_ACCEPTANCE_PASSED`
+
+**Date:** 2026-08-12 · **Decided by:** human acceptance manager
+
+The acceptance testing that §1 authorized has now been **performed and passed**. A human
+tester executed the script in `docs/operations/TEAM_ACCEPTANCE_TEST_SCRIPT.md` end to end:
+environment, preview-mode storefront, admin portal, Expo web preview, and the full
+commerce-test journey — synthetic inventory, fictional customer, sandbox decline, sandbox
+success, backend and admin test-order provenance, fulfilment, the notification worker,
+customer shipped/tracking visibility, synthetic inventory cleanup, return to preview mode,
+preview purchase blocking, and the `PUBLIC_COMMERCE_MODE` activation guard.
+
+Gate-by-gate results, the retained acceptance orders, the two post-acceptance defects found
+and corrected, and the exact regression counts are in
+[`evidence/team-acceptance/LOCAL_TEAM_ACCEPTANCE_CLOSEOUT.md`](../../evidence/team-acceptance/LOCAL_TEAM_ACCEPTANCE_CLOSEOUT.md).
+
+### What this status does NOT mean
+
+`PUBLIC_COMMERCIAL_LAUNCH_BLOCKED` is **unchanged and fully in force**. This is not
+`READY_FOR_PUBLIC_LAUNCH`, not production readiness, and not a launch authorization. It
+records one thing: the *local, internal* acceptance script was run by a human against
+fictional data, synthetic stock and a sandbox payment adapter, and it passed.
+
+Every blocker in §11 remains open, and none was attempted. In particular the
+`PUBLIC_COMMERCE_MODE` guard was tested during acceptance and **refused**, as designed:
+
+```text
+CommerceModeError: PUBLIC_COMMERCE_MODE cannot be enabled by configuration.
+Public commercial launch is BLOCKED.
+```
+
+The runtime was returned to `BRAND_PREVIEW_MODE` afterwards, which is the state the
+deployment is in now.
+
+### Status history
+
+| Date | Status | Commit |
+|---|---|---|
+| 2026-08-07 | `READY_FOR_TEAM_ACCEPTANCE_TESTING` | `fc7bdeb` |
+| 2026-08-12 | `LOCAL_TEAM_ACCEPTANCE_PASSED` | this commit |
+
+---
+
+## 1. Executive decision *(as decided 2026-08-07; superseded by §0)*
 
 # `READY_FOR_TEAM_ACCEPTANCE_TESTING`
 
@@ -373,8 +418,11 @@ None was attempted during this review.
 
 ## 13. Next human actions
 
-1. **Run the acceptance script** in `docs/operations/TEAM_ACCEPTANCE_TEST_SCRIPT.md` and
-   record the outcome. Confirm the catalogue thumbnails render in a visible browser (L9).
+> **Item 1 is complete.** The acceptance script was run and passed on 2026-08-12; see §0.
+> Items 2–6 remain open.
+
+1. ~~**Run the acceptance script**~~ — **DONE**, `LOCAL_TEAM_ACCEPTANCE_PASSED`. See
+   [`evidence/team-acceptance/LOCAL_TEAM_ACCEPTANCE_CLOSEOUT.md`](../../evidence/team-acceptance/LOCAL_TEAM_ACCEPTANCE_CLOSEOUT.md).
 2. **Decide CONFLICT-010** — whether this repository gets a private remote. That requires a
    secret and personal-data review first, and it unblocks CI and collaboration (L8).
 3. **Accept or reassign risk owners** — `ASSIGNMENT_RECORDED — HUMAN ACCEPTANCE PENDING`.
