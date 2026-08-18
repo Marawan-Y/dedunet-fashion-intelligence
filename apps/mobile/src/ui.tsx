@@ -41,8 +41,21 @@ export function Heading({ children }: { children: React.ReactNode }) {
   );
 }
 
-export function Body({ children, muted }: { children: React.ReactNode; muted?: boolean }) {
-  return <Text style={[styles.body, muted === true && styles.bodyMuted]}>{children}</Text>;
+export function Body({
+  children,
+  muted,
+  testID,
+}: {
+  children: React.ReactNode;
+  muted?: boolean;
+  /* Optional, so a line of body copy can be asserted on without wrapping it in a View. */
+  testID?: string;
+}) {
+  return (
+    <Text testID={testID} style={[styles.body, muted === true && styles.bodyMuted]}>
+      {children}
+    </Text>
+  );
 }
 
 export function Card({ children, style }: { children: React.ReactNode; style?: ViewStyle }) {

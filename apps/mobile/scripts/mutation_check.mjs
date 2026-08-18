@@ -216,6 +216,32 @@ const MUTATIONS = [
     test: "src/__tests__/contract.test.ts",
     expect: "legacy",
   },
+  {
+    id: "M19",
+    why: "a saved endpoint from an older build outranks the endpoint this build was made with",
+    file: "src/config.ts",
+    find: `  if (override.buildBase !== buildDefault) {
+    return { ...fallback, rejected: "stale" };
+  }`,
+    replace: `  if (false) {
+    return { ...fallback, rejected: "stale" };
+  }`,
+    test: "src/__tests__/api-base-lifecycle.test.ts",
+    expect: "18080",
+  },
+  {
+    id: "M20",
+    why: "preview mode invites a sandbox purchase the server will refuse",
+    file: "src/brand.ts",
+    find: `  if (mode === "BRAND_PREVIEW_MODE") {
+    return "Purchasing is unavailable while this catalogue is in preview.";
+  }`,
+    replace: `  if (mode === "BRAND_PREVIEW_MODE") {
+    return "Sandbox test orders you place will appear here.";
+  }`,
+    test: "src/__tests__/orders-copy.test.tsx",
+    expect: "sandbox",
+  },
 ];
 
 /**

@@ -14,7 +14,13 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ApiError } from "./api/client";
 import * as api from "./api/commerce";
 import type { Cart, CommerceMode, Order, Product } from "./api/types";
-import { defaultApiBase } from "./config";
+import {
+  buildDefaultApiBase,
+  describeOverrideRejection,
+  resolveApiBase,
+  type ApiBaseSource,
+  type OverrideRejection,
+} from "./config";
 import * as storage from "./storage";
 
 export type ScreenName =
@@ -55,7 +61,14 @@ export type AppState = ReturnType<typeof useAppStore>;
 
 export function useAppStore() {
   const [booted, setBooted] = useState(false);
-  const [apiBase, setApiBaseState] = useState<string>(defaultApiBase());
+  const buildDefault = buildDefaultApiBase();
+  const [apiBase, setApiBaseState] = useState<string>(buildDefault);
+  /** Which of the two the current `apiBase` came from, for the settings screen. */
+  const [apiBaseSource, setApiBaseSource] = useState<ApiBaseSource>(
+    buildDefault === "" ? "unconfigured" : "build-default"
+  );
+  /** Set once at boot if a stored override was refused, so the discard can be explained. */
+  const [apiBaseRejection, setApiBaseRejection] = useState<OverrideRejection | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [cartToken, setCartToken] = useState<string | null>(null);
   const [cart, setCart] = useState<Cart | null>(null);
@@ -76,13 +89,28 @@ export function useAppStore() {
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const [storedBase, storedSession, storedCart] = await Promise.all([
-        storage.loadApiBase(),
+      const [storedOverride, storedSession, storedCart] = await Promise.all([
+        storage.loadApiBaseOverride(),
         storage.loadSession(),
         storage.loadCartToken(),
       ]);
       if (cancelled) return;
-      if (storedBase) setApiBaseState(storedBase);
+
+      /* The build's endpoint wins unless the override proves it is current. Applying a
+         saved value unconditionally is what left a correct preview APK talking to a port
+         nothing listened on, with no way out but clearing app data. */
+      const resolved = resolveApiBase(storedOverride, buildDefault);
+      setApiBaseState(resolved.base);
+      setApiBaseSource(resolved.source);
+      setApiBaseRejection(resolved.rejected);
+      if (resolved.rejected !== null) {
+        // Discard it now, so the next launch is not asked the same question again.
+        void storage.clearApiBaseOverride();
+        setNotice(describeOverrideRejection(resolved.rejected));
+      }
+
+      /* Session and cart are restored exactly as before. An API-configuration migration
+         must not sign anyone out or empty a basket. */
       if (storedSession) setSession(storedSession);
       if (storedCart) setCartToken(storedCart);
       setBooted(true);
@@ -289,12 +317,39 @@ export function useAppStore() {
 
   // ------------------------------------------------------------------------- api base
 
-  const setApiBase = useCallback(async (value: string) => {
-    setApiBaseState(value);
-    await storage.saveApiBase(value);
+  /**
+   * Save an operator override, stamped with the build it was chosen against.
+   *
+   * The stamp is what lets a later build tell "deliberately set for this application" from
+   * "left behind by the previous install".
+   */
+  const setApiBase = useCallback(
+    async (value: string) => {
+      setApiBaseState(value);
+      setApiBaseSource("operator-override");
+      setApiBaseRejection(null);
+      await storage.saveApiBaseOverride(value, buildDefault);
+      setCart(null);
+      setNotice(null);
+    },
+    [buildDefault]
+  );
+
+  /**
+   * Forget the override and return to the endpoint this build was made with.
+   *
+   * The visible escape hatch from the acceptance failure: previously the only cure was
+   * clearing app storage from Android settings, which also destroyed the session and cart.
+   * This drops one key.
+   */
+  const resetApiBaseToBuildDefault = useCallback(async () => {
+    setApiBaseState(buildDefault);
+    setApiBaseSource(buildDefault === "" ? "unconfigured" : "build-default");
+    setApiBaseRejection(null);
+    await storage.clearApiBaseOverride();
     setCart(null);
     setNotice(null);
-  }, []);
+  }, [buildDefault]);
 
   // ----------------------------------------------------------------------- navigation
 
@@ -308,7 +363,11 @@ export function useAppStore() {
   return {
     booted,
     apiBase,
+    apiBaseSource,
+    apiBaseRejection,
+    buildDefaultApiBase: buildDefault,
     setApiBase,
+    resetApiBaseToBuildDefault,
     session,
     signIn,
     signUp,

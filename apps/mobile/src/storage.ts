@@ -13,9 +13,14 @@
 
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
+import { API_BASE_OVERRIDE_VERSION, type ApiBaseOverride } from "./config";
+
 const KEY_SESSION = "dedunet.session.v1";
 const KEY_CART = "dedunet.cart.v1";
-const KEY_API_BASE = "dedunet.apiBase.v1";
+/* v1 held a bare URL string with no record of the build it was saved against. It is read
+   once, only to delete it -- see `loadApiBaseOverride`. */
+const KEY_API_BASE_LEGACY = "dedunet.apiBase.v1";
+const KEY_API_BASE = "dedunet.apiBase.v2";
 
 export type StoredSession = {
   accessToken: string;
@@ -96,15 +101,61 @@ export async function clearCartToken(): Promise<void> {
 
 // ----------------------------------------------------------------------------- api base
 
-export async function loadApiBase(): Promise<string | null> {
-  const value = await readString(KEY_API_BASE);
-  return value === null || value === "" ? null : value;
+/**
+ * The operator's saved endpoint, or `null`.
+ *
+ * Reads the current record and, separately, retires any v1 record. v1 was a bare string:
+ * it cannot say which build default it was chosen against, so it cannot be shown to be
+ * current, and native Android acceptance showed what happens when such a value is trusted
+ * anyway -- a correct APK pinned to a dead port until app data was cleared.
+ *
+ * A legacy record is REPORTED as well as removed, so `resolveApiBase` can explain the
+ * discard on the settings screen instead of the endpoint appearing to change by itself.
+ *
+ * Only this key is touched. The session and cart keys are separate records and a migration
+ * of the API configuration has no business signing anyone out or emptying a basket.
+ */
+export async function loadApiBaseOverride(): Promise<ApiBaseOverride | null> {
+  const raw = await readString(KEY_API_BASE);
+
+  if (raw === null || raw === "") {
+    const legacy = await readString(KEY_API_BASE_LEGACY);
+    if (legacy === null || legacy === "") return null;
+    await remove(KEY_API_BASE_LEGACY);
+    // Version 1 on purpose: `resolveApiBase` refuses it and reports it as legacy.
+    return { version: 1, value: legacy, buildBase: "" };
+  }
+
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    if (typeof parsed !== "object" || parsed === null) return { version: 0, value: "", buildBase: "" };
+    const { version, value, buildBase } = parsed as Partial<ApiBaseOverride>;
+    if (typeof version !== "number" || typeof value !== "string" || typeof buildBase !== "string") {
+      // Structurally wrong rather than absent. Returned as a malformed record so the
+      // caller can discard it visibly; silently treating it as "no override" would hide a
+      // corrupted store.
+      return { version: API_BASE_OVERRIDE_VERSION, value: "", buildBase: "" };
+    }
+    return { version, value, buildBase };
+  } catch {
+    return { version: API_BASE_OVERRIDE_VERSION, value: "", buildBase: "" };
+  }
 }
 
-export async function saveApiBase(value: string): Promise<void> {
-  await writeString(KEY_API_BASE, value);
+/**
+ * Save an override, stamped with the build default it was chosen against.
+ *
+ * `buildBase` is the whole point of the record. Without it a later build has no way to tell
+ * an endpoint someone deliberately set for THIS build from one left behind by a previous
+ * install.
+ */
+export async function saveApiBaseOverride(value: string, buildBase: string): Promise<void> {
+  const record: ApiBaseOverride = { version: API_BASE_OVERRIDE_VERSION, value, buildBase };
+  await writeString(KEY_API_BASE, JSON.stringify(record));
 }
 
-export async function clearApiBase(): Promise<void> {
+/** Forget the override and fall back to the build default. Touches no other key. */
+export async function clearApiBaseOverride(): Promise<void> {
   await remove(KEY_API_BASE);
+  await remove(KEY_API_BASE_LEGACY);
 }
