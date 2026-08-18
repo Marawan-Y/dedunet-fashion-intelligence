@@ -11,6 +11,7 @@ import { Pressable, Text } from "react-native";
 import { ApiError, describeFailure } from "../api/client";
 import { getOrder, listOrders } from "../api/commerce";
 import type { Order } from "../api/types";
+import { ordersEmptyDetail } from "../brand";
 import { formatMinorUnits } from "../money";
 import type { AppState } from "../store";
 import { Banner, Body, Button, Card, EmptyState, Heading, Loading, Row, Screen, styles } from "../ui";
@@ -21,7 +22,7 @@ type ListState =
   | { status: "error"; error: ApiError };
 
 export function OrdersScreen({ app }: { app: AppState }) {
-  const { apiBase, session, navigate, handleFailure } = app;
+  const { apiBase, session, navigate, handleFailure, commerceMode } = app;
   const [state, setState] = useState<ListState>({ status: "loading" });
 
   const load = useCallback(async () => {
@@ -67,7 +68,8 @@ export function OrdersScreen({ app }: { app: AppState }) {
         <EmptyState
           testID="orders-empty"
           title="No orders yet"
-          detail="Sandbox orders you place will appear here."
+          /* Mode-derived. Preview mode must not invite a purchase the server will refuse. */
+          detail={ordersEmptyDetail(commerceMode)}
           action={{ label: "Browse the collection", onPress: () => navigate({ name: "catalog" }) }}
         />
       ) : null}

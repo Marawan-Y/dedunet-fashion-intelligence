@@ -85,3 +85,28 @@ export function commerceNotice(
   if (!headline || detail.length === 0) return SANDBOX_NOTICE;
   return [headline, ...detail].join(" ");
 }
+
+/**
+ * The empty order history, in wording the current commerce mode can support.
+ *
+ * Native acceptance found `BRAND_PREVIEW_MODE` promising "Sandbox orders you place will
+ * appear here." Nothing can be placed in preview mode -- `assert_purchasable` refuses every
+ * purchase before it reaches a payment call -- so the screen was inviting the customer to
+ * do something the server would refuse.
+ *
+ * Derived from the mode, never from stock. An unresolved or refused mode gets a fourth
+ * message that promises nothing, because the honest answer there is that we do not yet
+ * know what this deployment allows.
+ */
+export function ordersEmptyDetail(
+  disclosure: { mode?: string | null } | null | undefined
+): string {
+  const mode = typeof disclosure?.mode === "string" ? disclosure.mode : null;
+  if (mode === "BRAND_PREVIEW_MODE") {
+    return "Purchasing is unavailable while this catalogue is in preview.";
+  }
+  if (mode === "COMMERCE_TEST_MODE") {
+    return "Sandbox test orders you place will appear here.";
+  }
+  return "Orders you place will appear here once this deployment allows purchasing.";
+}
