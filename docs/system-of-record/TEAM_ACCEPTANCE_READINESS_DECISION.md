@@ -51,10 +51,14 @@ deployment is in now.
 | 2026-08-07 | `READY_FOR_TEAM_ACCEPTANCE_TESTING` | `fc7bdeb` |
 | 2026-08-12 | `LOCAL_TEAM_ACCEPTANCE_PASSED` | `c0c8fac` |
 | 2026-08-18 | `NATIVE_ANDROID_PREVIEW_ACCEPTANCE_PASSED` | `4cb8e50` |
+| 2026-08-18 | `NATIVE_POST_ACCEPTANCE_HARDENING_VERIFIED` | this commit |
 
-The Android status is **additive**, not a replacement: a preview APK was built through EAS
-and exercised on an emulator (Pixel 9, Android 16, API 36). Physical-device acceptance is
-`NOT TESTED` and iOS is unbuilt. See
+The Android statuses are **additive**, not replacements. A preview APK was built through EAS
+and exercised on an emulator (Pixel 9, Android 16, API 36); the two post-acceptance
+corrections were then verified on that emulator against the corrected build
+`f7c7352b-b848-4009-84d2-931139d6fef8`, installed with `adb install -r` over the previous
+APK so the stale saved endpoint survived the upgrade and had to be recovered from. Physical
+Android hardware is `NOT TESTED` and iOS is unbuilt and `NOT TESTED`. See
 [`evidence/team-acceptance/NATIVE_ANDROID_PREVIEW_ACCEPTANCE.md`](../../evidence/team-acceptance/NATIVE_ANDROID_PREVIEW_ACCEPTANCE.md).
 `PUBLIC_COMMERCIAL_LAUNCH_BLOCKED` is unaffected by it.
 

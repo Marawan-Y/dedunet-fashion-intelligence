@@ -1,14 +1,17 @@
 # DEDUNET — Native Android preview acceptance
 
-**Artifact ID:** EV-TA-004 · **Version:** 1.0 · **Owner:** Side B / platform
-**Status:** `NATIVE_ANDROID_PREVIEW_ACCEPTANCE_PASSED` · **Date:** 2026-08-18
+**Artifact ID:** EV-TA-004 · **Version:** 1.1 · **Owner:** Side B / platform
+**Status:** `NATIVE_ANDROID_PREVIEW_ACCEPTANCE_PASSED` ·
+`NATIVE_POST_ACCEPTANCE_HARDENING_VERIFIED` · **Date:** 2026-08-18
 **Accepted baseline before native work:** `c0c8fac` (*docs: close local team acceptance*)
 **Android acceptance commit:** `4cb8e50` (*feat: complete Android native preview acceptance*)
 **Decided by:** human acceptance manager
 
 > `PUBLIC_COMMERCIAL_LAUNCH_BLOCKED` remains fully in force. This records that a **preview**
-> APK was built and exercised on an **Android emulator**. It is not production readiness, not
-> a store release, and not a launch authorization. No Apple/App Store work was begun.
+> APK was built and exercised on an **Android emulator**, and that the **corrected** APK was
+> later verified there too (§5). It is not production readiness, not a store release, and not
+> a launch authorization. Physical Android hardware and iOS both remain `NOT TESTED`, and no
+> Apple/App Store work was begun.
 
 ---
 
@@ -19,7 +22,8 @@
 | EAS project | `@dedunet.com/dedunet` |
 | EAS project ID | `72b0a18d-36dd-406f-a54b-ab481a95db88` |
 | Emulator | Pixel 9 · Android 16 · API 36 |
-| Successful build IDs | `098add84-f7f5-4acd-a68b-e49bfcf2e100`<br>`2c765b76-2377-496c-8129-6b3bacde0a0b` |
+| Successful build IDs (acceptance) | `098add84-f7f5-4acd-a68b-e49bfcf2e100`<br>`2c765b76-2377-496c-8129-6b3bacde0a0b` |
+| Successful build ID (corrected, §5) | `f7c7352b-b848-4009-84d2-931139d6fef8` |
 | Package | `com.dedunet.store` |
 
 Emulator identity re-confirmed on the running device during this phase:
@@ -258,26 +262,88 @@ Host-side, unchanged throughout this phase: `COMMERCE_MODE=BRAND_PREVIEW_MODE`, 
 **200**. No order was created, no checkout replayed, and the runtime was never switched out
 of preview mode.
 
-### What native verification does NOT cover, and why
+### Native verification of the corrected APK — COMPLETED
 
-**The fixed application was not re-run natively.** Doing so needs a new APK, and none of the
-three routes to one was available without crossing a gate:
+**Status:** `NATIVE_POST_ACCEPTANCE_HARDENING_VERIFIED` · human, 2026-08-18
+**Corrected EAS build:** `f7c7352b-b848-4009-84d2-931139d6fef8`
 
-| Route | Blocked by |
+The corrected build was produced and exercised on the emulator by the human verifier. This
+closes the gap recorded when the fixes were committed — at that point no route to a new APK
+was open without crossing a gate (EAS is an external service, no JDK for a local Gradle
+build, no Expo Go on the emulator, and the installed release APK refused `run-as` as not
+debuggable). That is now resolved by an actual build and an actual device run.
+
+#### The upgrade path, which is the part that matters
+
+The install was an **upgrade over the previous APK**, not a clean install:
+
+```text
+adb install -r        corrected APK over the existing one
+app data              PRESERVED
+stale saved endpoint  http://10.0.2.2:18000   survived the upgrade
+```
+
+Preserving the data is what makes this a real test. A clean install would have proved
+nothing: the defect only exists when a saved endpoint from an older build is still present,
+and wiping it was the old workaround. The stale value was carried across the upgrade and the
+corrected app then had to deal with it.
+
+#### What the corrected app did with it
+
+| # | Check | Result |
+|---|---|---|
+| 1 | stale `:18000` endpoint detected and discarded | **PASS** |
+| 2 | endpoint selected automatically | **`http://10.0.2.2:18080`** |
+| 3 | native catalogue loaded | **5 DEDUNET products** |
+| 4 | API Settings → Source | **Build default** |
+| 5 | migration notice shown natively | stated that a saved endpoint from an older build was discarded and the current build endpoint was in use |
+
+Before the fix this exact state produced "Cannot reach the store" with no request reaching
+the backend, and the only cure was clearing app data. The app now recovers by itself, on
+first launch, and says why.
+
+#### Reset exercised natively
+
+| # | Check | Result |
+|---|---|---|
+| 6 | "Reset API endpoint to build default" exercised on the device | **PASS** |
+| 7 | effective endpoint after reset | **`http://10.0.2.2:18080`** |
+| 8 | source after reset | **Build default** |
+| 9 | UI confirmed the saved endpoint was cleared | **PASS** |
+
+#### Orders copy, in `BRAND_PREVIEW_MODE`, signed in
+
+```text
+No orders yet
+Purchasing is unavailable while this catalogue is in preview.
+```
+
+The incorrect sandbox-order promise was **absent**. That is the issue-B correction observed
+on a device rather than in a renderer.
+
+#### Commerce safety during the run
+
+| Check | Result |
 |---|---|
-| EAS cloud build | Uploads the project to an external service. Not undertaken without an explicit instruction. |
-| Local Gradle (`expo run:android`) | **No JDK installed** — `java` is not on PATH and `JAVA_HOME` is unset. |
-| Expo Go | **Not installed** on the emulator (`pm list packages` shows only `com.dedunet.store` and Chrome). |
-| Inspecting the installed app's storage | The preview APK is a release build — `run-as` reports *"package not debuggable"*. |
+| Orders created (real or sandbox) | **none** |
+| Disposable customer | `native-hardening@dedunet.example`, deleted after the test |
+| Cleanup verification | `native_hardening_customer_count=0` |
+| Final commerce mode | **`COMMERCE_MODE=BRAND_PREVIEW_MODE`** |
+| Final `/ready` | **200** · `database=ok` · `catalog_fixture=ok` |
 
-So the device-side evidence above is what the emulator can establish about the **defect and
-its environment**, not about the corrected build. What changed is entirely JavaScript-level
-endpoint selection and screen copy, covered by 55 tests and two mutations; but that is a
-statement about coverage, not a substitute for running it, and it is recorded as such.
+No order was placed, the disposable identity was removed and its removal was verified by
+count, and the runtime was left in preview mode.
 
-**Recommended next step:** rebuild the preview APK (EAS) and re-run the emulator pass —
-catalogue loads, a stale override cannot hijack the build, the reset works, the orders copy
-is preview-correct, purchase remains blocked.
+#### Still not established by this run
+
+The verification was performed on the **emulator**. It says nothing new about the two gaps
+recorded in §1, which stand unchanged:
+
+* **Physical Android hardware remains `NOT TESTED`.** An emulator shares the host network
+  stack through `10.0.2.2` and has its own graphics and storage behaviour.
+* **iOS remains `NOT TESTED`** and unbuilt, with no Apple publisher identity.
+* **`PUBLIC_COMMERCIAL_LAUNCH_BLOCKED` remains in force.** A preview APK accepted on an
+  emulator is not production readiness, not a store release, and not a launch authorization.
 
 ## 6. Commits
 
@@ -286,7 +352,8 @@ is preview-correct, purchase remains blocked.
 | `4cb8e50` | *feat: complete Android native preview acceptance* — the accepted baseline for this phase |
 | `1b2863b` | *fix: harden native API override lifecycle* |
 | `4e4f8c0` | *fix: make native orders copy mode aware* |
-| *this one* | *docs: close Android native acceptance* |
+| `7639b3f` | *docs: close Android native acceptance* |
+| *this one* | *docs: close native post-acceptance hardening* — the human runtime verification in §5 |
 
 ## 7. Remaining blockers
 
@@ -295,10 +362,9 @@ Unchanged by this phase, and none was attempted:
 | Blocker | Status |
 |---|---|
 | Physical Android device acceptance | **NOT TESTED** — emulator only |
-| Native iOS preview build | not begun; no Apple publisher identity |
+| Native iOS preview build | **NOT TESTED** — not begun; no Apple publisher identity |
 | Apple publisher membership / identity | `DEFERRED — PUBLISHER IDENTITY PENDING` |
 | Google Play publisher identity | `DEFERRED — PUBLISHER IDENTITY PENDING` |
-| Re-verification of the fixed APK on the emulator | pending a new EAS build |
 | External SMTP delivery | `EXTERNAL_SMTP_DELIVERY_PENDING` |
 | Hosted production cloud | `DEFERRED — LOCAL STAGING ONLY` |
 | Real payment provider activation | not activated |
@@ -330,9 +396,10 @@ preview mode. A new APK would be needed for either revert to reach a device.
 ```text
 Local team acceptance                     PASSED   (human, 2026-08-12)
 Native Android preview acceptance         PASSED   (human, emulator, 2026-08-18)
-Native API override lifecycle             HARDENED
-Native orders copy                        MODE AWARE
+Native API override lifecycle             HARDENED and VERIFIED on device
+Native orders copy                        MODE AWARE and VERIFIED on device
+Corrected APK re-verification             PASSED   (build f7c7352b, adb install -r)
 Physical Android device acceptance        NOT TESTED
-Re-verification of the fixed APK          PENDING a new EAS build
+Native iOS                                NOT TESTED
 Public commercial launch                  BLOCKED  (unchanged)
 ```
