@@ -2,12 +2,16 @@
   "expo": {
     "name": "DEDUNET",
     "slug": "dedunet",
-    "owner": "Dedunet",
+    "owner": "dedunet.com",
     "version": "0.2.0",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
     "scheme": "dedunet",
-    "platforms": ["ios", "android", "web"],
+    "platforms": [
+      "ios",
+      "android",
+      "web"
+    ],
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.dedunet.store"

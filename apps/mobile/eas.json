@@ -8,7 +8,8 @@
       "developmentClient": true,
       "distribution": "internal",
       "env": {
-        "EXPO_PUBLIC_API_BASE": "http://10.0.2.2:18000"
+        "EXPO_PUBLIC_API_BASE": "http://10.0.2.2:18080",
+        "DEDUNET_ALLOW_LOCAL_HTTP": "true"
       }
     },
     "preview": {
@@ -17,7 +18,8 @@
         "buildType": "apk"
       },
       "env": {
-        "EXPO_PUBLIC_API_BASE": "http://10.0.2.2:18000"
+        "EXPO_PUBLIC_API_BASE": "http://10.0.2.2:18080",
+        "DEDUNET_ALLOW_LOCAL_HTTP": "true"
       }
     },
     "production": {

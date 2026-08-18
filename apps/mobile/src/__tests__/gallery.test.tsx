@@ -107,9 +107,21 @@ describe("Gallery", () => {
   it("builds an absolute URL from the API base and the server-supplied url", () => {
     const tree = render(product({ media: [media("front", 0)] }));
     const image = all(tree, "gallery-image-")[0];
-    expect(image?.props.source.uri).toBe(
-      `${BASE}/api/v1/media/assets/brand-prototype/products/ddn-ts01-front.svg`
-    );
+    const expectedUri =
+      `${BASE}/api/v1/media/assets/brand-prototype/products/ddn-ts01-front.svg`;
+
+    const source = image?.props.source;
+    const sources = Array.isArray(source) ? source : [source];
+
+    expect(
+      sources.some(
+        (entry: unknown) =>
+          typeof entry === "object" &&
+          entry !== null &&
+          "uri" in entry &&
+          (entry as { uri?: string }).uri === expectedUri
+      )
+    ).toBe(true);
   });
 
   it("uses the Side A alt text for accessibility", () => {
@@ -130,7 +142,11 @@ describe("Gallery", () => {
     const first = all(tree, "gallery-image-")[0];
 
     act(() => {
-      first?.props.onError();
+      first?.props.onError({
+        nativeEvent: {
+          error: "synthetic image failure",
+        },
+      });
     });
 
     expect(all(tree, "gallery-failed-")).toHaveLength(1);

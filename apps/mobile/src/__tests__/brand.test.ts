@@ -120,9 +120,9 @@ describe("app configuration", () => {
     expect(appJson.expo.extra?.eas?.projectId).toBe("72b0a18d-36dd-406f-a54b-ab481a95db88");
   });
 
-  it("uses the mandated slug, owner and identifiers", () => {
+  it("uses the verified EAS owner, slug and native identifiers", () => {
     expect(appJson.expo.slug).toBe("dedunet");
-    expect(appJson.expo.owner).toBe("Dedunet");
+    expect(appJson.expo.owner).toBe("dedunet.com");
     expect(appJson.expo.ios.bundleIdentifier).toBe("com.dedunet.store");
     expect(appJson.expo.android.package).toBe("com.dedunet.store");
   });

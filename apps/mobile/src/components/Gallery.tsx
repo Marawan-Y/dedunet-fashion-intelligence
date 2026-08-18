@@ -17,7 +17,8 @@
  */
 
 import React, { useCallback, useState } from "react";
-import { Image, ScrollView, Text, View } from "react-native";
+import { ScrollView, Text, View } from "react-native";
+import { Image } from "expo-image";
 
 import type { Product, ProductMedia } from "../api/types";
 import { BRAND } from "../brand";
@@ -127,9 +128,8 @@ function GalleryImage({
         source={{ uri }}
         onError={onError}
         accessible
-        accessibilityRole="image"
         accessibilityLabel={label}
-        resizeMode="contain"
+        contentFit="contain"
         style={{
           width: 200,
           height: 240,
