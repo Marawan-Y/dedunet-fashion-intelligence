@@ -6,11 +6,18 @@ commerce mode: `BRAND_PREVIEW_MODE` reaches no payment call at all, `COMMERCE_TE
 uses the sandbox adapter against synthetic stock. The catalogue screen states which, in the
 server's own words, from `GET /api/v1/commerce/mode`.
 
-Status: `LOCAL_TEAM_ACCEPTANCE_PASSED` · `EAS_PROJECT_CONFIGURATION_VERIFIED` ·
-`NATIVE_PREVIEW_BUILD_EXTERNALLY_PENDING`. The Expo/React Native **web** preview was
-exercised and passed in human acceptance (Test 3B); **no native binary has been produced**,
-and that remains externally pending. See
-`evidence/team-acceptance/LOCAL_TEAM_ACCEPTANCE_CLOSEOUT.md` for the acceptance result and
+Status: `NATIVE_ANDROID_PREVIEW_ACCEPTANCE_PASSED` · `LOCAL_TEAM_ACCEPTANCE_PASSED` ·
+`EAS_PROJECT_CONFIGURATION_VERIFIED`.
+
+*Corrected 2026-08-18:* this line previously said `NATIVE_PREVIEW_BUILD_EXTERNALLY_PENDING`
+and that **no native binary has been produced**. Both are now out of date for Android. A
+preview APK was built through EAS and exercised on an Android emulator (Pixel 9, Android 16,
+API 36), and human acceptance passed. **Physical Android device acceptance remains
+`NOT TESTED`** — an emulator shares the host's network stack and says nothing about a real
+handset on a real network — and **iOS remains unbuilt**, with no Apple publisher identity.
+
+See `evidence/team-acceptance/NATIVE_ANDROID_PREVIEW_ACCEPTANCE.md` for the Android result,
+`evidence/team-acceptance/LOCAL_TEAM_ACCEPTANCE_CLOSEOUT.md` for the local acceptance, and
 `evidence/workstream-f/WORKSTREAM_F_EVIDENCE.md` for the original workstream record.
 
 `PUBLIC_COMMERCIAL_LAUNCH_BLOCKED` is unchanged. Local acceptance is not a launch
@@ -124,8 +131,10 @@ time a preview catalogue carries a non-zero count.
 
 ## Known limitations
 
-- No native build. `EAS_PROJECT_CONFIGURATION_VERIFIED` only; the app config carries the
-  existing EAS project, but no Expo account was available to build or link.
+- No **iOS** native build, and no physical-device acceptance on either platform. The
+  Android preview APK was built and accepted on an emulator only.
+  *Corrected 2026-08-18:* this entry previously read "No native build ...  no Expo account
+  was available to build or link", which an Android EAS build has since superseded.
 - Routing is a typed union in `App.tsx`, not a navigation library. No deep links, no
   gesture-based back navigation.
 - `AsyncStorage` is unencrypted. Session tokens are HMAC-signed, not encrypted, with no

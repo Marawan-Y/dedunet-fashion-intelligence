@@ -49,7 +49,14 @@ deployment is in now.
 | Date | Status | Commit |
 |---|---|---|
 | 2026-08-07 | `READY_FOR_TEAM_ACCEPTANCE_TESTING` | `fc7bdeb` |
-| 2026-08-12 | `LOCAL_TEAM_ACCEPTANCE_PASSED` | this commit |
+| 2026-08-12 | `LOCAL_TEAM_ACCEPTANCE_PASSED` | `c0c8fac` |
+| 2026-08-18 | `NATIVE_ANDROID_PREVIEW_ACCEPTANCE_PASSED` | `4cb8e50` |
+
+The Android status is **additive**, not a replacement: a preview APK was built through EAS
+and exercised on an emulator (Pixel 9, Android 16, API 36). Physical-device acceptance is
+`NOT TESTED` and iOS is unbuilt. See
+[`evidence/team-acceptance/NATIVE_ANDROID_PREVIEW_ACCEPTANCE.md`](../../evidence/team-acceptance/NATIVE_ANDROID_PREVIEW_ACCEPTANCE.md).
+`PUBLIC_COMMERCIAL_LAUNCH_BLOCKED` is unaffected by it.
 
 ---
 
@@ -426,8 +433,9 @@ None was attempted during this review.
 2. **Decide CONFLICT-010** — whether this repository gets a private remote. That requires a
    secret and personal-data review first, and it unblocks CI and collaboration (L8).
 3. **Accept or reassign risk owners** — `ASSIGNMENT_RECORDED — HUMAN ACCEPTANCE PENDING`.
-4. **Authenticate Expo** if a native preview build is wanted
-   (`NATIVE_PREVIEW_BUILD_EXTERNALLY_PENDING`).
+4. ~~**Authenticate Expo** if a native preview build is wanted~~ — **DONE for Android**
+   (`NATIVE_ANDROID_PREVIEW_ACCEPTANCE_PASSED`, emulator only). Still open: physical-device
+   acceptance, and any iOS build, which needs Apple publisher identity.
 5. **Close CONFLICT-009** — `docs/KNOWN_LIMITATIONS.md` and `README.md` still describe a
    pre-Workstream platform.
 6. Do **not** begin hosted deployment on the strength of this decision. It authorizes
