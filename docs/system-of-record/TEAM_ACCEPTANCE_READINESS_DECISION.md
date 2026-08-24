@@ -429,8 +429,8 @@ None was attempted during this review.
 
 ## 13. Next human actions
 
-> **Item 1 is complete.** The acceptance script was run and passed on 2026-08-12; see §0.
-> Items 2–6 remain open.
+> **Items 1, 4 (Android) and 5 are complete.** Items 2, 3, 6 and the new item 7 remain open.
+> Updated 2026-08-24 at `41cee4c`.
 
 1. ~~**Run the acceptance script**~~ — **DONE**, `LOCAL_TEAM_ACCEPTANCE_PASSED`. See
    [`evidence/team-acceptance/LOCAL_TEAM_ACCEPTANCE_CLOSEOUT.md`](../../evidence/team-acceptance/LOCAL_TEAM_ACCEPTANCE_CLOSEOUT.md).
@@ -440,7 +440,20 @@ None was attempted during this review.
 4. ~~**Authenticate Expo** if a native preview build is wanted~~ — **DONE for Android**
    (`NATIVE_ANDROID_PREVIEW_ACCEPTANCE_PASSED`, emulator only). Still open: physical-device
    acceptance, and any iOS build, which needs Apple publisher identity.
-5. **Close CONFLICT-009** — `docs/KNOWN_LIMITATIONS.md` and `README.md` still describe a
-   pre-Workstream platform.
+5. ~~**Close CONFLICT-009**~~ — **DONE 2026-08-24 at `41cee4c`.** `docs/KNOWN_LIMITATIONS.md`
+   and `README.md` rewritten against the executed state (**415 passed, 2 skipped**; **77**
+   guard mutations), every corrected line marked `**[was: …]**` so the drift stays visible,
+   and the three dead `README.md` links fixed. See the register entry for what was corrected
+   and what it deliberately did not close.
 6. Do **not** begin hosted deployment on the strength of this decision. It authorizes
    internal acceptance testing only.
+7. **Write the iPhone mobile-web acceptance record** — **CONFLICT-011, opened 2026-08-24.**
+   A successor brief states this acceptance passed. **No record of it exists in this
+   repository**, and `git log --all -S "IPHONE_MOBILE_WEB"` returns no commit in any ref. The
+   two UX defects it reported are real and are now closed
+   ([`IPHONE_WEB_HARDENING_CLOSURE.md`](../../evidence/team-acceptance/IPHONE_WEB_HARDENING_CLOSURE.md)),
+   which corroborates that testing happened — but a defect report is not an acceptance record,
+   and the *scope* of what passed cannot be reconstructed: device, iOS version, commit and
+   commerce mode are all unrecorded. Owner: human acceptance manager. Deliberately **not**
+   written on the tester's behalf, for the same reason DISC-07 was recorded rather than
+   retro-fitted.

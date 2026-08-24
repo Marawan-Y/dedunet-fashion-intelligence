@@ -6,7 +6,7 @@
 | Version | 1.1 |
 | Owner | Technical lead |
 | Status | SELF-VALIDATED |
-| Updated | 2026-08-06 — CONFLICT-001 marked superseded; CONFLICT-009 and CONFLICT-010 added by the successor agent takeover (`SUCCESSOR_AGENT_TAKEOVER_REPORT.md`) |
+| Updated | 2026-08-24 — CONFLICT-009 **RESOLVED** (honesty documents rewritten at `41cee4c`). Previously 2026-08-06: CONFLICT-001 marked superseded; CONFLICT-009 and CONFLICT-010 added by the successor agent takeover (`SUCCESSOR_AGENT_TAKEOVER_REPORT.md`) |
 | Rule | No material contradiction is resolved silently. Each carries a proposed resolution and an approval state. |
 
 Resolution follows the source-of-truth hierarchy in the human manager approval, §4.
@@ -224,7 +224,7 @@ blind replace would break assertions and demo credentials simultaneously.
 
 ---
 
-## CONFLICT-009 — The honesty documents contradict five delivered workstreams
+## CONFLICT-009 — The honesty documents contradict five delivered workstreams — **RESOLVED**
 
 **Files:** `docs/KNOWN_LIMITATIONS.md`, `README.md`
 
@@ -264,8 +264,32 @@ successor agent concluding that rate limiting, backups, notifications or Postgre
 and either re-implementing them or blocking a gate that should pass.
 
 **Owner:** Technical lead
-**Approval status:** OPEN — recorded by the successor agent 2026-08-06. Not resolved silently; not
-fixed during the read-only takeover. Recommended as the next commit.
+**Approval status:** **RESOLVED 2026-08-24 at `41cee4c`.** Both files rewritten against the
+executed state. Recorded by the successor agent 2026-08-06; not resolved silently and not fixed
+during the read-only takeover, as intended.
+
+**What was done, and what it cost.** Every corrected line is marked `**[was: …]**` in place, so
+the drift is visible rather than erased — the resolution above required showing the progression,
+and a clean rewrite would have destroyed exactly the record this register exists to keep. The
+three dead `README.md` links now resolve, and a link check over both files plus the four new
+architecture documents reports **0 broken**.
+
+The counts were re-derived, not carried forward: **415 passed, 2 skipped** executed at `41cee4c`,
+and **77 guard mutations** after this phase added five to the 72 that existed. The PostgreSQL
+suite result is **carried
+forward on prior evidence and explicitly labelled as such** in `KNOWN_LIMITATIONS.md` §7 rather
+than restated as though re-run.
+
+**One correction beyond the recorded scope.** `KNOWN_LIMITATIONS.md` §4 previously carried a
+single "Android / iOS applications" row. That row cannot be true of both any more: Android has
+passed native preview acceptance on an emulator and iOS has never been built. They are now
+separate rows, and the iOS row says **do not infer iOS status from the Android result**. Merging
+them was the shape of error that produces a false platform claim.
+
+**Not closed by this.** The documents are now accurate about the *existing* platform. `ADR-0002`
+proposes a repositioning whose entire domain is `NOT_STARTED`, and §4.1 of
+`KNOWN_LIMITATIONS.md` records it as such. A future reader must not read that section as a
+roadmap that is underway.
 
 ---
 
@@ -393,3 +417,58 @@ incident.
 
 CONFLICT-009 remains OPEN: it covers `docs/KNOWN_LIMITATIONS.md` and `README.md`, which are a
 larger rewrite and were deliberately not pulled into a readiness review.
+
+> **Update 2026-08-24 at `41cee4c`:** CONFLICT-009 is now **RESOLVED** — see its entry above.
+> Both `docs/KNOWN_LIMITATIONS.md` and `README.md` were rewritten against the executed state,
+> with every corrected line marked `**[was: …]**` so the drift stays visible.
+
+---
+
+## CONFLICT-011 — iPhone mobile-web acceptance is asserted but has no record in the repository
+
+**Files:** `evidence/team-acceptance/` — the directory that holds every other acceptance record
+
+**Conflicting values:** A successor brief states that `IPHONE_MOBILE_WEB_ACCEPTANCE` "has
+undergone successful human testing", listing eleven specific checks: physical iPhone Safari
+access, LAN connectivity, CORS, catalogue, product images, product detail, preview safety,
+account registration, session persistence, expired-session handling and stale-token clearing.
+
+Against this, the repository records **nothing**. `evidence/team-acceptance/` holds
+`LOCAL_TEAM_ACCEPTANCE_CLOSEOUT.md` and `NATIVE_ANDROID_PREVIEW_ACCEPTANCE.md` but no iPhone
+equivalent. `git log --all -S "IPHONE_MOBILE_WEB"` returns **no commit in any ref**. The token
+appears in zero tracked files predating this phase.
+
+**What corroborates it.** The two UX defects that testing reported are real, specific and were
+independently reproducible against the frozen client — an enabled "Add to cart" in
+`BRAND_PREVIEW_MODE` and an empty order history reading "You have no orders yet." Both are now
+closed (`evidence/team-acceptance/IPHONE_WEB_HARDENING_CLOSURE.md`). Commit `41cee4c`
+(*support LAN staging storefront access*) is also consistent with someone having reached the
+staging storefront from a phone on the LAN. **The testing almost certainly happened.**
+
+**What does not follow.** A defect report is not an acceptance record. The Android closeout
+names its emulator, API level, build id and gate-by-gate results; nothing comparable exists
+for iPhone, so the *scope* of what passed cannot be reconstructed — which device, which iOS
+version, which commit, which commerce mode, and whether the eleven checks were the whole
+script or a subset.
+
+**Affected systems:** readiness review, the acceptance matrix, any future claim about mobile
+web support, and the credibility of the acceptance ledger as a whole — which depends on every
+entry in it being reconstructible.
+
+**Proposed resolution:** Either (a) the human tester writes the closeout, naming device, iOS
+version, commit and mode, or (b) the acceptance is re-run and recorded. Until one of those
+happens, every surface describing it must say **`HUMAN_ASSERTED_NOT_EVIDENCED`**, which
+`README.md` and `docs/KNOWN_LIMITATIONS.md` §7 now do.
+
+**Reason:** This is the same shape as DISC-07 in the takeover report, where the EAS project
+id existed only in a brief and in zero tracked files. The rule applied there applies here: a
+human-provided value is recorded **as stated** and is not converted into a verified result by
+being written down again. Retro-fitting an acceptance record from a brief would manufacture
+evidence, which is worse than the gap it closes.
+
+**Risk:** Medium. No runtime impact. The failure mode is a readiness matrix that carries a
+passed acceptance nobody can reconstruct, and a public claim of iPhone support resting on it.
+
+**Owner:** Human acceptance manager
+**Approval status:** OPEN — recorded by the successor agent 2026-08-24. Not resolved by this
+phase, and deliberately not resolved by writing the missing record on the tester's behalf.
