@@ -16,8 +16,25 @@ Before proposing or changing anything, read:
 3. The relevant side's full execution book in Markdown in `docs/source/`
 4. `.agent/PLANS.md`
 5. `README.md` for software work
+6. `docs/system-of-record/SUCCESSOR_AGENT_TAKEOVER_REPORT.md` — the verified baseline, and
+   the discrepancies a newcomer would otherwise rediscover as new
+7. `docs/KNOWN_LIMITATIONS.md` — the designated honesty inventory
+8. `docs/system-of-record/CONFLICT_AND_RESOLUTION_REGISTER.md` — open contradictions,
+   including which ones are deliberately unresolved
 
 PDF and DOCX files are retained as human references. Use the Markdown books as the machine-readable source.
+
+### Proposed, not adopted
+
+`docs/architecture/decisions/ADR-0002-repositioning-to-fashion-intelligence-platform.md`
+proposes repositioning DEDUNET from a single-brand commerce platform into a fashion
+intelligence platform — AI stylist, multi-brand marketplace and merchant SaaS — with a target
+architecture and a phased plan beside it in `docs/architecture/`.
+
+**Its status is `PROPOSED` and its entire domain is `NOT_STARTED`.** Read those three
+documents as a target, not as a description of the system. Nothing in them may be cited as
+implemented, and the repository's stated purpose above is unchanged until an owner decides
+otherwise.
 
 ## Agent delegation
 For project mobilization and gate work, explicitly delegate to exactly these project-scoped agents:
