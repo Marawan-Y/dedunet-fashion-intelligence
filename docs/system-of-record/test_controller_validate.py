@@ -171,6 +171,125 @@ def test_risk_state_keeps_its_own_vocabulary(tree):
     assert "BAD RISK STATE" in run_validator(tree).stdout
 
 
+# ======================================================== SCOPE 6: two axes
+#
+# Readiness ("how well is this proven?") and supersession ("is this still the current
+# record?") are independent. They shared one column until 2026-08-24, and writing
+# SUPERSEDED into it destroyed the readiness four evidence documents had declared.
+
+
+def test_superseded_is_valid_in_the_supersession_column(tree):
+    write(tree, "docs/side-b/EVIDENCE_INDEX.csv", """
+        evidence_id,readiness_status,supersession_status,superseded_by
+        EV-001,AUTOMATED-TESTED,SUPERSEDED,EV-002
+        EV-002,AUTOMATED-TESTED,CURRENT,
+    """)
+    result = run_validator(tree)
+    assert "BAD STATUS" not in result.stdout, result.stdout
+    assert "BAD SUPERSESSION" not in result.stdout, result.stdout
+
+
+def test_superseded_remains_invalid_in_a_readiness_column(tree):
+    """The whole point of the split.
+
+    If SUPERSEDED had simply been added to the readiness vocabulary, the overwrite that
+    destroyed four readiness values would have become legal again. It must stay illegal
+    there, which is a different assertion from "SUPERSEDED is valid somewhere".
+    """
+
+    write(tree, "docs/side-b/EVIDENCE_INDEX.csv", """
+        evidence_id,readiness_status
+        EV-001,SUPERSEDED
+    """)
+    result = run_validator(tree)
+    assert "BAD STATUS" in result.stdout, result.stdout
+    assert result.returncode == 1
+
+
+def test_an_invalid_supersession_value_is_rejected(tree):
+    """The lifecycle axis is validated, not merely exempted from the other one."""
+
+    write(tree, "docs/side-b/EVIDENCE_INDEX.csv", """
+        evidence_id,readiness_status,supersession_status
+        EV-001,AUTOMATED-TESTED,RETIRED
+    """)
+    result = run_validator(tree)
+    assert "BAD SUPERSESSION" in result.stdout, result.stdout
+    assert "RETIRED" in result.stdout
+    assert result.returncode == 1
+
+
+def test_a_readiness_value_is_rejected_in_the_supersession_column(tree):
+    """Both directions. The two vocabularies must not be interchangeable."""
+
+    write(tree, "docs/side-b/EVIDENCE_INDEX.csv", """
+        evidence_id,supersession_status
+        EV-001,AUTOMATED-TESTED
+    """)
+    assert "BAD SUPERSESSION" in run_validator(tree).stdout
+
+
+def test_the_repository_preserves_recovered_readiness_for_superseded_evidence():
+    """The four rows whose readiness was destroyed, restored from their own documents.
+
+    Asserted against the live register rather than a fixture, because the recovery is the
+    claim: each value must equal what its evidence document declares, and a future edit
+    that re-flattened the two axes would fail here.
+    """
+
+    import csv as _csv
+    import io as _io
+
+    index = REPO / "docs" / "side-b" / "EVIDENCE_INDEX.csv"
+    rows = {r["evidence_id"]: r for r in
+            _csv.DictReader(_io.StringIO(index.read_text(encoding="utf-8-sig")))}
+
+    expected = {
+        "SB-EV-BOOT-001": "SELF-VALIDATED",
+        "SB-EV-BOOT-002": "AUTOMATED-TESTED",
+        "SB-EV-BOOT-003": "BLOCKED",
+        "SB-EV-BOOT-004": "BLOCKED",
+        "SB-EV-BOOT-005": "SELF-VALIDATED",
+        "SB-EV-G1-001": "SELF-VALIDATED",
+    }
+    for evidence_id, readiness in expected.items():
+        row = rows[evidence_id]
+        assert row["readiness_status"] == readiness, (evidence_id, row)
+        assert row["supersession_status"] == "SUPERSEDED", (evidence_id, row)
+        assert row["superseded_by"], f"{evidence_id} has no supersession provenance"
+
+
+def test_recovered_readiness_matches_each_evidence_document():
+    """The recovery method itself, re-executed rather than trusted.
+
+    SB-EV-BOOT-003 is the control: its value was never overwritten with SUPERSEDED, so
+    document-and-index agreeing there is what shows the method reads the right field
+    rather than that the index was written to match.
+    """
+
+    import csv as _csv
+    import io as _io
+    import re as _re
+
+    index = REPO / "docs" / "side-b" / "EVIDENCE_INDEX.csv"
+    pattern = _re.compile(r"^\s*-\s*Readiness status:\s*(\S+)\s*$", _re.M | _re.I)
+
+    checked = 0
+    for row in _csv.DictReader(_io.StringIO(index.read_text(encoding="utf-8-sig"))):
+        doc = REPO / row["path"]
+        if not doc.exists() or doc.suffix != ".md":
+            continue
+        m = pattern.search(doc.read_text(encoding="utf-8", errors="replace"))
+        if not m:
+            continue
+        assert m.group(1).strip() == row["readiness_status"], (
+            f"{row['evidence_id']}: index says {row['readiness_status']!r}, "
+            f"document says {m.group(1)!r}"
+        )
+        checked += 1
+    assert checked >= 6, f"only {checked} documents declared a readiness status"
+
+
 # ======================================================== SCOPE 2: whose schema
 
 

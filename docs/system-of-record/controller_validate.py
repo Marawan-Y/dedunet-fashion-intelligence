@@ -3,6 +3,7 @@
 Checks, per AGENTS.md and the Shared Interface Contract:
   1. every CSV register parses
   2. only allowed evidence statuses appear -- in the columns that actually use them
+  2b. supersession state is valid, and independent of readiness
   3. no duplicate artifact IDs within a register
   4. every LIVE path reference exists on disk
   5. ExecPlan files carry all 17 required sections
@@ -97,6 +98,30 @@ EVIDENCE_STATUS_COLUMNS = {"artifact_status", "readiness_status", "status", "evi
 # DEC-009 declares risk state a SEPARATE axis from artifact readiness.
 RISK_STATE_COLUMNS = {"current_status"}
 
+# ---------------------------------------------------------------- SCOPE 6: two axes
+#
+# READINESS ("how well is this proven?") and SUPERSESSION ("is this still the current
+# record?") are independent facts, and `docs/side-b/EVIDENCE_INDEX.csv` used to carry both
+# in one `status` column. Writing SUPERSEDED there overwrote -- and destroyed -- the
+# readiness the evidence document had declared, for four rows.
+#
+# They are now separate columns, so a superseded record keeps its historical readiness:
+#
+#     SB-EV-BOOT-002   readiness_status=AUTOMATED-TESTED   supersession_status=SUPERSEDED
+#
+# SUPERSEDED is deliberately NOT added to ALLOWED_STATUS. It was never a readiness value,
+# and admitting it there would have re-legalised the overwrite that lost the data.
+#
+# Named for supersession rather than "lifecycle" on purpose: `lifecycle_status` is already
+# taken in this repository for the PRODUCT business lifecycle
+# (fixture|candidate|sample|approved|sellable|retired, BPC-A-003, and live in
+# `app/candidate_activation.py` as `BusinessLifecycle`). Reusing the identifier for a second
+# vocabulary would recreate exactly the one-name-two-meanings ambiguity this validator was
+# just repaired to remove. "Supersession" is the repository's own term for this concept --
+# `evidence/side-b/EVIDENCE_ATTRIBUTION_AND_SUPERSESSION.md`.
+SUPERSESSION_COLUMNS = {"supersession_status"}
+ALLOWED_SUPERSESSION = {"CURRENT", "SUPERSEDED"}
+
 ALLOWED_STATUS = {
     "DRAFT", "SELF-VALIDATED", "AUTOMATED-TESTED", "HUMAN-VERIFIED",
     "EXTERNALLY-VERIFIED", "BLOCKED", "REJECTED",
@@ -181,6 +206,14 @@ for path in csv_files:
                 v = (r.get(h) or "").strip().upper()
                 if v and v not in RISK_STATE:
                     err(f"BAD RISK STATE {rel(path)}:{i} col='{h}' value='{v}'")
+            continue
+
+        # Validated independently of readiness, and against its own vocabulary.
+        if key in SUPERSESSION_COLUMNS:
+            for i, r in enumerate(rows, start=2):
+                v = (r.get(h) or "").strip().upper()
+                if v and v not in ALLOWED_SUPERSESSION:
+                    err(f"BAD SUPERSESSION {rel(path)}:{i} col='{h}' value='{v}'")
             continue
 
         # SCOPE 3: an evidence-status column is one that carries the readiness
