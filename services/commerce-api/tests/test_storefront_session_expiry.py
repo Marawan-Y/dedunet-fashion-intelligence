@@ -161,7 +161,11 @@ function responderFor(spec, body) {
       ordersText,
       bannerText,
       hash,
-      claimsNoOrders: /You have no orders yet/.test(ordersText),
+      /* Matches the mode-derived family ("No orders yet. ..."), not the retired sentence
+         "You have no orders yet." this defect was reported against. Anchored on the part
+         every mode shares, so the probe still fires whichever wording a regression picks.
+         See test_storefront_purchase_refusal.py for the wording itself. */
+      claimsNoOrders: /No orders yet/.test(ordersText),
       ...describe(window),
     };
   }
@@ -301,6 +305,11 @@ def test_an_expired_session_no_longer_reports_an_empty_order_history(rendered):
 
     "You have no orders yet" is a statement about the customer's history, asserted on the
     strength of a request the server refused to answer.
+
+    The sentence has since been replaced by mode-derived copy (iPhone acceptance issue B),
+    so the probe matches the "No orders yet" stem all three variants share rather than the
+    retired sentence. Without that update this assertion would pass on a string that can no
+    longer be produced -- green for the wrong reason, and blind to the defect returning.
     """
 
     assert rendered["acceptanceSequence"]["claimsNoOrders"] is False, (

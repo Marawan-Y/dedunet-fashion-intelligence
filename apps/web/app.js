@@ -52,7 +52,18 @@ const state = {
   cartToken: localStorage.getItem("dedunet_cart") || "",
   token: localStorage.getItem("dedunet_token") || "",
   role: localStorage.getItem("dedunet_role") || "",
+  /* The deployment's commerce mode, once the API has said what it is.
+     `null` is a distinct third state meaning "not yet known", never a silent fallback to
+     either working mode: assuming preview would understate a live sandbox, and assuming
+     commerce-test would invite a purchase this deployment may refuse. Every reader below
+     handles the three cases separately. */
+  commerceMode: null,
 };
+
+/* The two modes a deployment may actually be in. `modes.current_mode()` refuses everything
+   else, so a payload naming anything else -- including PUBLIC_COMMERCE_MODE -- describes a
+   deployment that cannot say what it is, and leaves `state.commerceMode` null. */
+const KNOWN_MODES = ["BRAND_PREVIEW_MODE", "COMMERCE_TEST_MODE"];
 
 /* ----------------------------------------------------------------- formatting */
 
@@ -310,14 +321,74 @@ function renderCommerceNotice(disclosure) {
   return host;
 }
 
+/**
+ * Record the deployment's mode, if the payload names one this client can act on.
+ *
+ * Separate from `renderCommerceNotice` because the two consume different halves of the
+ * same response and must fail independently: a disclosure missing its `headline` is
+ * unrenderable but may still carry a usable `mode`, and a payload naming an unknown mode
+ * must not become a mode however well-formed its prose is.
+ *
+ * Validated against `KNOWN_MODES` rather than stored raw. Everything downstream of here
+ * decides what a customer is invited to do, so an unrecognised string must land in the
+ * "not known" case and not in one of the two working ones.
+ */
+function recordCommerceMode(disclosure) {
+  const mode = typeof disclosure?.mode === "string" ? disclosure.mode.trim() : "";
+  state.commerceMode = KNOWN_MODES.includes(mode) ? mode : null;
+  return state.commerceMode;
+}
+
+/* The boot request for the mode, so a view that needs the mode can wait for the request
+   already in flight instead of issuing a second one.
+
+   It exists because the ordering at boot is against us: `route` and `loadCommerceNotice`
+   are both DOMContentLoaded listeners and `route` is registered first, so a customer
+   opening `#/orders` directly renders the page BEFORE the mode has been asked for, let
+   alone answered. Without this, the mode-specific copy would be unreachable on the one
+   path that matters most -- a hard reload of the page the defect was found on -- and the
+   neutral fallback would be what shipped.
+
+   Never rejects: `loadCommerceNotice` swallows its own failure, and a waiter must not be
+   able to turn a disclosure problem into a route error. */
+let modeReady = null;
+
 async function loadCommerceNotice() {
   try {
-    renderCommerceNotice(await api("/api/v1/commerce/mode"));
+    const disclosure = await api("/api/v1/commerce/mode");
+    recordCommerceMode(disclosure);
+    renderCommerceNotice(disclosure);
   } catch {
     /* Deliberately silent. The mode notice is a disclosure, not a feature: if the call
        fails the shipped sentence still stands, and an error banner about it would push a
        transport problem in front of a customer who can do nothing with it. */
   }
+}
+
+/**
+ * Wait for the boot mode request, but never longer than `ms`.
+ *
+ * Bounded on purpose. `api()` has no timeout, so awaiting the mode unconditionally would
+ * let a hanging `/api/v1/commerce/mode` hold a route in `loading()` indefinitely -- a blank
+ * page, which is the outcome `route`'s own catch exists to prevent. On expiry the caller
+ * proceeds with `state.commerceMode` still null and gets the neutral wording, which is the
+ * correct thing to say when the deployment has not answered.
+ *
+ * Resolves immediately when the mode is already known, which is every navigation after the
+ * first and, in practice, the first one too by the time a data call has returned.
+ */
+function awaitCommerceMode(ms = 2000) {
+  if (state.commerceMode !== null || modeReady === null) return Promise.resolve(state.commerceMode);
+  let timer = null;
+  return Promise.race([
+    modeReady,
+    new Promise((resolve) => {
+      timer = setTimeout(resolve, ms);
+    }),
+  ]).then(() => {
+    if (timer !== null) clearTimeout(timer);
+    return state.commerceMode;
+  });
 }
 
 function setBanner(message, kind = "info") {
@@ -475,10 +546,25 @@ async function viewProduct(slug) {
 
   const price = el("p", { class: "pdp__price", text: money(selected.price_minor_units, product.currency) });
 
+  /* Mirrors `modes.assert_purchasable`, both gates and in its order. The server refuses
+     either way; this decides whether the customer is invited to press a button whose only
+     outcome is a rejection. See `purchaseRefusal`.
+
+     Awaited for the same reason the orders view awaits it: on a direct load of a product
+     URL this render happens before the boot mode request has answered, and the mode gate
+     cannot be evaluated against a mode nobody has stated yet. The product fetch above has
+     already given it a round trip to settle. */
+  const refusal = purchaseRefusal(product, await awaitCommerceMode());
+
   const addButton = el("button", {
     class: "btn btn--primary",
     type: "button",
-    text: "Add to cart",
+    text: refusal ? "Not available to buy" : "Add to cart",
+    disabled: refusal ? "disabled" : null,
+    /* The label already says so, but a disabled control is skipped by some screen-reader
+       navigation modes, so the reason is attached to the button itself rather than left to
+       the separate banner a customer may never reach. */
+    "aria-describedby": refusal ? "purchase-refusal" : null,
     onclick: async () => {
       addButton.disabled = true;
       try {
@@ -511,6 +597,9 @@ async function viewProduct(slug) {
         sizes,
         stock,
         addButton,
+        refusal
+          ? el("p", { class: "muted", id: "purchase-refusal", text: refusalText(refusal) })
+          : null,
         el("dl", { class: "specs" }, specRows(product)),
         el("p", {
           class: "disclaimer",
@@ -579,6 +668,54 @@ function disclaimerFor(product) {
     "Fictional demonstration product. Material and origin fields are illustrative and are " +
     "not substantiated claims."
   );
+}
+
+/* ------------------------------------------------------------------ purchasability
+ *
+ * iPhone Safari acceptance, issue A. In BRAND_PREVIEW_MODE the product page offered an
+ * ordinary, enabled "Add to cart". Pressing it produced a 409 -- the server was correct
+ * throughout -- so the page was inviting the customer to do something the deployment had
+ * already decided to refuse. The same class of untruth as the storefront banner closed in
+ * `1a90c10` and the native order copy closed in `4e4f8c0`, one page further in.
+ *
+ * `modes.assert_purchasable` refuses on TWO independent gates and this mirrors both, in the
+ * same order, so the client's prediction and the server's decision cannot disagree:
+ *
+ *   MODE     brand preview refuses every purchase, whatever the product says
+ *   PRODUCT  a non-sellable product is refused in any mode
+ *
+ * Mirroring only the product gate -- which is what the native client does -- is correct
+ * today only because every product in a preview catalogue also carries `sellable: false`.
+ * That is a property of the current seed, not a rule the server enforces, so the mode gate
+ * is checked here in its own right rather than inferred from the flag.
+ */
+
+/**
+ * Why this product cannot be bought, or null if nothing forbids it.
+ *
+ * Returns the REASON, not a boolean, because the two refusals are different facts about
+ * the deployment and a customer told the wrong one has been misinformed rather than merely
+ * under-informed.
+ *
+ * An unresolved mode (`null`) deliberately does not refuse on its own. The mode gate cannot
+ * be evaluated before the deployment has answered, and disabling on that basis would block
+ * a legitimate purchase in COMMERCE_TEST_MODE for as long as the mode call is in flight.
+ * The product gate still applies meanwhile, and in a preview catalogue it is what fires.
+ */
+function purchaseRefusal(product, mode) {
+  if (mode === "BRAND_PREVIEW_MODE") return "preview";
+  /* `sellable === false` is a deliberate refusal. `undefined` is the legacy payload, which
+     predates the flag, and must not be read as "not sellable". */
+  if (product?.sellable === false) return "product";
+  return null;
+}
+
+/** The reason text for a refusal, for the control it disables. */
+function refusalText(refusal) {
+  if (refusal === "preview") {
+    return "This catalogue is in preview. Nothing is available to buy while it is.";
+  }
+  return "This piece is shown for review and is not available to buy.";
 }
 
 /** Banner shown when a product is visible but deliberately not purchasable. */
@@ -778,6 +915,36 @@ async function viewOrder(orderNumber) {
   );
 }
 
+/**
+ * The empty order history, in wording the current commerce mode can support.
+ *
+ * iPhone Safari acceptance, issue B. The page said "You have no orders yet." full stop,
+ * which in BRAND_PREVIEW_MODE reads as an invitation to place one. Nothing can be placed
+ * there: `assert_purchasable` refuses every purchase before a payment call is reached.
+ *
+ * Derived from the MODE, never from stock or from the catalogue. A client reasoning "there
+ * is inventory, so orders must be placeable" would be right today and wrong the first time
+ * a preview catalogue carries a non-zero count for any reason.
+ *
+ * Three cases, none of them sharing a sentence with another -- the same discipline the
+ * server applies to `PREVIEW_DISCLOSURE` and `COMMERCE_TEST_DISCLOSURE`, because a shared
+ * sentence is how "no card is charged" ends up on a screen where one could be. The third
+ * promises nothing at all: before the deployment has said what it allows, the honest answer
+ * is that this client does not yet know.
+ *
+ * Wording matches the native client's `ordersEmptyDetail` exactly. Two surfaces describing
+ * the same deployment differently is a defect even when both sentences are true.
+ */
+function ordersEmptyMessage(mode) {
+  if (mode === "BRAND_PREVIEW_MODE") {
+    return "No orders yet. Purchasing is unavailable while this catalogue is in preview.";
+  }
+  if (mode === "COMMERCE_TEST_MODE") {
+    return "No orders yet. Sandbox test orders you place will appear here.";
+  }
+  return "No orders yet. Orders you place will appear here once this deployment allows purchasing.";
+}
+
 async function viewOrders() {
   if (!state.token) {
     location.hash = "#/account";
@@ -797,7 +964,14 @@ async function viewOrders() {
     return render(emptyState(error.message, "Browse the collection", "#/catalog"));
   }
 
-  if (!orders.length) return render(emptyState("You have no orders yet.", "Browse the collection", "#/catalog"));
+  if (!orders.length) {
+    /* Awaited only on the branch that needs it, and only after the orders call has already
+       returned -- so the boot request has had that whole round trip to settle and the wait
+       is normally already over. A customer with orders never waits for it at all. */
+    return render(
+      emptyState(ordersEmptyMessage(await awaitCommerceMode()), "Browse the collection", "#/catalog")
+    );
+  }
   render(
     el("h1", { text: "My orders" }),
     el(
@@ -1017,5 +1191,11 @@ window.addEventListener("hashchange", route);
 window.addEventListener("DOMContentLoaded", route);
 /* Once, at boot: the mode is a property of the deployment, not of the page being viewed.
    Not awaited by `route`, so a slow or unreachable API delays the disclosure but never the
-   catalogue. */
-window.addEventListener("DOMContentLoaded", loadCommerceNotice);
+   catalogue.
+
+   The promise is kept because two views DO need the answer -- the empty order history and
+   the product page's purchase gate -- and they wait on this one request through
+   `awaitCommerceMode`, bounded, rather than issuing their own. */
+window.addEventListener("DOMContentLoaded", () => {
+  modeReady = loadCommerceNotice();
+});

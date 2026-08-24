@@ -82,6 +82,7 @@ TEST_ADMIN_PROVENANCE = "tests/test_admin_order_provenance.py"
 TEST_MODE_DISCLOSURE = "tests/test_commerce_mode_disclosure.py"
 TEST_STOREFRONT_NOTICE = "tests/test_storefront_mode_notice.py"
 TEST_SESSION_EXPIRY = "tests/test_storefront_session_expiry.py"
+TEST_PURCHASE_REFUSAL = "tests/test_storefront_purchase_refusal.py"
 TEST_NOTIFY = "tests/test_notifications.py"
 TEST_BACKUP = "tests/test_backup_guards.py"
 TEST_DEDUNET = "tests/test_dedunet_integration.py"
@@ -1088,6 +1089,125 @@ MUTATIONS: tuple[Mutation, ...] = (
             "purpose and its own tests cover the statuses that must NOT sign a customer "
             "out; what this proves is that the narrow condition is actually wired to the "
             "state change, which is the half that was missing."
+        ),
+    ),
+    # ---- iPhone Safari acceptance issue A: an enabled Add to cart in preview mode ----
+    Mutation(
+        mutation_id="M75_preview_mode_refuses_the_purchase_invitation",
+        guard="brand preview disables the storefront's add-to-cart control",
+        target=WEB_APP,
+        original='  if (mode === "BRAND_PREVIEW_MODE") return "preview";\n',
+        mutated="  // MUTATED: the mode gate no longer refuses anything\n",
+        tests=(
+            f"{TEST_PURCHASE_REFUSAL}::test_preview_mode_does_not_offer_to_add_a_sellable_product",
+            f"{TEST_PURCHASE_REFUSAL}::test_preview_mode_states_the_reason_next_to_the_control",
+        ),
+        covers=(
+            "human iPhone Safari acceptance found product detail offering an ordinary, "
+            "enabled 'Add to cart' in BRAND_PREVIEW_MODE, where every purchase is refused "
+            "with 409 before a payment call is reached -- the page inviting a customer to "
+            "do what the deployment had already decided to refuse",
+        ),
+        notes=(
+            "Removes the MODE gate only, leaving the product gate intact. The guarding "
+            "tests use a product with `sellable: true`, so nothing else can refuse it and "
+            "the mutation cannot be masked by the seed's habit of marking every preview "
+            "product non-sellable."
+        ),
+    ),
+    Mutation(
+        mutation_id="M76_a_non_sellable_product_refuses_the_purchase_invitation",
+        guard="a non-sellable product disables the add-to-cart control in any mode",
+        target=WEB_APP,
+        original="  if (product?.sellable === false) return \"product\";\n",
+        mutated="  // MUTATED: the product gate no longer refuses anything\n",
+        tests=(
+            f"{TEST_PURCHASE_REFUSAL}::test_a_non_sellable_product_is_refused_in_commerce_test_mode",
+            f"{TEST_PURCHASE_REFUSAL}::"
+            "test_a_deployment_that_cannot_state_its_mode_still_refuses_a_non_sellable_product",
+        ),
+        covers=(
+            "`assert_purchasable` refuses a non-sellable product in EVERY mode, so a "
+            "prototype does not become purchasable merely because the deployment is not in "
+            "brand preview",
+        ),
+        notes=(
+            "The second of the two gates, mutated independently. M75 removes the mode gate "
+            "and this one the product gate, because a single mutation over a collapsed "
+            "condition could not tell which half was actually load-bearing."
+        ),
+    ),
+    Mutation(
+        mutation_id="M77_the_refusal_reaches_the_control",
+        guard="a refused purchase renders as a disabled control, not merely as a banner",
+        target=WEB_APP,
+        original='    disabled: refusal ? "disabled" : null,\n',
+        mutated="    // MUTATED: the refusal never disables the button\n",
+        tests=(
+            f"{TEST_PURCHASE_REFUSAL}::test_preview_mode_does_not_offer_to_add_a_sellable_product",
+            f"{TEST_PURCHASE_REFUSAL}::test_a_non_sellable_product_is_refused_in_commerce_test_mode",
+        ),
+        covers=(
+            "the shipped defect was not a missing rule but a rule nobody wired to a "
+            "control: the page already rendered an evidence banner saying the piece was "
+            "not available to buy, directly above an enabled button offering to buy it",
+        ),
+        notes=(
+            "Aimed at the wiring rather than the predicate, the same shape as M74. "
+            "`purchaseRefusal` keeps working and the reason paragraph still renders; only "
+            "the control stops reflecting it, which is exactly the state that shipped."
+        ),
+    ),
+    # ---- iPhone Safari acceptance issue B: an empty order history inviting an order ----
+    Mutation(
+        mutation_id="M78_empty_order_history_does_not_promise_what_preview_refuses",
+        guard="the empty order history is worded by the commerce mode",
+        target=WEB_APP,
+        original=(
+            '  if (mode === "BRAND_PREVIEW_MODE") {\n'
+            '    return "No orders yet. Purchasing is unavailable while this catalogue is in preview.";\n'
+        ),
+        mutated=(
+            '  if (false) {  // MUTATED: preview gets the sandbox wording\n'
+            '    return "No orders yet. Sandbox test orders you place will appear here.";\n'
+        ),
+        tests=(
+            f"{TEST_PURCHASE_REFUSAL}::test_preview_mode_does_not_invite_an_order_it_will_refuse",
+            f"{TEST_PURCHASE_REFUSAL}::test_preview_mode_never_promises_sandbox_orders",
+            f"{TEST_PURCHASE_REFUSAL}::test_the_two_modes_do_not_share_an_empty_history_message",
+        ),
+        covers=(
+            "human iPhone Safari acceptance found the empty order history reading 'You "
+            "have no orders yet.' in BRAND_PREVIEW_MODE, where no order can be placed at "
+            "all -- the same defect closed on the native client in 4e4f8c0, one surface "
+            "over",
+        ),
+        notes=(
+            "Collapses preview onto the commerce-test wording, which is the native "
+            "acceptance symptom exactly rather than an arbitrary edit. Both the wording "
+            "and the no-shared-sentence rule are asserted, so restoring the sentence "
+            "without restoring the distinction would not pass."
+        ),
+    ),
+    Mutation(
+        mutation_id="M79_an_unstated_mode_is_not_adopted_as_a_working_one",
+        guard="only a mode the deployment can actually run in is stored on the client",
+        target=WEB_APP,
+        original="  state.commerceMode = KNOWN_MODES.includes(mode) ? mode : null;\n",
+        mutated="  state.commerceMode = mode || null;  // MUTATED: any string becomes a mode\n",
+        tests=(
+            f"{TEST_PURCHASE_REFUSAL}::test_an_unresolved_mode_promises_nothing",
+            f"{TEST_PURCHASE_REFUSAL}::test_an_unknown_mode_string_is_not_adopted",
+        ),
+        covers=(
+            "`current_mode()` refuses PUBLIC_COMMERCE_MODE and every unknown value "
+            "outright, so a client that adopts whatever string arrives would let a "
+            "deployment that cannot say what it is present itself as one that can",
+        ),
+        notes=(
+            "The validation, not the storage. `describe(None)` sends `mode: null`, which "
+            "survives this mutation unchanged; what it breaks is the case where a "
+            "well-formed payload names a mode the server would refuse to run in."
         ),
     ),
 )
