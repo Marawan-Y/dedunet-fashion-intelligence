@@ -2,11 +2,23 @@
 
 Checks, per AGENTS.md and the Shared Interface Contract:
   1. every CSV register parses
-  2. only allowed evidence statuses appear
+  2. only allowed evidence statuses appear -- in the columns that actually use them
   3. no duplicate artifact IDs within a register
-  4. every referenced evidence/file path actually exists on disk
+  4. every LIVE path reference exists on disk
   5. ExecPlan files carry all 17 required sections
   6. no unsupported completion / external-reality language
+
+SCOPING (added 2026-08-24)
+--------------------------
+This validator previously reported 585 errors and every one was a false positive, produced
+by inspecting things it does not govern. A validator that is permanently red governs
+nothing: no one can distinguish a new error from the 585 already there, so the next real
+finding arrives invisible.
+
+The rules below narrow WHAT IS INSPECTED. None of them narrows WHAT IS ENFORCED. An invalid
+evidence status in a register this validator governs still fails, and
+`test_controller_validate.py` proves that in both directions -- valid vocabulary passes,
+invalid vocabulary fails -- so the scoping cannot silently become a way of not checking.
 """
 import csv
 import io
@@ -15,7 +27,75 @@ import re
 import sys
 from pathlib import Path
 
-ROOT = Path(r"C:\Users\User\Desktop\Claude\Fashion_Commerce_Codex_Multi_Agent_Pack")
+# Derived, not hard-coded. The previous absolute path meant this file only worked on one
+# machine, and on any other would either crash or silently validate the wrong tree.
+# docs/system-of-record/controller_validate.py -> repository root
+ROOT = Path(__file__).resolve().parents[2]
+
+# ---------------------------------------------------------------- SCOPE 1: dependencies
+#
+# Dependency, build and cache trees are not repository content and this programme's rules
+# have no authority over them. `apps/mobile/node_modules` alone produced an UNSUPPORTED
+# CLAIM error for Expo's own README saying "Production-ready." -- a true statement, by a
+# third party, about their software, which we can neither fix nor are asked to.
+EXCLUDED_DIRS = {
+    "node_modules", "__pycache__", ".git", ".pytest_cache", ".expo", ".next",
+    "dist", "build", "coverage", "htmlcov", ".venv", "venv", "site-packages",
+    ".mypy_cache", ".ruff_cache", "vendor", ".tox", ".gradle", "Pods",
+}
+
+
+def in_excluded_tree(path) -> bool:
+    """True if any path segment names a dependency, build or cache directory."""
+
+    return any(part in EXCLUDED_DIRS for part in Path(path).parts)
+
+
+def walk(pattern):
+    """`ROOT.rglob`, minus dependency, build and cache trees."""
+
+    return [p for p in ROOT.rglob(pattern) if not in_excluded_tree(p)]
+
+
+# ---------------------------------------------------------------- SCOPE 2: whose schema
+#
+# `handoffs/incoming/` holds immutable partner data packages. They carry their own schema
+# and their own vocabulary -- `PROTOTYPE_CONCEPT`, `prototype_unavailable`,
+# `ORIGINAL_PROTOTYPE_ASSET` -- and their own validator, `scripts/validation/
+# verify_side_a_package.py`, plus a SHA-256 manifest that fails if a byte changes.
+#
+# Applying THIS programme's readiness vocabulary to THEIR files produced 93 errors that
+# could never be fixed: the package is immutable by design, so the only way to satisfy the
+# check would be to break the manifest.
+PARTNER_DATA_PREFIX = "handoffs/incoming/"
+
+
+def is_partner_data(rel_path: str) -> bool:
+    return rel_path.startswith(PARTNER_DATA_PREFIX)
+
+
+# ---------------------------------------------------------------- SCOPE 3: which columns
+#
+# The seven readiness statuses in AGENTS.md govern ARTIFACT READINESS. The previous rule
+# -- `if "status" in header.lower()` -- applied them to every column whose name happened to
+# contain the substring, which is how the validator came to insist that:
+#
+#     runtime_status   = build-time                240 errors
+#     migration_status = DONE                       67 errors
+#     inventory_status = prototype_unavailable      62 errors
+#     ownership_status = ORIGINAL_PROTOTYPE_ASSET   31 errors
+#
+# were invalid evidence statuses. They are not evidence statuses at all. A column is not an
+# evidence-status column because its name ends in `_status`; it is one because it carries
+# the readiness vocabulary, which is a property of the register's schema.
+#
+# Derived empirically and then fixed here: across every non-partner register, these two
+# columns carry the readiness vocabulary in 100% of populated rows (76 and 114 rows), and
+# `status` carries it in every non-partner register that uses it.
+EVIDENCE_STATUS_COLUMNS = {"artifact_status", "readiness_status", "status", "evidence_status"}
+
+# DEC-009 declares risk state a SEPARATE axis from artifact readiness.
+RISK_STATE_COLUMNS = {"current_status"}
 
 ALLOWED_STATUS = {
     "DRAFT", "SELF-VALIDATED", "AUTOMATED-TESTED", "HUMAN-VERIFIED",
@@ -58,11 +138,17 @@ def rel(p):
 
 
 # ---------- 1..4 CSV registers ----------
-csv_files = sorted(ROOT.rglob("*.csv"))
-csv_files = [p for p in csv_files if "__pycache__" not in str(p)]
-info(f"CSV registers found: {len(csv_files)}")
+csv_files = sorted(walk("*.csv"))
+info(f"CSV registers found: {len(csv_files)} (dependency/build trees excluded)")
 
 PATHLIKE = re.compile(r"(?:docs|evidence|handoffs|platform|\.agent|\.codex)/[\w./\-]+")
+
+# Columns that record where something USED to be. A path here that still exists would be
+# the surprising outcome, not a missing one.
+HISTORICAL_PATH_COLUMNS = {"source_path", "current_path", "source_or_basis"}
+
+# Reference columns that do not end in `_path` but are still live pointers.
+LIVE_REFERENCE_COLUMNS = {"evidence", "evidence_ref", "proving_evidence", "artifact_ref"}
 
 for path in csv_files:
     try:
@@ -83,28 +169,41 @@ for path in csv_files:
     # The seven readiness statuses govern artifacts, not risks, so risk-state
     # columns are checked against the risk vocabulary instead.
     RISK_STATE = {"OPEN", "PARTIALLY MITIGATED", "MITIGATED", "FIXED", "ACCEPTED", "BLOCKED"}
+
+    # SCOPE 2: a partner data package carries its own schema and its own validator.
+    partner = is_partner_data(rel(path))
+
     for h in headers:
-        if h.lower() == "current_status":
+        key = h.lower()
+
+        if key in RISK_STATE_COLUMNS:
             for i, r in enumerate(rows, start=2):
                 v = (r.get(h) or "").strip().upper()
                 if v and v not in RISK_STATE:
                     err(f"BAD RISK STATE {rel(path)}:{i} col='{h}' value='{v}'")
             continue
-        if "status" in h.lower() or "readiness" in h.lower():
-            for i, r in enumerate(rows, start=2):
-                v = (r.get(h) or "").strip()
-                if not v:
+
+        # SCOPE 3: an evidence-status column is one that carries the readiness
+        # vocabulary, not one whose name happens to contain "status". `runtime_status`,
+        # `migration_status`, `inventory_status` and `ownership_status` are domain
+        # classifications with their own value sets and are not governed here.
+        if key not in EVIDENCE_STATUS_COLUMNS or partner:
+            continue
+
+        for i, r in enumerate(rows, start=2):
+            v = (r.get(h) or "").strip()
+            if not v:
+                continue
+            for token in re.split(r"[;,/|]", v):
+                t = token.strip().upper()
+                if not t:
                     continue
-                for token in re.split(r"[;,/|]", v):
-                    t = token.strip().upper()
-                    if not t:
-                        continue
-                    if t in ALLOWED_STATUS:
-                        continue
-                    # tolerate prose in narrative columns
-                    if len(t) > 24 or " " in t:
-                        continue
-                    err(f"BAD STATUS {rel(path)}:{i} col='{h}' value='{token.strip()}'")
+                if t in ALLOWED_STATUS:
+                    continue
+                # tolerate prose in narrative columns
+                if len(t) > 24 or " " in t:
+                    continue
+                err(f"BAD STATUS {rel(path)}:{i} col='{h}' value='{token.strip()}'")
 
     # duplicate IDs -- primary key only.
     # These registers carry three kinds of id-shaped column:
@@ -134,8 +233,29 @@ for path in csv_files:
             info(f"PK unique ({best_n} rows) on '{best}': {rel(path)}")
 
     # path existence
+    #
+    # SCOPE 4: only LIVE reference columns are checked, and historical ones are not.
+    # All 140 MISSING PATH errors this check used to report were `platform/poc/...`
+    # paths, in two false-positive classes:
+    #
+    #   HISTORICAL   `source_path` in the migration map records where a file USED to
+    #                live. It must not exist -- that is what "migrated" means. Likewise
+    #                `current_path` in the dated pre-restructure file-map snapshot.
+    #
+    #   PROSE        a `risk` cell reading "secrets in platform/poc/.env" and an
+    #                `acceptance_criteria` cell reading "evidence/gate ownership" are
+    #                sentences that contain path-shaped text, not path references.
+    #
+    # Checking every column's prose for path existence made narrative columns unwritable
+    # without tripping the validator. Checking reference columns keeps the property that
+    # matters: a register pointing at evidence that is not there still fails.
     for i, r in enumerate(rows, start=2):
         for h in headers:
+            key = h.lower()
+            if key in HISTORICAL_PATH_COLUMNS:
+                continue
+            if not (key.endswith(("_path", "_paths")) or key in LIVE_REFERENCE_COLUMNS):
+                continue
             v = (r.get(h) or "")
             for m in PATHLIKE.findall(v):
                 cand = m.rstrip(".,;")
@@ -169,7 +289,7 @@ REQUIRED_SECTIONS = [
     "Completion summary and residual work",
 ]
 
-execplans = [p for p in ROOT.rglob("*.md")
+execplans = [p for p in walk("*.md")
              if re.search(r"EXECPLAN|EXEC_PLAN|MASTER_EXECUTION_PLAN", p.name, re.I)]
 info(f"ExecPlan files found: {len(execplans)}")
 for p in execplans:
@@ -186,17 +306,52 @@ for p in execplans:
         info(f"ExecPlan 17/17 sections OK: {rel(p)}")
 
 # ---------- 6. unsupported language ----------
-scan = [p for p in ROOT.rglob("*.md")
-        if "docs/source" not in rel(p) and "__pycache__" not in str(p)]
+#
+# SCOPE 5: two measured false-positive classes, both fixed by looking at the right text.
+#
+#   CODE SPANS   A phrase inside backticks or a fenced block is being NAMED, not claimed.
+#                `EV_A1_002_M1_CONDITION_CLOSURE_VALIDATION.md` was flagged for a paragraph
+#                headed "False positive recorded and resolved" which quotes the offending
+#                phrase in backticks while explaining that it is not a claim. That document
+#                also records the fix Side A applied to its own scanner -- strip fenced code
+#                blocks and inline code before matching -- so this adopts it.
+#
+#   WRAPPED      "Nothing here is\nproduction-ready." puts the negation on the previous
+#                physical line. Checking only the matched line missed it and reported the
+#                strongest disclaimer in `CONTROLLER_VALIDATION_G1_M1.md` as a claim.
+#
+# Both are fixed by WIDENING what is examined, never by narrowing what is forbidden. The
+# FORBIDDEN list is unchanged.
+
+CODE_FENCE = re.compile(r"```.*?```", re.S)
+INLINE_CODE = re.compile(r"`[^`\n]*`")
+
+
+def mask_code(text: str) -> str:
+    """Blank out code spans, preserving length so line numbers stay accurate."""
+
+    def blank(m):
+        return re.sub(r"[^\n]", " ", m.group(0))
+
+    return INLINE_CODE.sub(blank, CODE_FENCE.sub(blank, text))
+
+
+# `docs/source` is immutable third-party input; dependency trees are not ours either.
+scan = [p for p in walk("*.md") if "docs/source" not in rel(p)]
 for p in scan:
     text = p.read_text(encoding="utf-8", errors="replace")
+    masked = mask_code(text)
     for pat in FORBIDDEN:
-        for m in re.finditer(pat, text, re.I):
-            line = text[:m.start()].count("\n") + 1
+        for m in re.finditer(pat, masked, re.I):
+            line = masked[:m.start()].count("\n") + 1
             ctx = text.splitlines()[line - 1].strip()[:150]
-            # allow explicit negations / prohibitions
+            # Negation window spans the sentence, not the physical line, because a line
+            # break between "Nothing here is" and "production-ready" does not make it a
+            # claim. Read from the masked text so a negation inside code does not excuse
+            # a claim outside it.
+            window = " ".join(masked[max(0, m.start() - 200):m.end() + 60].split())
             if re.search(r"\b(never|not|no|nothing|none|without|require|pending|must|cannot|prohibit|do not|blocked)\b",
-                         ctx, re.I):
+                         window, re.I):
                 continue
             # a line that is itself a search command scanning FOR these phrases
             # (regex alternations, rg/grep invocations) is a control, not a claim

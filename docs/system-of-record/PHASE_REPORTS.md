@@ -233,6 +233,72 @@ distinct states, and no two of them may be aggregated into "mobile is accepted".
 
 ---
 
+## PHASE 1C — ADR revision and governance validator closure
+
+**Starting HEAD:** `be80411`
+
+| Field | Result |
+|---|---|
+| Implementation | **PASS** — ADR §2.0 issued; validator scoped. No application code touched |
+| Tests | **PASS** — backend 434 passed / 2 skipped; **26 new validator tests** |
+| Security | **PASS** — no guard touched; mutation harness intact at 77, no target file changed |
+| Regression | **PASS** — controller validator **585 → 8**, all 8 genuine; 0 false positives |
+| Human Test | **N/A** — governance and documentation only |
+| Documentation | **PASS** — 11 markdown files, 29 links, 0 broken; secret scan 0 |
+
+**Commits:** `15f1851`, and the validator commit below.
+
+### 1C.1 Validator — root causes and correction
+
+| Class | Count | Root cause | Fix |
+|---|---|---|---|
+| `BAD STATUS` on domain columns | **442** | `if "status" in header` applied the seven readiness statuses to any column whose *name* contained the substring — `runtime_status=build-time`, `migration_status=DONE`, `inventory_status=prototype_unavailable`, `ownership_status=ORIGINAL_PROTOTYPE_ASSET` | explicit `EVIDENCE_STATUS_COLUMNS` set, derived empirically from which columns actually carry the vocabulary |
+| `BAD STATUS` on partner data | (within the 442) | this programme's vocabulary applied to an immutable, checksum-sealed partner package with its own schema and its own validator | `handoffs/incoming/` exempt from *our* vocabulary; its uniqueness and structure are still checked |
+| `MISSING PATH` | **140** | every column's prose scanned for path existence, and historical columns treated as live. All 140 were pre-restructure `platform/poc/…` paths — `source_path` records where a file *used* to be, and a `risk` cell mentioning a path is a sentence | check only live reference columns; exempt `HISTORICAL_PATH_COLUMNS` |
+| `UNSUPPORTED CLAIM` in `node_modules` | **1** | Expo's own README saying "Production-ready." — true, third-party, unfixable by us | `EXCLUDED_DIRS` |
+| `UNSUPPORTED CLAIM`, quoted phrase | **1** | a document headed *"False positive recorded and resolved"* was flagged for the phrase it quotes in backticks while explaining it is not a claim | mask fenced blocks and inline code before matching — the same fix that document records Side A applying to its own scanner |
+| `UNSUPPORTED CLAIM`, wrapped negation | **1** | `"Nothing here is
+production-ready."` put the negation on the previous physical line | negation window spans the sentence, read from masked text so a `not` inside code cannot launder a claim |
+
+Also fixed: `ROOT` was a **hard-coded absolute path to one machine**. Now derived from
+`__file__`. Every new test depends on this — they run the validator against temporary trees
+and would otherwise have silently validated the real repository.
+
+**None of these narrows what is enforced.** All six widen or redirect *what is inspected*.
+The `FORBIDDEN` list and `ALLOWED_STATUS` are unchanged.
+
+### 1C.2 Tests — 26, each scoping rule in both directions
+
+The easy way to make a validator green is to stop it checking, and that is invisible in an
+error count. Every rule therefore has a paired test: *the false positive is gone* **and**
+*the real violation still fails*. Notably `test_an_invalid_evidence_status_is_rejected_in_every_governed_column`
+is parametrised over all four governed columns, because an explicit set is exactly the kind
+of thing that loses a member unnoticed; and
+`test_a_negation_inside_code_does_not_excuse_a_claim_outside_it` proves the code-masking
+cannot be used to launder a real claim.
+
+`test_the_repository_has_no_false_positive_classes_left` asserts by **class, not count** — a
+total would move for legitimate reasons and then get edited to match, which is how a guard
+stops guarding.
+
+### 1C.3 Genuine findings that remain — reported, not fixed
+
+| Finding | Count | Disposition |
+|---|---|---|
+| `SUPERSEDED` in `docs/side-b/EVIDENCE_INDEX.csv` and `EVIDENCE_INDEX_v2_0_0.csv` | **8** | **OPEN — owner decision.** `AGENTS.md` declares seven statuses and says "use only these". `SUPERSEDED` is an eighth. It is *not* a category error: the same column also holds `BLOCKED`, `SELF-VALIDATED` and `AUTOMATED-TESTED`, so it is genuinely a readiness column carrying an undeclared value. Resolving it means either adding `SUPERSEDED` to the declared vocabulary in `AGENTS.md` or moving supersession to its own column — both changes to a root governance file, and neither is mine to make unilaterally. **Deleting the data to reach green would destroy real lifecycle information** recorded in `evidence/side-b/EVIDENCE_ATTRIBUTION_AND_SUPERSESSION.md` |
+| Stale `platform/poc/.github/workflows/ci.yml` in `SIDE_B_RISK_REGISTER.csv` | 1 | **FIXED** — corrected to `.github/workflows/ci.yml`, which exists. A live evidence reference left pointing at a pre-restructure path; within Side B's authorized scope and unambiguous |
+| `handoff_envelope_check.py` — 6/20 handoffs pass | — | **PRE-EXISTING, OUT OF SCOPE.** Two Side B handoffs are missing `assumptions` and `questions` envelope fields. Neither the checker nor the handoffs were touched by this phase. Reported so it is not rediscovered as new |
+
+**I considered and rejected a reading that would have reached zero.** Treating
+`EVIDENCE_INDEX.status` as a lifecycle axis — like `current_status` for risk — would have
+exempted all 8. The data refutes it: the column mixes `SUPERSEDED` with three readiness
+values, so it is a readiness column with an undeclared member. Reasoning to green there
+would have been the precise failure this phase exists to correct.
+
+**Decision: `PHASE_1C_COMPLETE`**
+
+---
+
 ## Platform decisions
 
 Re-stated at every phase boundary, deliberately separate.
