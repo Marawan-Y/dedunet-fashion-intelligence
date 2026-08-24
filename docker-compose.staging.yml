@@ -178,7 +178,7 @@ services:
         # Staging publishes the API on 18080, not the client's default 18000. Without
         # this the storefront would ask the wrong port and every product, and the brand
         # mark with them, would fail to load.
-        API_BASE_URL: "http://127.0.0.1:${API_PORT:-18080}"
+        API_BASE_URL: "http://${STAGING_PUBLIC_HOST}:${API_PORT}"
     depends_on:
       api:
         condition: service_healthy
