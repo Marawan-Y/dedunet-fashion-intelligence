@@ -59,7 +59,7 @@ unbuilt; Apple Developer Program membership is `DEFERRED — FUNDING`.
 | 2 | Design system + website foundation | 1 | a redesign that regresses the mode disclosures |
 | 3 | Consumer fashion platform (pages, discover, saved) | 2 | catalogue re-emerges as the product |
 | 4 | Multi-brand marketplace domain | 1 | `Brand` retrofit over an unbranded `Product` |
-| 5 | Merchant SaaS + multi-tenancy | 4 | **cross-tenant read. The programme's worst credible defect** |
+| 5 | Merchant SaaS + multi-tenancy | 4 | **cross-tenant read via derived ownership. The programme's worst credible defect** |
 | 6 | Style DNA | 1 | collecting personal data with no consent basis |
 | 7 | Dido conversational experience | 6 | a chat bubble instead of a product |
 | 8 | Recommendation engine | 6, 4 | LLM ranking creeping in through the back door |
@@ -98,18 +98,29 @@ starts.
 - Every page has a defined empty and error state. No "Load failed".
 
 ### Phase 4 — Multi-brand marketplace
-- `Brand` first-class; `Product.brand_id` `NOT NULL` after backfill.
-- Three brand models supported: connected, hosted, curated.
-- `CommerceRoute` typed and enforced server-side.
+- `Brand` first-class with explicit `ownership_type`; `Product.brand_id` `NOT NULL` after
+  backfill to the DEDUNET first-party brand.
+- Existing 5 products: `PLATFORM_CURATED` brand, `commerce_route = NON_PURCHASABLE`, preview
+  safety state preserved exactly. **No `MerchantOrganization` created.**
+- `CommerceRoute` typed and enforced server-side, and **orthogonal to ownership** — a test
+  asserts neither is inferred from the other.
 - Availability on external/referral routes carries `last_checked_at` and a confidence, and
   **no client renders it as a fact**.
 
 ### Phase 5 — Merchant SaaS + multi-tenancy
-- `organization_id` on every merchant-owned table, `NOT NULL`, FK'd, after the four-step
-  migration in the architecture §6.
-- **Tenant isolation test category exists** and every merchant endpoint has a
-  two-organization test asserting 404.
-- A tenant id supplied by a client is never trusted. A test proves it is ignored.
+- `organization_id NOT NULL` on **new merchant tables only**, from creation. **No existing
+  table is retrofitted** — architecture §6.1.
+- `Brand.ownership_type` explicit, with the `PLATFORM_CURATED`/`EXTERNAL_CURATED` → 0 and
+  `MERCHANT_OWNED` → exactly 1 invariants enforced by database and application, and asserted
+  in **both** directions.
+- Catalogue authorization resolves through `Brand` ownership in **one** function. No
+  `organization_id` on `Product` or `Variant`.
+- **Tenant isolation test category exists BEFORE the first merchant endpoint**, and every
+  merchant endpoint has a two-organization test asserting **404**, not 403.
+- A tenant id supplied by a client is never trusted. A test proves it is **ignored**, not
+  merely rejected.
+- No consumer table acquires an owner organization. A test asserts merchant sessions cannot
+  reach consumer styling data.
 - Entitlements enforced server-side; a client-side flag grants nothing.
 
 ### Phase 6 — Style DNA

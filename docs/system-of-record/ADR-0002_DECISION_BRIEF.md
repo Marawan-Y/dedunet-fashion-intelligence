@@ -10,6 +10,7 @@
 | Subject | `ADR-0002` — repositioning to a fashion intelligence platform |
 | ADR status | **PROPOSED**, unmodified. This brief does not change it |
 | **Recommendation** | **REVISE ADR-0002 — then accept.** See §19 and §20 |
+| **Outcome** | **ANSWERED 2026-08-24 — revision required, direction approved subject to corrections.** `ADR-0002` §2.0 issued. See §21 |
 
 > This brief was written **after** owner guidance that materially contradicts ADR-0002 §6.
 > That contradiction is the reason the recommendation is REVISE rather than ACCEPT, and it is
@@ -486,9 +487,33 @@ a migration — and none of that is visible if the ADR is approved as it stands.
 
 ```
 [ ] ACCEPT ADR-0002 as written
-[ ] REVISE ADR-0002 per §19, then accept        <- recommended
+[x] REVISE ADR-0002 per §19, then accept        <- DECIDED 2026-08-24
 [ ] REJECT
 ```
+
+## 21. Outcome
+
+**Owner decision, 2026-08-24: revision required. The general revised ownership/domain
+direction is approved, subject to corrections.** `ADR-0002` is now at **§2.0**.
+
+The owner accepted §19's three edits and **corrected one thing this brief got wrong**:
+
+> §7 of this brief proposed that "the absence of a `BrandOwnership` row **is** the
+> platform-curated case, which is a fact a database can enforce."
+
+**That was rejected, and rightly.** Absence of a relationship is too ambiguous to carry a
+critical authorization state — it cannot distinguish *platform-curated* from *merchant-owned
+whose ownership row failed to insert*. `Brand` now carries an explicit `ownership_type`
+(`PLATFORM_CURATED` / `MERCHANT_OWNED` / `EXTERNAL_CURATED`), `BrandOwnership` carries only
+the merchant relationship, and the invariants are enforced in both directions.
+
+`EXTERNAL_CONNECTED` was also renamed `EXTERNAL_CURATED`, and the future order boundary was
+given an explicit shape (`CustomerOrder → MerchantFulfillmentGroup → OrderLines`) as guidance
+only, with the second merchant as its trigger.
+
+**This brief is left as written** apart from this section. Editing §7 to match the corrected
+design would erase the record of a proposal that was reviewed and improved, which is the
+record this document exists to provide.
 
 Unchanged by any of the three:
 

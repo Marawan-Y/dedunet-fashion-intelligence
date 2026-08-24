@@ -38,7 +38,7 @@ Three properties of the existing domain constrain every decision below.
 
 | Property | Consequence for the target |
 |---|---|
-| **No tenant column anywhere** | Multi-tenancy is a schema change over every merchant-owned table, not a service-layer convention |
+| **No tenant column anywhere** | Nothing to retrofit: every existing row belongs to a platform-curated first-party brand, so **no existing table receives an owner column**. Tenancy applies only to new merchant tables |
 | **No brand entity** | `Product` belongs to a catalogue, not a seller. Brand must become first-class before a marketplace is possible |
 | **No styling domain** | Style profile, occasion, look, session, memory and feedback are all new. `ai_stylist.py` is a contract demo, not a foundation |
 
@@ -75,7 +75,7 @@ another tenant's rows. See §6.
 |---|---|---|
 | `Customer` | EXISTS | PBKDF2 + HMAC session tokens, no revocation list |
 | `Address` | EXISTS | |
-| `MerchantOrganization` | NEW | the tenant root. Every merchant-owned row resolves to exactly one |
+| `MerchantOrganization` | NEW | the **only** tenant root. Consumers are never tenants |
 | `MerchantMember` | NEW | user ↔ organization, carries the role |
 | `MerchantRole` | NEW | `merchant_admin`, `merchant_user` |
 | `InternalRole` | NEW | `internal_admin`, `support_operator` — never tenant-scoped, always audited |
@@ -134,11 +134,11 @@ decides what prose is permitted, and no surface invents a claim the data does no
 
 | Entity | State | Note |
 |---|---|---|
-| `Product` | EXISTS | gains `brand_id`, `commerce_route`, tenancy |
+| `Product` | EXISTS | gains `brand_id` and `commerce_route`. **No owner column** — ownership derived via `Brand` |
 | `Variant` | EXISTS | |
 | `InventoryItem` | EXISTS | atomic reservation preserved unchanged |
 | `ProductMedia` | EXISTS | |
-| `Brand` | NEW | first-class. Three models: connected, hosted, curated |
+| `Brand` | NEW | first-class. `ownership_type`: `PLATFORM_CURATED` / `MERCHANT_OWNED` / `EXTERNAL_CURATED` |
 | `BrandIntegration` | NEW | Shopify / Woo / custom API / feed, plus sync state |
 | `ProductStyleTag` | NEW | links catalogue to the style taxonomy |
 | `ProductAttribute` | NEW | |
@@ -148,8 +148,10 @@ decides what prose is permitted, and no surface invents a claim the data does no
 ### 3.5 Commerce, saved content, platform
 
 `Cart`, `CartLine`, `Promotion`, `Order`, `OrderLine`, `Reservation`, `Payment`, `Shipment`,
-`ReturnRequest`, `Notification`, `AnalyticsEvent`, `AuditLog` all **EXIST** and are unchanged
-by this architecture except where tenancy applies.
+`ReturnRequest`, `Notification`, `AnalyticsEvent`, `AuditLog` all **EXIST** and are
+**completely unchanged** by this architecture. Not one of them receives an owner column: carts
+are consumer-owned by `customer_id` already, orders are deferred (§6.7), and the rest are
+platform-owned.
 
 New: `SavedLook`, `FavoriteProduct`, `FavoriteBrand`, `Refund`, `Fulfilment`, `Automation`,
 `Subscription`, `BillingAccount`, `Plan`, `Entitlement`, `FeatureFlag`, `Consent`,
@@ -250,34 +252,118 @@ render "in stock" for a route DEDUNET does not control.
 
 ---
 
-## 6. Multi-tenancy
+## 6. Ownership and tenancy
 
-The largest correctness risk in the programme, because it is retrofitted.
+Revised 2026-08-24 per owner decision. `ADR-0002` §2.0 is authoritative; this expands it.
 
-**Rules.**
+### 6.1 Four ownership shapes
 
-1. Every merchant-owned table carries `organization_id`, `NOT NULL`, foreign-keyed to
-   `merchant_organizations`.
-2. The organization is resolved **from the session, server-side**. A tenant id in a request
-   body, query string, path or header is ignored — and, where it could plausibly be trusted,
-   rejected loudly rather than silently.
-3. Every merchant query carries an ownership predicate. Not "the service adds one" — the
-   repository layer refuses a query that does not have one.
-4. Cross-tenant access is a test category, not a review checklist item. Every merchant
-   endpoint gets a two-organization test that asserts 404 (not 403 — a 403 confirms the row
-   exists).
+| Domain | Shape | Column |
+|---|---|---|
+| **Platform / global** | owned by DEDUNET | **none** |
+| **Consumer** | owned by a customer | `customer_id NOT NULL` |
+| **Fashion network** | owned via `Brand` | **none** — resolved through `Brand` |
+| **Merchant SaaS** | owned by an organization | `organization_id NOT NULL` |
 
-**Migration order**, for each existing table that becomes merchant-owned:
+**No existing table is retrofitted with a tenant column.** `organization_id` appears only on
+**new** merchant tables, `NOT NULL` from creation, because those tables start empty. The
+nullable→backfill→constrain migration the earlier draft described is not required and is not
+performed.
+
+**A consumer is not a tenant.** No consumer table carries `organization_id`, and no merchant
+session can reach consumer data by any scoping — there is no column to scope by.
+
+**No nullable tenant column anywhere.** Nullable `organization_id` cannot distinguish platform
+data from merchant data whose owner was never set, so the fail-open case becomes invisible to
+a constraint.
+
+### 6.2 Brand ownership — explicit classification
 
 ```
-1. add organization_id  NULLABLE           reversible, no behaviour change
-2. backfill                                every existing row -> the DEDUNET house org
-3. add the ownership predicate to queries   deployed and verified while the column is still nullable
-4. add NOT NULL + FK                       only after 3 is proven
+Brand.ownership_type   PLATFORM_CURATED | MERCHANT_OWNED | EXTERNAL_CURATED   NOT NULL
+
+BrandOwnership         the merchant relationship only
+  brand_id                    UNIQUE, FK -> brands
+  merchant_organization_id    NOT NULL, FK -> merchant_organizations
 ```
 
-Step 3 before step 4 is deliberate. Enforcing the constraint first turns a missed query into
-a 500 in production; enforcing it last turns a missed query into a failing test.
+| `ownership_type` | `BrandOwnership` rows |
+|---|---|
+| `PLATFORM_CURATED` | **0** |
+| `EXTERNAL_CURATED` | **0** |
+| `MERCHANT_OWNED` | **exactly 1** |
+
+Enforced by database and application, asserted in **both** directions: changing the type
+without changing the ownership row must fail, and changing the ownership row without the type
+must fail. `brand_id UNIQUE` makes "at most one" a key constraint; the two-way tie makes
+"exactly one when merchant-owned, none otherwise" a checked invariant.
+
+**Absence of a relationship is not a state.** It cannot distinguish *platform-curated* from
+*merchant-owned whose ownership row failed to insert*, and an authorization state must never
+be carried by a missing row.
+
+### 6.3 Route is orthogonal to ownership
+
+Never infer one from the other. All four combinations are legitimate — see `ADR-0002`. The
+commerce **mode** remains an outer gate over the route.
+
+### 6.4 Derived ownership for catalogue resources
+
+`Product`, `Variant`, `ProductMedia` and merchant `InventoryItem` carry **no owner column**.
+Merchant authorization resolves:
+
+```
+product -> brand -> BrandOwnership -> merchant_organization
+```
+
+in **exactly one function**. One join to audit, not one per endpoint. Any proposal to put
+direct organization ownership on another entity must be justified **per entity** against these
+four domains.
+
+### 6.5 Enforcement
+
+1. The organization is resolved **from the session, server-side**. A tenant id in a body,
+   query string, path or header is ignored, and a test proves it is ignored rather than
+   merely rejected.
+2. **The repository layer cannot express an unscoped merchant query.** Scoping is a required
+   argument, so the unscoped query is not writable — the failure mode becomes an import error
+   rather than a silent full-table read.
+3. Cross-tenant reads answer **404, not 403**. A 403 confirms the row exists, which leaks
+   existence to a competitor.
+4. **Tenant isolation is a test category**, established *before* the first merchant endpoint.
+   Every merchant endpoint gets a two-organization test; guard mutations that remove a scope
+   predicate must be detected.
+
+### 6.6 Migration and rollback
+
+No step touches existing rows for tenancy purposes.
+
+```
+1  create brands; insert the DEDUNET first-party brand      no existing row touched
+2  Product.brand_id nullable; backfill all 5 to DEDUNET
+3  Product.brand_id NOT NULL                                 only after 2 is verified
+4  add commerce_route, default NON_PURCHASABLE               fail-closed default
+5  create merchant tables, organization_id NOT NULL          start empty
+6  scoping helper + tenant-isolation test category           BEFORE any endpoint
+7  merchant endpoints, one at a time                         each with its isolation test
+```
+
+Rollback of steps 5–7 is **drop the tables, zero impact** — no existing row references them.
+Step 6 before step 7 is the rule that matters: shipping a merchant endpoint before the
+isolation category exists is how the first IDOR ships.
+
+### 6.7 Future order boundary — guidance only
+
+Existing `Order` tables are **not redesigned**, and no speculative multi-merchant checkout is
+implemented. Recorded as a forward constraint: an order spanning multiple merchants requires
+separate merchant fulfilment and accounting boundaries, not one ambiguous tenant owner on the
+customer order. Likely shape:
+
+```
+CustomerOrder -> MerchantFulfillmentGroup -> OrderLines
+```
+
+Trigger: the second merchant with hosted commerce. Until then no order can span two merchants.
 
 ---
 
