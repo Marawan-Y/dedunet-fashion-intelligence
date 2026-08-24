@@ -51,7 +51,25 @@ deployment is in now.
 | 2026-08-07 | `READY_FOR_TEAM_ACCEPTANCE_TESTING` | `fc7bdeb` |
 | 2026-08-12 | `LOCAL_TEAM_ACCEPTANCE_PASSED` | `c0c8fac` |
 | 2026-08-18 | `NATIVE_ANDROID_PREVIEW_ACCEPTANCE_PASSED` | `4cb8e50` |
-| 2026-08-18 | `NATIVE_POST_ACCEPTANCE_HARDENING_VERIFIED` | this commit |
+| 2026-08-18 | `NATIVE_POST_ACCEPTANCE_HARDENING_VERIFIED` | `52ddf16` |
+| 2026-08-24 | `IPHONE_WEB_HARDENING_CLOSED` — the two defects that acceptance reported | `2f50e11` |
+| 2026-08-24 | `IPHONE_MOBILE_WEB_ACCEPTANCE_PASSED` — recorded, closing CONFLICT-011 | this commit |
+
+**`IPHONE_MOBILE_WEB_ACCEPTANCE_PASSED`** is likewise additive. The DEDUNET storefront was
+exercised in mobile Safari on a **physical iPhone**, against local staging over the LAN, in
+`BRAND_PREVIEW_MODE`, across 25 gates — connectivity and CORS, brand media, five preview
+products, the Source Tee at €72, preview disclosure and purchase blocking, registration and
+signed-in Account and Orders, Safari session persistence, a server-side invalidation
+answering 401 with the client clearing stale state, backend restoration leaving Safari signed
+out, disposable-customer deletion, and a final `/ready` 200 in preview mode. Two non-blocking
+UX defects were found and have since been corrected (`2f50e11`). See
+[`evidence/team-acceptance/IPHONE_MOBILE_WEB_ACCEPTANCE.md`](../../evidence/team-acceptance/IPHONE_MOBILE_WEB_ACCEPTANCE.md).
+
+**It is not native iOS acceptance.** `NATIVE_IOS_ACCEPTANCE` is `NOT TESTED`; Apple signing,
+TestFlight and App Store submission are all `NOT TESTED`; and Apple Developer Program
+membership is `DEFERRED — FUNDING`. No iOS binary has ever been built. Mobile web and the
+native application share a commerce contract and nothing else, and the two records must never
+be aggregated into "mobile is accepted".
 
 The Android statuses are **additive**, not replacements. A preview APK was built through EAS
 and exercised on an emulator (Pixel 9, Android 16, API 36); the two post-acceptance
@@ -447,13 +465,15 @@ None was attempted during this review.
    and what it deliberately did not close.
 6. Do **not** begin hosted deployment on the strength of this decision. It authorizes
    internal acceptance testing only.
-7. **Write the iPhone mobile-web acceptance record** — **CONFLICT-011, opened 2026-08-24.**
-   A successor brief states this acceptance passed. **No record of it exists in this
-   repository**, and `git log --all -S "IPHONE_MOBILE_WEB"` returns no commit in any ref. The
-   two UX defects it reported are real and are now closed
-   ([`IPHONE_WEB_HARDENING_CLOSURE.md`](../../evidence/team-acceptance/IPHONE_WEB_HARDENING_CLOSURE.md)),
-   which corroborates that testing happened — but a defect report is not an acceptance record,
-   and the *scope* of what passed cannot be reconstructed: device, iOS version, commit and
-   commerce mode are all unrecorded. Owner: human acceptance manager. Deliberately **not**
-   written on the tester's behalf, for the same reason DISC-07 was recorded rather than
-   retro-fitted.
+7. ~~**Write the iPhone mobile-web acceptance record**~~ — **DONE 2026-08-24. CONFLICT-011
+   RESOLVED.** The human tester supplied the authoritative scope and it is recorded as
+   `EV-TA-006`, [`IPHONE_MOBILE_WEB_ACCEPTANCE.md`](../../evidence/team-acceptance/IPHONE_MOBILE_WEB_ACCEPTANCE.md),
+   status `IPHONE_MOBILE_WEB_ACCEPTANCE_PASSED` over 25 gates. Ten of the supplied claims were
+   independently corroborated against repository data rather than transcribed.
+   **Residual, non-blocking:** iPhone model, iOS version and the acceptance commit were not
+   supplied; the commit is recorded as an *inference* (`41cee4c`) and bounded to a two-commit
+   window. Recorded in `EV-TA-006` §7, not re-raised as a new conflict.
+8. **Re-check the two corrected screens on the device that reported them** — **NOT TESTED.**
+   Defects A and B were found on a physical iPhone and their fixes were verified by automated
+   tests in a rendered DOM. 434 passing tests do not substitute for a human looking at the two
+   screens on the device. Owner: human acceptance manager.

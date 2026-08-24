@@ -6,7 +6,7 @@
 | Version | 1.1 |
 | Owner | Technical lead |
 | Status | SELF-VALIDATED |
-| Updated | 2026-08-24 — CONFLICT-009 **RESOLVED** (honesty documents rewritten at `41cee4c`). Previously 2026-08-06: CONFLICT-001 marked superseded; CONFLICT-009 and CONFLICT-010 added by the successor agent takeover (`SUCCESSOR_AGENT_TAKEOVER_REPORT.md`) |
+| Updated | 2026-08-24 — CONFLICT-009 and CONFLICT-011 both **RESOLVED**; CONFLICT-011 closed by `EV-TA-006`, the iPhone acceptance record supplied by the human tester. Earlier same day: CONFLICT-009 (honesty documents rewritten at `41cee4c`). Previously 2026-08-06: CONFLICT-001 marked superseded; CONFLICT-009 and CONFLICT-010 added by the successor agent takeover (`SUCCESSOR_AGENT_TAKEOVER_REPORT.md`) |
 | Rule | No material contradiction is resolved silently. Each carries a proposed resolution and an approval state. |
 
 Resolution follows the source-of-truth hierarchy in the human manager approval, §4.
@@ -424,7 +424,7 @@ larger rewrite and were deliberately not pulled into a readiness review.
 
 ---
 
-## CONFLICT-011 — iPhone mobile-web acceptance is asserted but has no record in the repository
+## CONFLICT-011 — iPhone mobile-web acceptance is asserted but has no record in the repository — **RESOLVED**
 
 **Files:** `evidence/team-acceptance/` — the directory that holds every other acceptance record
 
@@ -470,5 +470,34 @@ evidence, which is worse than the gap it closes.
 passed acceptance nobody can reconstruct, and a public claim of iPhone support resting on it.
 
 **Owner:** Human acceptance manager
-**Approval status:** OPEN — recorded by the successor agent 2026-08-24. Not resolved by this
-phase, and deliberately not resolved by writing the missing record on the tester's behalf.
+**Approval status:** **RESOLVED 2026-08-24 at `37cd6f6`** by resolution path (a): the human
+tester supplied the authoritative scope and the record was written from it.
+
+**Evidence:** [`evidence/team-acceptance/IPHONE_MOBILE_WEB_ACCEPTANCE.md`](../../evidence/team-acceptance/IPHONE_MOBILE_WEB_ACCEPTANCE.md)
+— `EV-TA-006`, status `IPHONE_MOBILE_WEB_ACCEPTANCE_PASSED`, 25 gates across connectivity,
+catalogue and brand, preview safety, identity, session invalidation and cleanup.
+
+**Ten of the supplied claims were independently corroborated against the repository** rather
+than transcribed: €72 confirmed from `variant-master.csv` (`DDN-TS01`, every variant
+`price_eur=72`), five products from `product-master.json`, non-purchasability from
+`inventory_status=prototype_unavailable` and `stock_quantity=0`, the mode gate from
+`assert_purchasable`, the caution language from `origin_claim_status=UNVERIFIED`, and the
+stale-token clearing from mutation M74. The record separates those from the observations only
+a human could make, which are carried on the tester's authority.
+
+**The residual gap is recorded rather than papered over.** This entry's proposed resolution
+asked for device, iOS version, commit and mode. **Mode was supplied; iPhone model, iOS version
+and the commit were not.** The commit is *inferred* as `41cee4c` and labelled an inference —
+bounded because LAN storefront access is what that commit added, so the acceptance cannot
+predate it, and the two defects it reported were fixed in `2f50e11`, so it cannot postdate
+that. See `EV-TA-006` §7.
+
+That residual is **not** re-raised as a new conflict. The substantive defect this entry
+recorded was an acceptance with *no record at all*; that is closed. What remains is
+reproducibility detail on a record the acceptance manager owns and has now written.
+
+**One thing this resolution explicitly does not do.** It does not become native iOS
+acceptance. `NATIVE_IOS_ACCEPTANCE` is `NOT TESTED`, Apple signing, TestFlight and App Store
+are `NOT TESTED`, and Apple Developer Program membership remains `DEFERRED — FUNDING`. Mobile
+web in Safari and the native application share a commerce contract and nothing else. `EV-TA-006`
+§6 states this separately because it is the most likely misreading of the record.

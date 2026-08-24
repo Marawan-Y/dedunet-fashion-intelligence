@@ -69,7 +69,7 @@ Verified by executed tests and by human acceptance where stated.
 | Mobile app — Expo, 14 Jest suites, web export | VERIFIED |
 | Mobile app — **Android native preview on emulator** | `NATIVE_ANDROID_PREVIEW_ACCEPTANCE_PASSED` |
 | Mobile app — **iOS native** | **NOT TESTED** — Apple membership deferred, no budget |
-| Mobile web on **physical iPhone Safari** | **HUMAN-ASSERTED, NOT EVIDENCED HERE** — see note below |
+| Mobile web on **physical iPhone Safari** | `IPHONE_MOBILE_WEB_ACCEPTANCE_PASSED` — 25 gates, `BRAND_PREVIEW_MODE` |
 | Local team acceptance, end to end, by a human | `LOCAL_TEAM_ACCEPTANCE_PASSED` |
 | CI pipeline | **NOT EXECUTED** — no runner, and no Git remote to push to |
 | Hosted staging, cloud, TLS, DNS | **NOT_STARTED** |
@@ -78,17 +78,15 @@ Verified by executed tests and by human acceptance where stated.
 Test baseline at `41cee4c`: **415 passed, 2 skipped** (SQLite path). The two skips are
 PostgreSQL-only guarantees. **77 guard mutations** registered.
 
-> **iPhone acceptance is asserted but not evidenced.** A successor brief states that
-> physical-iPhone-Safari testing passed — LAN access, CORS, catalogue, media, product detail,
-> preview safety, registration, session persistence, expired-session handling, stale-token
-> clearing and cleanup. **No acceptance record for it exists in this repository.**
-> `evidence/team-acceptance/` holds closeouts for local team acceptance and Android native
-> preview; there is no iPhone equivalent, and no commit in any ref introduces one. The two
-> UX defects that testing reported are real and are now closed
-> ([`IPHONE_WEB_HARDENING_CLOSURE.md`](evidence/team-acceptance/IPHONE_WEB_HARDENING_CLOSURE.md)),
-> which corroborates that the testing happened — but a defect report is not an acceptance
-> record. Until one is written, treat iPhone mobile web as **human-asserted**, the same way
-> the takeover report treats the EAS project ID (DISC-07).
+> **Mobile web is accepted; native iOS is not built.** These are separate facts and must not
+> be merged. The storefront was exercised in Safari on a physical iPhone against local staging
+> over the LAN, in `BRAND_PREVIEW_MODE`, across 25 gates
+> ([`IPHONE_MOBILE_WEB_ACCEPTANCE.md`](evidence/team-acceptance/IPHONE_MOBILE_WEB_ACCEPTANCE.md)).
+> **No iOS binary has ever been built** — no signing, no TestFlight, no App Store, and Apple
+> Developer Program membership is `DEFERRED — FUNDING`. Mobile web and the native application
+> share a commerce contract and nothing else. Neither may the Android and iPhone records be
+> aggregated into "mobile is accepted": Android is an emulator preview, iPhone is mobile web,
+> and native iOS is nothing at all.
 
 ---
 

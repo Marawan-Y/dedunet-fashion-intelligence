@@ -184,11 +184,13 @@ notices is not a guard.
 **Automated green is not human acceptance.** Local team acceptance and Android native
 preview acceptance were performed by a human and are recorded in `evidence/team-acceptance/`.
 
-**iPhone mobile-web acceptance is `HUMAN_ASSERTED_NOT_EVIDENCED`.** A successor brief states
-it passed. No acceptance record exists in this repository and no commit in any ref introduces
-one. The two UX defects that testing reported are real and are now closed
-(`evidence/team-acceptance/IPHONE_WEB_HARDENING_CLOSURE.md`), which corroborates that testing
-occurred — a defect report is not an acceptance record, and the gap should be closed by
-writing one, not by treating the brief as the record.
+**iPhone mobile-web acceptance is `IPHONE_MOBILE_WEB_ACCEPTANCE_PASSED`** — 25 gates on a
+physical iPhone in Safari, against local staging over the LAN, in `BRAND_PREVIEW_MODE`,
+recorded at `evidence/team-acceptance/IPHONE_MOBILE_WEB_ACCEPTANCE.md` (CONFLICT-011 closed).
+Two non-blocking UX defects were found and have since been corrected. **The corrected screens
+have not been re-checked on the device that reported them** — automated tests are not that
+check.
 
-**iOS native is `NOT TESTED`** — never built. Do not infer it from the Android result.
+**iOS native is `NOT TESTED`** — never built. No signing, no TestFlight, no App Store, Apple
+Developer Program `DEFERRED — FUNDING`. Do not infer it from the Android result, and do not
+infer it from the iPhone *mobile-web* result either: Safari is not the native application.

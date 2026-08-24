@@ -218,7 +218,7 @@ exactly rather than an arbitrary edit.
 |---|---|---|
 | `NATIVE_MIRRORS_ONE_GATE` | `ProductScreen.tsx` mirrors the product gate only. Correct against the current seed; would show an enabled "Add to bag" for a sellable product in a preview catalogue | **NON_BLOCKING** — separate surface, separate acceptance. Web is now the stricter of the two |
 | Catalogue grid | Cards do not offer an add control at all, so neither gate applies there. Unchanged | not a defect |
-| **CONFLICT-011** | **The iPhone acceptance itself has no record in this repository.** The two defects closed here are its only trace | **OPEN** — see below |
+| **CONFLICT-011** | The iPhone acceptance itself had no record in this repository when this document was written | **RESOLVED 2026-08-24** — see §8.1 |
 
 ### 8.1 The acceptance that produced these defects is not evidenced
 
@@ -242,11 +242,22 @@ closeout names its emulator, API level and build id; nothing comparable exists h
 
 Recorded as **CONFLICT-011**, owner: human acceptance manager. Deliberately **not** resolved
 by writing the missing record on the tester's behalf — that would manufacture evidence, which
-is worse than the gap. `README.md` and `docs/KNOWN_LIMITATIONS.md` §7 now describe iPhone
-mobile web as `HUMAN_ASSERTED_NOT_EVIDENCED`.
+is worse than the gap.
 
-**This document does not claim to close the iPhone acceptance.** It closes the two UX defects
-that acceptance reported, and nothing more.
+> **RESOLVED 2026-08-24.** The human tester supplied the authoritative scope and the record was
+> written from it: [`IPHONE_MOBILE_WEB_ACCEPTANCE.md`](IPHONE_MOBILE_WEB_ACCEPTANCE.md)
+> (`EV-TA-006`, `IPHONE_MOBILE_WEB_ACCEPTANCE_PASSED`, 25 gates). The refusal above is what
+> made that record worth having: it was supplied by the person who ran the test, not
+> reconstructed from a brief by the agent that needed it to exist. Ten of its claims were then
+> independently corroborated against repository data — €72, five products, non-purchasability,
+> the mode gate, the caution language and M74 among them.
+>
+> Residual and non-blocking: iPhone model, iOS version and the acceptance commit were not
+> supplied; the commit is recorded as an inference bounded to a two-commit window.
+
+**This document still does not claim to close the iPhone acceptance.** It closes the two UX
+defects that acceptance reported. `EV-TA-006` is the acceptance record, and the two are
+deliberately separate artifacts.
 
 ## 9. Verification status
 

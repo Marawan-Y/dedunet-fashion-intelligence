@@ -35,15 +35,18 @@ A phase is complete when **all** of these hold, and not before.
 delta and explain it, the way the team-acceptance review explained `301 → 307`. A count that
 moves without an explanation is a weakened test until proven otherwise.
 
-**Rule 8 is the one that protects the inheritance.** Local team acceptance and Android native
-preview acceptance are passed states with records in `evidence/team-acceptance/`. A phase that
-would invalidate either is blocked, not permitted to proceed with a note.
+**Rule 8 is the one that protects the inheritance.** Local team acceptance, Android native
+preview acceptance and iPhone mobile-web acceptance are passed states, each with a record in
+`evidence/team-acceptance/`. A phase that would invalidate any of them is blocked, not
+permitted to proceed with a note.
 
-**iPhone mobile web is *not* on that list**, deliberately. A brief asserts it passed; the
-repository records no such acceptance (**CONFLICT-011**). Rule 8 protects states that can be
-pointed at, and this one cannot — so it must be re-established by a human, not carried forward
-as though it had been. Treating an assertion as an inherited pass is how a readiness matrix
-ends up with an entry nobody can reconstruct.
+iPhone mobile web joined that list on 2026-08-24, when the human tester supplied the scope and
+`EV-TA-006` was written (**CONFLICT-011** closed). It was deliberately excluded while the
+acceptance existed only as an assertion in a brief, because Rule 8 protects states that can be
+pointed at. That it can now be pointed at is the whole difference.
+
+**Native iOS is not on the list and cannot join it by inheritance.** It is `NOT TESTED` and
+unbuilt; Apple Developer Program membership is `DEFERRED — FUNDING`.
 
 ---
 

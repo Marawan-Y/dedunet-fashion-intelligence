@@ -85,7 +85,7 @@ independent of the repositioning, and blocking nothing else.
 | ID | Item | Status |
 |---|---|---|
 | `NATIVE_MIRRORS_ONE_GATE` | `ProductScreen.tsx` mirrors the product gate only; web now mirrors both. Correct against today's seed, wrong for a sellable product in a preview catalogue | **OPEN** — separate surface, separate acceptance |
-| **CONFLICT-011** | The iPhone acceptance that reported these defects has **no record in this repository** | **OPEN** — owner: human acceptance manager |
+| **CONFLICT-011** | The iPhone acceptance that reported these defects had no record in this repository | **RESOLVED 2026-08-24** — `EV-TA-006` written from tester-supplied scope |
 | Human confirmation | Neither corrected screen has been seen by a human since the fix | **NOT TESTED** |
 
 ### 0A.2 A discarded result, recorded
@@ -167,11 +167,69 @@ would degrade quietly.
 | Phases 2–19 | **NOT STARTED** |
 | Phase 15 (CI/CD) | **BLOCKED** — no Git remote; the workflow has never executed |
 | CONFLICT-010 (Git remote) | **OPEN** — owner decision, needs a secret and personal-data review first |
-| CONFLICT-011 (iPhone record) | **OPEN** — human acceptance manager |
+| CONFLICT-011 (iPhone record) | **RESOLVED** — `EV-TA-006`, `IPHONE_MOBILE_WEB_ACCEPTANCE_PASSED` |
 | Risk-owner acceptance | **PENDING** — all four |
 | Deliverables C, D, K, M–AD | **NOT AUTHORED** — they belong to their phases |
 
 **Decision: `PHASE_1_COMPLETE`**
+
+---
+
+## PHASE 1B — Governance closure
+
+**Starting HEAD:** `37cd6f6`
+
+| Field | Result |
+|---|---|
+| Implementation | **PASS** — documentation and governance only. No application code touched |
+| Tests | **PASS** — 434 passed, 2 skipped, unchanged (no code in scope) |
+| Security | **PASS** — no guard touched |
+| Regression | **PASS** — `controller_validate.py` **585 errors before, 585 after: zero introduced** |
+| Human Test | **PASS** — this phase *records* a human acceptance the tester performed |
+| Documentation | **PASS** — eight documents brought into agreement, 29 links, 0 broken |
+
+**Evidence:** `evidence/team-acceptance/IPHONE_MOBILE_WEB_ACCEPTANCE.md` (`EV-TA-006`)
+
+### 1B.1 CONFLICT-011 closed
+
+The human tester supplied the authoritative scope; the record was written from it and
+**not** reconstructed from the brief. `IPHONE_MOBILE_WEB_ACCEPTANCE_PASSED` over 25 gates:
+connectivity and LAN CORS, brand media, five preview products, the Source Tee at €72, preview
+disclosure and purchase blocking, cart safety, registration, signed-in Account and Orders,
+Safari persistence, server-side invalidation → authoritative 401 → client clearing stale
+state, backend restoration leaving Safari signed out, disposable-customer deletion, and a
+final `/ready` 200 in `BRAND_PREVIEW_MODE`.
+
+**Ten claims independently corroborated** against repository data rather than transcribed —
+€72 from `variant-master.csv`, five products from `product-master.json`, non-purchasability
+from `prototype_unavailable` / `stock_quantity=0`, the mode gate from `assert_purchasable`,
+the caution language from `origin_claim_status=UNVERIFIED`, and stale-token clearing from
+mutation M74.
+
+**Residual, recorded not hidden:** iPhone model, iOS version and the acceptance commit were
+not supplied. The commit is an *inference* (`41cee4c`), bounded to a two-commit window because
+LAN access is what that commit added and the reported defects were fixed in `2f50e11`.
+
+### 1B.2 What this phase refused to do
+
+`NATIVE_IOS_ACCEPTANCE` remains **`NOT TESTED`**. Apple signing, TestFlight and App Store
+submission remain `NOT TESTED`. Apple Developer Program membership remains
+**`DEFERRED — FUNDING`**.
+
+Mobile web in Safari and the native application share a commerce contract and nothing else.
+The Android emulator preview, the iPhone mobile-web acceptance and native iOS are three
+distinct states, and no two of them may be aggregated into "mobile is accepted".
+
+### 1B.3 Remaining issues
+
+| Item | Status |
+|---|---|
+| Corrected screens re-checked on the reporting device | **NOT TESTED** — readiness action 8 |
+| iPhone model / iOS version / acceptance commit | **NOT SUPPLIED** — `EV-TA-006` §7 |
+| `controller_validate.py` | **FAILING AT BASELINE** — 585 errors, pre-existing. 442 are `BAD STATUS` from applying the evidence vocabulary to any `*_status` column (`runtime_status=build-time`, `inventory_status=prototype_unavailable`), and one `UNSUPPORTED CLAIM` is inside `apps/mobile/node_modules/`. A validator scoping defect, not a data defect. **Not fixed here** — out of scope for a governance closure, and recorded so it is not rediscovered as new |
+| `ADR-0002` | **PROPOSED**, unmodified. Decision brief delivered separately |
+
+**Decision: `PHASE_1B_COMPLETE`**
 
 ---
 
