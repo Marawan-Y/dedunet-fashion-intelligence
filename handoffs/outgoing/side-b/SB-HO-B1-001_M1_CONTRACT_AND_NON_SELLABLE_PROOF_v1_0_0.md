@@ -72,6 +72,22 @@ Unchanged and verified byte-identical: `backend/data/products.json`,
 5. `products.json` and `candidate_products.json` are byte-identical to their pre-cycle
    state (sha256 `536f91ab…` and `7f052e4c…`).
 
+## 3a. Assumptions
+
+Stated explicitly on 2026-08-24 for envelope compliance. Each was already operative in
+this handoff when it was sent; none is new, and none changes a claim made below.
+
+1. **The candidate record is synthetic and carries no business truth.** Every value in
+   `candidate_products.json` is a fixture. `price` is `null` and stays `null` until Side A
+   supplies an approved value with evidence.
+2. **Side A owns the blocked field inputs.** Side B can prove the gates hold; it cannot
+   supply the approved business values that would let a candidate pass them.
+3. **Evidence must be attributable to this working tree.** Records naming another checkout
+   are treated as superseded rather than corrected — see SB-EV-ATTR-001.
+4. **The controller decides M1 acceptance.** This handoff supplies proof, not a decision.
+5. **No production provider, market or real product is selected.** The PoC serves
+   non-sellable synthetic candidates with every gate failing closed.
+
 ## 4. Findings the controller must see
 
 1. **Attribution (as flagged).** SB-EV-BOOT-001..005 and SB-EV-G1-001 record a working
@@ -142,12 +158,24 @@ bump. No superseded file was edited or deleted. No file outside `docs/side-b/`,
 `evidence/side-b/`, `handoffs/outgoing/side-b/` and `platform/` was written. Side A
 artifacts and `docs/source/` were not touched. `docs/system-of-record/` was read only.
 
-## 9. Receiver response required
+**Envelope completion, 2026-08-24.** This document was missing the required `assumptions`
+and `questions` envelope fields and failed `handoff_envelope_check.py`. Section 3a was
+added and section 9 renamed. **No claim, finding, disposition, acceptance criterion or
+evidence reference was altered** — the assumptions restate what sections 1 and 3 already
+established, and the questions are verbatim the three section 9 already asked. The version
+is deliberately not bumped: a version bump signals a change in what a handoff asserts, and
+nothing it asserts has changed. Recorded here rather than applied silently, per the
+change-control rule above.
 
-ACCEPT / CONDITIONALLY ACCEPT / REJECT, with field-level reasons. Please also rule on:
+## 9. Questions and receiver response required
 
-- whether SB-EV-BOOT-001..005 should be retired or formally re-run;
-- who is the named human risk owner for SB-RISK-003 (stored XSS), SB-RISK-005
-  (non-transactional inventory) and SB-RISK-011 (secrets), all of which remain **OPEN**
-  launch blockers that Side B cannot close alone;
-- whether the breaking money wire change (SB-DEC-G1-003) is accepted.
+ACCEPT / CONDITIONALLY ACCEPT / REJECT, with field-level reasons.
+
+**Open questions for the receiver.** These are the questions this handoff has always
+asked; the heading was corrected on 2026-08-24 so the envelope names them as questions.
+
+1. Should SB-EV-BOOT-001..005 be retired or formally re-run?
+2. Who is the named human risk owner for SB-RISK-003 (stored XSS), SB-RISK-005
+   (non-transactional inventory) and SB-RISK-011 (secrets)? All three remain **OPEN**
+   launch blockers that Side B cannot close alone.
+3. Is the breaking money wire change (SB-DEC-G1-003) accepted?

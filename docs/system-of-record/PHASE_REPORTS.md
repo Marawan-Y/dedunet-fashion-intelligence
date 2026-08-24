@@ -299,6 +299,87 @@ would have been the precise failure this phase exists to correct.
 
 ---
 
+## PHASE 1D — Final governance closure
+
+**Starting HEAD:** `5ff75df` · **ADR-0002: APPROVED AS REVISED** by owner decision.
+
+| Field | Result |
+|---|---|
+| Implementation | **PASS** — two genuine defects closed. No application code touched |
+| Tests | **PASS** — backend 434/2 skipped; governance **43** (26 controller + 17 envelope) |
+| Security | **PASS** — no guard touched; no mutation target changed; Side A package still `DEDUNET_HANDOFF_INTEGRITY_VERIFIED` |
+| Regression | **PASS** — controller **8 → 0**; envelope **6/20 → 8/8** |
+| Human Test | **N/A** — governance only |
+| Documentation | **PASS** — links 0 broken; secret scan 0; `git diff --check` clean |
+
+### 1D.1 Readiness and supersession separated
+
+The `status` column in `docs/side-b/EVIDENCE_INDEX.csv` carried two independent facts.
+Writing `SUPERSEDED` into it **destroyed** the readiness four evidence documents had
+declared. Recovered from each document's own `- Readiness status:` line — never inferred:
+
+| Evidence | Recovered readiness | Supersession | Superseded by |
+|---|---|---|---|
+| `SB-EV-BOOT-001` | **SELF-VALIDATED** | SUPERSEDED | `SB-EV-G1-005` |
+| `SB-EV-BOOT-002` | **AUTOMATED-TESTED** | SUPERSEDED | `SB-EV-G1-005` |
+| `SB-EV-BOOT-003` | **BLOCKED** *(control — never overwritten)* | SUPERSEDED | `SB-EV-G1-005` |
+| `SB-EV-BOOT-004` | **BLOCKED** | SUPERSEDED | `SB-EV-G1-005` |
+| `SB-EV-BOOT-005` | **SELF-VALIDATED** | SUPERSEDED | `SB-EV-G1-005` |
+| `SB-EV-G1-001` | **SELF-VALIDATED** *(was already correct)* | SUPERSEDED | `SB-EV-G1-002` |
+
+**`SB-EV-BOOT-003` is what makes this a recovery rather than a guess.** Its value was never
+overwritten, and it matches its document exactly — so the method is validated against a
+control before being trusted on the four rows that lost their data. Every non-overwritten
+row was additionally cross-checked; the transform was written to **abort** on any mismatch,
+and none occurred.
+
+The supersession register named **six** superseded artifacts while the index marked four.
+All six are now marked, so the two registers agree.
+
+**Naming.** The column is `supersession_status`, not `lifecycle_status`, because
+`lifecycle_status` is already taken in this repository for the **product** business
+lifecycle (`fixture|candidate|sample|approved|sellable|retired`, BPC-A-003, live in
+`app/candidate_activation.py` as `BusinessLifecycle`). Reusing the identifier for a second
+vocabulary would have recreated the one-name-two-meanings ambiguity Phase 1C removed.
+"Supersession" is the repository's own term for this concept —
+`evidence/side-b/EVIDENCE_ATTRIBUTION_AND_SUPERSESSION.md`. **Deviation from the literal
+instruction, taken deliberately and reported here.**
+
+`SUPERSEDED` was **not** added to the readiness vocabulary. Admitting it there would
+re-legalise the overwrite that lost the data.
+
+### 1D.2 Handoff envelopes
+
+`6/20` was two separate problems.
+
+**Genuinely broken (2).** `SB-HO-B1-001` and its `_v1_0_0` twin lacked `assumptions` and
+`questions`. The questions were **already in the document** — §9 asked three — so they were
+named rather than invented, and §3a records assumptions restating what §1 and §3 already
+established. **No claim, finding, disposition or acceptance criterion changed**, so the
+version is deliberately not bumped; an envelope-completion note records this in §8.
+
+**Never envelopes (11).** The checker scanned inside the delivered partner package —
+brand-prototype documents, a README, a VALIDATION_REPORT. Demanding "sender" and "need-by
+gate" of a brand identity document is a category error, and the package is sealed by
+`CHECKSUMS_SHA256.txt` (54/54), so satisfying the check would have required breaking its own
+manifest. It also **double-counted**: 20 reported against 19 unique, because the package
+carries its own nested `handoffs/` directory.
+
+A handoff envelope is now defined as a document a side sent — directly in
+`handoffs/{incoming,outgoing}/<side>/`. `REQUIRED` is **unchanged**; all eighteen fields are
+still demanded of all eight envelopes.
+
+### 1D.3 Recorded, not fixed
+
+| Item | Status |
+|---|---|
+| `handoffs/incoming/side-a/DEDUNET_Platform_Integration_v1/handoffs/outgoing/HANDOFF_SIDE_A_TO_SIDE_B_DEDUNET_v1.md` | **Excluded and would not pass.** It *is* a genuine handoff envelope, but it is Side A's, inside a checksum-sealed package, and covered by that package's own `VALIDATION_REPORT.md`. Repairing it would break the 54/54 manifest — a verified control. Reported rather than hidden by the exclusion |
+| 3 `CSV EMPTY` warnings | Header-only templates in `docs/operations/`. Warnings, not errors; correct as templates |
+
+**Decision: `PHASE_1D_COMPLETE`**
+
+---
+
 ## Platform decisions
 
 Re-stated at every phase boundary, deliberately separate.
