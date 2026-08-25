@@ -24,35 +24,62 @@ RUN npm ci
 
 COPY apps/consumer/ ./
 
-# Where the API lives, baked in at BUILD time.
+# Where the API is, from the BROWSER's point of view.
 #
-# Not at run time, for the reason above. Empty means "the page host on the development API
-# port", which is correct for a bare checkout and for docker-compose.yml, and wrong for
-# staging — whose API is published on 18080 and which passes this through.
+# Empty is the intended value for this image, because nginx proxies /api on the same
+# origin (see the serve stage). The client then needs no absolute base at all, which is
+# both simpler and one fewer thing that can be wrong in a deployment.
+#
+# API_BASE_URL remains available for a cross-origin deployment, where it is baked in at
+# BUILD time rather than read at run time — the served directory is read-only after start.
 ARG API_BASE_URL=""
+ARG API_SAME_ORIGIN="true"
 ENV VITE_API_BASE_URL=$API_BASE_URL
+ENV VITE_API_SAME_ORIGIN=$API_SAME_ORIGIN
 
 # Type-check and build. `npm run build` runs `tsc -b` first, so a type error fails the
 # IMAGE rather than shipping and failing in someone's browser.
-RUN npm run build && echo "consumer API base: ${API_BASE_URL:-client default}"
+RUN npm run build && echo "consumer API base: ${API_BASE_URL:-same-origin via nginx proxy}"
 
 # ---------------------------------------------------------------- serve stage
 FROM nginx:1.27-alpine
 
 COPY --from=build /build/dist /usr/share/nginx/html
 COPY apps/admin /usr/share/nginx/html/admin
-COPY apps/consumer/nginx.conf /etc/nginx/conf.d/default.conf
 
-# The admin client is a classic static surface with its own config seam, and it resolves
-# the API itself. One build argument configures both so they cannot disagree about where
-# the API is — which is a defect this programme has already fixed once.
-ARG API_BASE_URL=""
-RUN if [ -n "$API_BASE_URL" ]; then \
-      printf '/* generated at build time from API_BASE_URL */\nwindow.DEDUNET_API_BASE = "%s";\n' \
-        "$API_BASE_URL" > /usr/share/nginx/html/admin/config.js; \
-      echo "admin API base: $API_BASE_URL"; \
+# A TEMPLATE, rendered at container start.
+#
+# The nginx entrypoint runs envsubst over /etc/nginx/templates/*.template and writes the
+# result into conf.d. NGINX_ENVSUBST_FILTER restricts substitution to the DEDUNET_ prefix
+# so nginx's own $uri, $host and $upstream variables survive untouched — without the
+# filter, envsubst would blank every one of them.
+COPY apps/consumer/default.conf.template /etc/nginx/templates/default.conf.template
+ENV NGINX_ENVSUBST_FILTER="DEDUNET_"
+
+# Where the commerce API is, from INSIDE the container.
+#
+# A service name on a shared Docker network by default, never a host address: the image
+# stays portable and no LAN address is baked into it. Override per deployment.
+ENV DEDUNET_API_UPSTREAM="api:8000"
+
+# The admin client is a classic static surface with its own config seam and it resolves the
+# API itself, so it cannot use the same-origin proxy above: its resolver treats an empty
+# base as "not configured" and falls back to the page host on port 18000.
+#
+# Its argument is therefore SEPARATE from the consumer's. Sharing one would mean that
+# configuring the admin silently switched the consumer out of same-origin mode, which is
+# exactly the "two clients disagreeing about where the API is" defect this programme has
+# already fixed once.
+#
+# Left unset, /admin on this image is not configured and is not part of the consumer
+# acceptance surface.
+ARG ADMIN_API_BASE_URL=""
+RUN if [ -n "$ADMIN_API_BASE_URL" ]; then \
+      printf '/* generated at build time from ADMIN_API_BASE_URL */\nwindow.DEDUNET_API_BASE = "%s";\n' \
+        "$ADMIN_API_BASE_URL" > /usr/share/nginx/html/admin/config.js; \
+      echo "admin API base: $ADMIN_API_BASE_URL"; \
     else \
-      echo "admin API base: client default (page host on port 18000)"; \
+      echo "admin API base: NOT CONFIGURED on this image"; \
     fi
 
 EXPOSE 80

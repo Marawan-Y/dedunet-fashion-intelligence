@@ -1,3 +1,11 @@
+# DEDUNET consumer client — nginx configuration TEMPLATE.
+#
+# A template, not a plain conf, because the API upstream must be configurable per
+# deployment without editing tracked source and without baking a host address into an
+# image. The nginx entrypoint runs envsubst over /etc/nginx/templates/*.template at
+# container start, restricted by NGINX_ENVSUBST_FILTER to the DEDUNET_ prefix — so
+# nginx's own $uri, $host and $upstream variables are left alone.
+#
 server {
     listen       80;
     server_name  localhost;
@@ -41,6 +49,38 @@ server {
     # verbatim; not hashed, so they revalidate rather than being held.
     location ~ ^/(tokens\.generated\.css|brand\.generated\.js)$ {
         add_header Cache-Control "no-cache" always;
+    }
+
+    # SAME-ORIGIN API.
+    #
+    # The client calls /api/... on its own origin and nginx forwards it to the commerce
+    # API. This is the production-like topology and it is preferred over widening the
+    # API's CORS list for a new origin: the browser sees one origin, so there is no
+    # preflight, no CORS entry to maintain, no cross-origin cookie or referrer difference,
+    # and the client needs no absolute API base baked in at build time.
+    #
+    # proxy_pass carries NO trailing URI on purpose. With one, nginx would rewrite the
+    # path and /api/v1/products would arrive as /v1/products; without one the original
+    # request URI is passed through unchanged, which is what the API serves.
+    location /api/ {
+        proxy_pass http://${DEDUNET_API_UPSTREAM};
+        proxy_http_version 1.1;
+
+        proxy_set_header Host              $host;
+        proxy_set_header X-Real-IP         $remote_addr;
+        proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+
+        # The API ignores X-Forwarded-For unless it is explicitly told how many proxies to
+        # trust, which is correct and is left alone here. The consequence is deliberate and
+        # worth knowing: rate limiting keys on THIS container's address, so every client
+        # behind this proxy shares one bucket.
+        proxy_connect_timeout 5s;
+        proxy_read_timeout   30s;
+
+        # Never cache an API response at the edge; the client decides what is fresh.
+        proxy_buffering off;
+        add_header Cache-Control "no-store" always;
     }
 
     # The administration portal keeps its own path on this origin, unchanged. It is a
