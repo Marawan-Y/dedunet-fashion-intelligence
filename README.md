@@ -1,7 +1,14 @@
-# DEDUNET — fashion commerce platform
+# DEDUNET — personal fashion intelligence platform
 
-A working, locally runnable commerce platform for **DEDUNET**, a fashion brand identity under
-development, used to exercise and demonstrate the system.
+A working, locally runnable platform for **DEDUNET**. The consumer surface is a personal
+fashion intelligence platform — *"DEDUNET helps you decide what to wear, then helps you find
+it"* — built on a verified commerce core.
+
+**The styling experience is the product; the catalogue supports it.** That is a Phase 2
+repositioning (`ADR-0002`, approved as revised), and it is a claim about the *interface*.
+The engines behind it — the stylist, the recommendation engine, the outfit engine, the
+merchant platform — **do not exist yet**, and every surface that needs one says so on
+screen. See [`docs/KNOWN_LIMITATIONS.md`](docs/KNOWN_LIMITATIONS.md) §4.1.
 
 > **Nothing here is a commercial offering.** No company, factory, supplier, product,
 > certification or customer exists. Every product, material, origin, price, customer, order
@@ -46,6 +53,11 @@ Verified by executed tests and by human acceptance where stated.
 
 | Capability | State |
 |---|---|
+| **Consumer platform** — design system, 13 routes, responsive navigation | VERIFIED |
+| **Dido experience shell** — character, 10 states, conversation surface | VERIFIED — **shell only, no engine** |
+| **Discover / Looks / Brands / Saved / My Style / For Brands** | VERIFIED — fixture-backed, badged as such |
+| AI stylist engine, recommendation engine, outfit engine | **NOT_STARTED** |
+| Merchant SaaS, tenancy, hosted merchant checkout | **NOT_STARTED** |
 | Catalogue, variants, stock visibility, search, filter, sort | VERIFIED |
 | Customer registration, login, RBAC, session tokens, expiry handling | VERIFIED |
 | Cart, quote, VAT-inclusive pricing, promotions, shipping threshold | VERIFIED |
@@ -75,8 +87,8 @@ Verified by executed tests and by human acceptance where stated.
 | Hosted staging, cloud, TLS, DNS | **NOT_STARTED** |
 | Multi-replica deployment | **BLOCKED** — rate-limit buckets are process-local |
 
-Test baseline at `41cee4c`: **415 passed, 2 skipped** (SQLite path). The two skips are
-PostgreSQL-only guarantees. **77 guard mutations** registered.
+Test baseline: **486 passed, 2 skipped** (SQLite path). The two skips are PostgreSQL-only
+guarantees. **77 guard mutations** registered.
 
 > **Mobile web is accepted; native iOS is not built.** These are separate facts and must not
 > be merged. The storefront was exercised in Safari on a physical iPhone against local staging
@@ -219,7 +231,14 @@ services/commerce-api/
   manage.py            migrate / seed / bootstrap / export-openapi / check /
                        check-config / create-admin / load-test-inventory /
                        clear-test-inventory
-apps/web/              customer storefront (static, no build step)
+apps/web/              consumer platform (static, no build step — see ADR-0003)
+  tokens.generated.css   GENERATED brand tokens from the Side A delivery
+  design-system.css      semantic layer built on those tokens
+  components.css         component library
+  shell.css              navigation, page layouts, Dido surface
+  ds.js                  element factory, components, Dido      -> window.DS
+  data.js                service interfaces + fixture adapters  -> window.DedunetData
+  app.js                 router and views
 apps/admin/            operations portal (static, no build step)
 apps/mobile/           Expo / React Native — 14 Jest suites, own mutation harness
 packages/contracts/openapi/openapi.json    authoritative API contract, 31 paths
@@ -349,6 +368,8 @@ blocking errors.
 |---|---|
 | [`docs/KNOWN_LIMITATIONS.md`](docs/KNOWN_LIMITATIONS.md) | What is deliberately not done, and why |
 | [`docs/architecture/decisions/`](docs/architecture/decisions/) | Architecture decision records |
+| [`docs/architecture/DEDUNET_CONSUMER_PLATFORM_UX.md`](docs/architecture/DEDUNET_CONSUMER_PLATFORM_UX.md) | Consumer platform UX, sitemap, responsive, accessibility |
+| [`docs/architecture/DEDUNET_DESIGN_SYSTEM.md`](docs/architecture/DEDUNET_DESIGN_SYSTEM.md) | Design system and component inventory |
 | [`packages/contracts/openapi/openapi.json`](packages/contracts/openapi/openapi.json) | Authoritative API contract |
 | [`docs/operations/RUNBOOKS.md`](docs/operations/RUNBOOKS.md) | Operational runbooks |
 | [`docs/operations/TEAM_ACCEPTANCE_TEST_SCRIPT.md`](docs/operations/TEAM_ACCEPTANCE_TEST_SCRIPT.md) | The 19-step human acceptance script |

@@ -654,6 +654,65 @@ def test_reduced_motion_is_handled_centrally():
     assert ".dido-iris { animation: none !important; }" in shell
 
 
+def _relative_luminance(hex_colour: str) -> float:
+    c = hex_colour.lstrip("#")
+    channels = []
+    for i in (0, 2, 4):
+        v = int(c[i:i + 2], 16) / 255
+        channels.append(v / 12.92 if v <= 0.03928 else ((v + 0.055) / 1.055) ** 2.4)
+    r, g, b = channels
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b
+
+
+def _contrast(a: str, b: str) -> float:
+    la, lb = _relative_luminance(a), _relative_luminance(b)
+    hi, lo = max(la, lb), min(la, lb)
+    return (hi + 0.05) / (lo + 0.05)
+
+
+def _tokens() -> dict[str, str]:
+    """The generated Side A tokens, parsed from what actually ships to the client."""
+
+    source = (WEB / "tokens.generated.css").read_text(encoding="utf-8")
+    return dict(re.findall(r"(--ddn-color-[\w-]+):\s*(#[0-9A-Fa-f]{6})", source))
+
+
+@pytest.mark.parametrize("role,token", [
+    ("text", "--ddn-color-textprimary"),
+    ("muted", "--ddn-color-textsecondary"),
+    ("subtle", "--ddn-color-textsecondary"),
+    ("error", "--ddn-color-error"),
+    ("success", "--ddn-color-success"),
+    ("info", "--ddn-color-info"),
+])
+def test_every_text_role_meets_aa_contrast_on_the_page_background(role, token):
+    """Measured against the delivered tokens, not asserted by intention.
+
+    `--ds-text-subtle` originally mapped to `--ddn-color-smoke`, which measures 4.09:1 --
+    below the 4.5:1 AA floor for normal text, on the copy that explains what is fixture
+    content and why a control is disabled. It was remapped at the semantic layer.
+
+    Parametrised over every text role so the next one added is measured too. A design
+    system whose contrast is asserted by intention rather than by measurement is how an
+    inaccessible palette ships.
+    """
+
+    tokens = _tokens()
+    ratio = _contrast(tokens[token], tokens["--ddn-color-background"])
+    assert ratio >= 4.5, f"{role} ({token}) is {ratio:.2f}:1 on the background, AA needs 4.5"
+
+
+def test_the_semantic_layer_does_not_use_the_low_contrast_token_for_text():
+    """The specific regression: `--ds-text-subtle` must not point back at `smoke`."""
+
+    ds = (WEB / "design-system.css").read_text(encoding="utf-8")
+    subtle = re.search(r"--ds-text-subtle:\s*var\((--[\w-]+)\)", ds)
+    assert subtle, "--ds-text-subtle is not defined"
+    assert subtle.group(1) != "--ddn-color-smoke", (
+        "--ds-text-subtle is mapped to a token that fails AA for normal text"
+    )
+
+
 def test_the_mobile_navigation_is_not_a_media_query_afterthought():
     """Mobile-first: the tab bar is the DEFAULT and the desktop header is the enhancement.
 

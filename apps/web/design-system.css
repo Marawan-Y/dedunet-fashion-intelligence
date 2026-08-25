@@ -27,7 +27,17 @@
   /* ---------------------------------------------------------------- text */
   --ds-text: var(--ddn-color-textprimary);
   --ds-text-muted: var(--ddn-color-textsecondary);
-  --ds-text-subtle: var(--ddn-color-smoke);
+  /* MEASURED, not assumed. `--ddn-color-smoke` (#7C746A) is 4.09:1 against the page
+     background -- below the 4.5:1 WCAG AA floor for normal text, and `.ds-subtle` renders
+     at 14px, which is not "large text". It carries the notes explaining what is fixture
+     content, what is not built yet, and why a control is disabled: exactly the copy a
+     customer must be able to read to know what is real.
+
+     Remapped at the SEMANTIC layer rather than by editing the delivered token. The Side A
+     tokens are generated and immutable, and `--ddn-color-smoke` stays available for
+     non-text use where contrast does not apply. This is the two-layer split earning its
+     keep -- an AA failure became a one-line change to a role, not to a brand value. */
+  --ds-text-subtle: var(--ddn-color-textsecondary);
   --ds-text-inverse: var(--ddn-color-background);
 
   /* ---------------------------------------------------------------- accent */

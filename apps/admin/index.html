@@ -8,6 +8,10 @@
     <!-- Own copy of the base tokens. The admin app must not reach into apps/web:
          a cross-application source dependency prevents either being built, deployed
          or owned independently. Shipping them in one image is a packaging choice. -->
+    <!-- Generated brand tokens, emitted here by the same build that emits
+         brand.generated.js. The operations portal is not restyled in Phase 2, but the
+         drift check covers both clients, so both must actually carry the artefact. -->
+    <link rel="stylesheet" href="tokens.generated.css" />
     <link rel="stylesheet" href="styles.css" />
     <link rel="stylesheet" href="admin.css" />
   </head>

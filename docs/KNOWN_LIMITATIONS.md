@@ -80,6 +80,8 @@ what that does and does not mean.
 | Customer support workflow | **NOT_STARTED** | No ticketing or support case model |
 | Reviews / Wishlist | **NOT_STARTED** | |
 | Semantic / AI search | **NOT_STARTED** | Search is a SQL `ILIKE` match, not semantic |
+| Visual regression testing | **NOT_STARTED** | Phase 2 used route-level DOM assertions and measured layout instead. §31 permits an alternative; brittle screenshot testing was deliberately not adopted |
+| Automated accessibility audit | **NOT_RUN** | Structural accessibility is implemented and asserted (landmarks, heading order, focus, targets, labels, live region, reduced motion) and contrast was measured. No axe run and no screen-reader pass — **audited accessibility is not claimed** |
 | Multi-currency | **NOT_STARTED** | Only EUR has a reviewed minor-unit exponent; any other currency raises rather than defaulting |
 | Address validation, multiple shipping options | **NOT_STARTED** | Flat-rate shipping with one free threshold |
 | Email / SMS / push **delivery** | **`EXTERNAL_SMTP_DELIVERY_PENDING`** | **[was: "Nothing dispatches them. No message has ever been sent"]** Superseded by Workstream B: a separate `notification-worker` container drains the outbox with claim leases and fencing. The **channel is `console`** — no external SMTP is configured, so no message has left this machine |
@@ -87,7 +89,19 @@ what that does and does not mean.
 
 ### 4.1 Not built — the fashion-intelligence platform
 
-Recorded here because `ADR-0002` proposes it and none of it exists.
+Recorded here because `ADR-0002` (**approved as revised**) describes it. **Phase 2 built
+the consumer platform's front end. None of the engines behind it exist.**
+
+> **What Phase 2 did build**, so the two are not confused: a token-driven design system on
+> the delivered Side A brand tokens, ~35 components, thirteen routes, desktop and mobile
+> navigation, Discover / Looks / Brands / Saved / My Style / For Brands, and the Dido
+> experience **shell**. See `docs/architecture/DEDUNET_CONSUMER_PLATFORM_UX.md`.
+>
+> Every surface that needs an engine it does not have says so on screen and is covered by a
+> test that it says so. `SavedService` reports *unavailable* rather than writing to
+> `localStorage` to look functional; "Looks selected for you" states that personalised
+> selection is not built rather than labelling fixture looks as a personal selection; and
+> Dido answers that it cannot style yet rather than scripting a recommendation.
 
 | Area | State |
 |---|---|
@@ -180,6 +194,20 @@ any LLM behaviour (there is no LLM).
 ids run to M79 because M56 and M57 were never used, so the highest id is not the count. Each
 removes one safety guard and requires its guarding test to fail. A guard whose removal nobody
 notices is not a guard.
+
+**Phase 2 invalidated the web half of the mobile acceptances.** The Android emulator and
+physical-iPhone acceptances passed against the pre-Phase-2 storefront. Phase 2 replaced
+every consumer surface on the web, so those results describe a build that no longer exists
+there and **both are `NOT TESTED` against the current web client**. The native Android
+binary is unaffected — no mobile file was changed — but its web-parity claims are not.
+Re-running them is outstanding.
+
+**One frontend defect is worth remembering rather than only fixing.** `ds.js` and `app.js`
+each declared a top-level `el`, which in classic scripts is a `SyntaxError` that stops the
+whole page. Every jsdom test passed and the page was blank: those harnesses `window.eval`
+each file into its own scope, and a browser sharing one top-level scope does not. It was
+found by opening the page. A jsdom suite verifies what a function renders, not that the
+page loads — see `evidence/phase-2/PHASE_2_CONSUMER_PLATFORM_EVIDENCE.md` §7.
 
 **Automated green is not human acceptance.** Local team acceptance and Android native
 preview acceptance were performed by a human and are recorded in `evidence/team-acceptance/`.
