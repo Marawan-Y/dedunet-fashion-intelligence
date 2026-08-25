@@ -18,6 +18,69 @@ not exercised), `BLOCKED`, `EXTERNALLY_PENDING`, `NOT_STARTED`.
 
 ---
 
+## 0. The consumer web client was replaced (2026-08-25)
+
+`ADR-0004` supersedes `ADR-0003`. The consumer web application is now React + TypeScript
+built by Vite (`apps/consumer`), replacing the classic-script client in `apps/web`.
+
+**Why**, stated plainly: the Phase 2 client failed human acceptance, and the successor audit
+reproduced two defects in a real browser at `9b63791`.
+
+| Defect | Evidence |
+|---|---|
+| 27 empty image wells across Home, Discover, Looks, Look detail, Brands and Brand detail | Zero `img` and zero `svg` inside every `.card__media` on those routes |
+| 17 class names rendered with no rule in any attached stylesheet | `index.html` stopped loading `styles.css`; `app.js` kept emitting its class names |
+
+The second is why Account rendered raw form controls with labels running into fields, and
+why the product page computed `.pdp__thumbs` to `display:block` and stood **4,766px** tall.
+**493 backend tests passed throughout.** No test looked at the relationship between what the
+document emits and what the stylesheets define, and none looked inside an image well.
+
+**Neither defect was caused by classic scripts.** A dropped stylesheet link and unported
+components would have happened in any framework. `ADR-0003` was superseded because its
+central premise — that no build stage could be added without changing the container's
+security posture — is **wrong**: a multi-stage Dockerfile builds in a discarded stage and
+the runtime root filesystem stays read-only. The migration was authorized on that basis, not
+on the defects.
+
+### What this invalidates
+
+| Item | State |
+|---|---|
+| Six jsdom harnesses driving `apps/web/*.js` | Still passing, still pointed at the **classic** client, which is still served. They do not cover `apps/consumer` |
+| 8 guard mutations over `apps/web/app.js` | Unchanged and still valid **for the classic client** |
+| Local team acceptance · Android preview · iPhone mobile web | Already `NOT TESTED` against the web surface since Phase 2. This does not change that; it adds a third client that has never been on a device |
+| `apps/admin` | **Not migrated.** Separate surface, own acceptance, no reported defect |
+
+### What replaced the missing coverage
+
+A Playwright suite (`apps/consumer/e2e`) that drives the built application in a real browser
+across Chromium, WebKit, Firefox and an iPhone viewport. It encodes the accepted commerce
+guarantees at the browser level — preview-mode purchase refusal, the refusal reason reaching
+the disabled control, mode disclosure, 401 stale-token clearing, signed-out orders redirect,
+and a sweep asserting no surface offers a purchase this deployment would refuse.
+
+It also carries a **CSS contract test**: it walks the DOM and every attached stylesheet and
+fails when a class is emitted with no rule behind it. The Phase 2 defect cannot recur
+silently. It caught a real one during the migration — react-router's `NavLink` appends its
+own `active` class, which this design system never defines.
+
+**The suite was run against the classic client first**, to record a baseline and prove the
+accepted guards were captured rather than asserted: **16 failed, 110 passed**, and the
+failures were precisely the defects above.
+
+### Not fixed, and deliberately
+
+**The brand display typeface does not render.** `fonts.json` names Bodoni Moda (display) and
+Manrope (body), both Google Fonts. No font file ships in the brand package and no webfont is
+linked, so both resolve to their declared fallbacks — Didot/Georgia and Arial/Helvetica.
+Adding a Google Fonts link would put an external network dependency and a CSP widening into
+a preview build that is served over a LAN, which is the topology the iPhone acceptance uses.
+**The typography renders in fallback faces and the brand face has never been seen.** This is
+a deferred decision, not an oversight.
+
+---
+
 ## 1. This is not a real business
 
 DEDUNET is a brand identity under development. **[was: "MERET is invented"]** — the brand was
