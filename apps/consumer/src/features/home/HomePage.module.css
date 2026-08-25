@@ -508,9 +508,14 @@
 
 .forBrandsMedia {
   position: relative;
-  min-height: 240px;
-  /* The scaled artwork below has to be CLIPPED. Without this it escaped its grid column
-     and ran across the copy panel beside it. */
+  /* A DEFINITE height at every width.
+   *
+   * `min-height` alone is not one: the image inside is `height: 100%`, which against an
+   * auto-height row resolves to auto and lets the 1080x1920 source set the row to ~693px
+   * on a phone. At that height `cover` has nothing to crop and the artwork's baked type
+   * came back into frame — the same defect as the stretched desktop column, arriving by a
+   * different route. An aspect-ratio makes the crop a property of the component. */
+  aspect-ratio: 4 / 3;
   overflow: hidden;
 }
 /* Plain cover, no transform.
