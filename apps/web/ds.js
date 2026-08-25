@@ -16,6 +16,16 @@
  * functions directly, which are what the accepted storefront behaviour is tested through.
  */
 
+/* IIFE. These files publish exactly one global each -- the namespace at the bottom.
+   Without this every helper here would also be a global, and `app.js` declaring
+   `const el = window.DS.el` would collide with this file's `function el`, which is a
+   SyntaxError that takes the entire page down. jsdom's per-file `window.eval` gave
+   each script its own scope and hid that; a browser loading real <script> tags does
+   not. One namespace per file, asserted by a test. */
+(function () {
+  "use strict";
+
+
 /* ------------------------------------------------------------------ element factory */
 
 /**
@@ -416,3 +426,4 @@ window.DS = {
   announce,
   STATUS_COPY,
 };
+})();

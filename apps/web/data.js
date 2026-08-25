@@ -17,6 +17,16 @@
  * When a real endpoint lands, its service swaps `FIXTURE` for `LIVE` here. No page changes.
  */
 
+/* IIFE. These files publish exactly one global each -- the namespace at the bottom.
+   Without this every helper here would also be a global, and `app.js` declaring
+   `const el = window.DS.el` would collide with this file's `function el`, which is a
+   SyntaxError that takes the entire page down. jsdom's per-file `window.eval` gave
+   each script its own scope and hid that; a browser loading real <script> tags does
+   not. One namespace per file, asserted by a test. */
+(function () {
+  "use strict";
+
+
 /* ------------------------------------------------------------------ provenance */
 
 const SOURCE = { LIVE: "live", FIXTURE: "fixture", UNAVAILABLE: "unavailable" };
@@ -355,3 +365,4 @@ window.DedunetData = {
   BRAND_CONSUMER_LABEL,
   LooksService, BrandsService, SavedService, StyleProfileService, DidoService,
 };
+})();

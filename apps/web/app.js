@@ -413,7 +413,10 @@ async function viewCatalog() {
   try {
     products = await api(`/api/v1/catalog/products?${query.toString()}`);
   } catch (error) {
-    return render(emptyState(`Could not load the collection. ${error.message}`));
+    /* Named failure rather than one sentence for every cause. §23: avoid a generic
+       message where meaningful context exists -- and the status IS the context. */
+    return render(el("div", { class: "ds-container ds-section" },
+      [window.DS.errorState(error, { onRetry: () => viewCatalog() })]));
   }
 
   const filters = el(
@@ -432,11 +435,11 @@ async function viewCatalog() {
     },
     [
       el("label", { class: "sr-only", for: "f-q", text: "Search products" }),
-      el("input", { id: "f-q", name: "q", type: "search", placeholder: "Search", value: params.get("q") || "" }),
+      el("input", { class: "input", id: "f-q", name: "q", type: "search", placeholder: "Search", value: params.get("q") || "" }),
       el("label", { class: "sr-only", for: "f-cat", text: "Category" }),
       el(
         "select",
-        { id: "f-cat", name: "category" },
+        { class: "select", id: "f-cat", name: "category" },
         ["", "tops", "bottoms", "outerwear", "accessories"].map((value) =>
           el("option", {
             value,
@@ -446,35 +449,60 @@ async function viewCatalog() {
         )
       ),
       el("label", { class: "sr-only", for: "f-sort", text: "Sort" }),
-      el("select", { id: "f-sort", name: "sort" }, [
+      el("select", { class: "select", id: "f-sort", name: "sort" }, [
         el("option", { value: "name", text: "Sort: name" }),
         el("option", { value: "price", text: "Sort: price", selected: params.get("sort") === "price" ? "selected" : null }),
       ]),
-      el("button", { class: "btn", type: "submit", text: "Apply" }),
+      el("button", { class: "btn btn--primary", type: "submit", text: "Apply" }),
     ]
   );
 
+  const head = el("div", { class: "ds-container", "data-testid": "shop-head" }, [
+    el("h1", { text: "Shop" }),
+    /* The shop is a destination inside the platform, not its identity. The lede says so
+       rather than leaving the page reading as the product. */
+    el("p", { class: "ds-lede",
+              text: "Every piece DEDUNET can show you, with the brand it comes from. " +
+                    "If you would rather be styled than browse, start with Dido." }),
+  ]);
+
   if (!products.length) {
-    return render(el("h1", { text: "Collection" }), filters, emptyState("No products match that search.", "Clear filters", "#/catalog"));
+    return render(head, el("div", { class: "ds-container" }, [filters]),
+      emptyState("No products match that search.", "Clear filters", "#/shop"));
   }
 
   const grid = el(
     "div",
-    { class: "grid" },
+    { class: "ds-grid", "data-testid": "shop-grid" },
     products.map((product) => {
       const cheapest = Math.min(...product.variants.map((v) => v.price_minor_units));
       const inStock = product.variants.some((v) => v.available > 0);
-      return el("a", { class: "card", href: `#/product/${product.slug}` }, [
+      /* §12 requires clear brand attribution. Every product in this catalogue is
+         DEDUNET's own; when the Brand entity lands in Phase 4 this reads `product.brand`
+         instead, and the card does not change shape. */
+      const brandName = (window.DEDUNET_BRAND && window.DEDUNET_BRAND.name) || "DEDUNET";
+      return el("article", { class: "card", "data-testid": "product-card" }, [
         cardMedia(product),
-        el("h2", { class: "card__title", text: product.name }),
-        el("p", { class: "card__meta", text: product.collection || product.category }),
-        el("p", { class: "card__price", text: money(cheapest, product.currency) }),
-        el("p", { class: inStock ? "tag tag--ok" : "tag tag--out", text: inStock ? "In stock" : "Sold out" }),
+        el("div", { class: "card__body" }, [
+          el("p", { class: "detail__brand", text: brandName }),
+          el("h2", { class: "card__title" }, [
+            el("a", { class: "card__link", href: `#/product/${product.slug}`, text: product.name }),
+          ]),
+          el("p", { class: "card__meta", text: product.collection || product.category }),
+          el("p", { class: "price price--sm", text: money(cheapest, product.currency) }),
+          /* Availability, not purchasability. A product can be in stock and still not be
+             buyable -- the mode and the product's own state decide that, and the product
+             page is where that decision is stated. */
+          el("p", {
+            class: inStock ? "availability availability--in" : "availability availability--out",
+            text: inStock ? "In stock" : "Sold out",
+          }),
+        ]),
       ]);
     })
   );
 
-  render(el("h1", { text: "Collection" }), filters, grid);
+  render(head, el("div", { class: "ds-container" }, [filters, grid]));
 }
 
 async function viewProduct(slug) {
@@ -484,11 +512,14 @@ async function viewProduct(slug) {
     product = await api(`/api/v1/catalog/products/${encodeURIComponent(slug)}`);
   } catch (error) {
     return render(
-      emptyState(
-        error.status === 404 ? "That product is not available." : error.message,
-        "Back to collection",
-        "#/catalog"
-      )
+      el("div", { class: "ds-container ds-section" }, [
+        window.DS.errorState(
+          error.status === 404
+            ? { status: 404, message: "That product is not available." }
+            : error
+        ),
+        el("p", { class: "ds-row" }, [window.DS.linkButton("Back to shop", "#/shop")]),
+      ])
     );
   }
 
@@ -560,30 +591,59 @@ async function viewProduct(slug) {
     },
   });
 
+  const brandName = (window.DEDUNET_BRAND && window.DEDUNET_BRAND.name) || "DEDUNET";
+
+  /* Related looks: the styling context that makes this a fashion-intelligence platform
+     rather than a catalogue. Fixture-sourced and badged as such, and matched on the
+     product's stable external id rather than on its name -- a name is copy and copy
+     changes, an external product id is an identifier. */
+  const relatedLooks = (await DATA.LooksService.list()).filter((look) =>
+    look.items.some((item) => item.external_product_id === product.external_product_id)
+  );
+
   render(
-    el("nav", { class: "crumbs" }, [el("a", { href: "#/catalog", text: "← Collection" })]),
-    evidenceBanner(product),
-    el("div", { class: "pdp" }, [
-      productGallery(product) ||
-        el("div", { class: "pdp__media", "aria-hidden": "true", text: product.name.slice(0, 1) }),
-      el("div", { class: "pdp__info" }, [
-        el("h1", { text: product.name }),
-        price,
-        el("p", { text: product.description }),
-        el("h2", { class: "h6", text: "Size" }),
-        sizes,
-        stock,
-        addButton,
-        refusal
-          ? el("p", { class: "muted", id: "purchase-refusal", text: refusalText(refusal) })
-          : null,
-        el("dl", { class: "specs" }, specRows(product)),
-        el("p", {
-          class: "disclaimer",
-          text: disclaimerFor(product),
-        }),
+    el("div", { class: "ds-container ds-section" }, [
+      el("nav", { class: "crumbs", "aria-label": "Breadcrumb" },
+        [el("a", { href: "#/shop", text: "← Shop" })]),
+      evidenceBanner(product),
+      el("div", { class: "detail" }, [
+        el("div", { class: "detail__media" }, [
+          productGallery(product) ||
+            el("div", { class: "card__media", "aria-hidden": "true", text: product.name.slice(0, 1) }),
+        ]),
+        el("div", { class: "detail__info" }, [
+          el("a", { class: "detail__brand", href: "#/brand/dedunet", text: brandName }),
+          el("h1", { class: "detail__title", text: product.name }),
+          price,
+          el("p", { text: product.description }),
+          el("h2", { class: "ds-eyebrow", text: "Size" }),
+          sizes,
+          stock,
+          addButton,
+          refusal
+            ? el("p", { class: "muted", id: "purchase-refusal", text: refusalText(refusal) })
+            : null,
+          window.DS.button("Save", {
+            disabled: !DATA.SavedService.canSave,
+            testid: "product-save",
+            describedBy: "product-save-note",
+          }),
+          el("p", { class: "ds-subtle", id: "product-save-note",
+                    text: "Saving arrives with the styling platform phase." }),
+          el("h2", { class: "ds-eyebrow", text: "Details" }),
+          el("dl", { class: "specs" }, specRows(product)),
+          el("p", {
+            class: "disclaimer",
+            text: disclaimerFor(product),
+          }),
+        ]),
       ]),
-    ])
+    ]),
+    relatedLooks.length
+      ? section("Looks with this piece",
+          el("div", { class: "ds-grid" }, relatedLooks.map(lookCard)),
+          { fixture: true, testid: "related-looks" })
+      : null
   );
 }
 
@@ -979,10 +1039,31 @@ function requireSignIn() {
 
 function viewAccount() {
   if (state.token) {
+    /* Account is the hub for everything that is the customer's own. The sections that do
+       not exist yet are LINKED and say so on arrival, rather than being hidden -- a
+       customer should be able to see where their style data will live before it exists,
+       and where to go to delete it once it does. */
+    const ACCOUNT_LINKS = [
+      { href: "#/my-style", name: "My Style", hint: "Style DNA, sizes, colours, fits" },
+      { href: "#/saved", name: "Saved", hint: "Looks, products and brands you keep" },
+      { href: "#/orders", name: "Orders", hint: "What you have ordered" },
+      { href: "#/account", name: "Privacy", hint: "Export and delete your data" },
+      { href: "#/account", name: "Notifications", hint: "What DEDUNET may send you" },
+      { href: "#/account", name: "Preferences", hint: "Language, currency, motion" },
+    ];
+
     return render(
+      el("div", { class: "ds-container ds-section" }, [
       el("h1", { text: "Account" }),
       el("p", { text: `Signed in as ${state.role}.` }),
-      el("p", {}, [el("a", { href: "#/orders", text: "View my orders" })]),
+      el("nav", { "aria-label": "Account sections" }, [
+        el("div", { class: "ds-grid ds-grid--tight", "data-testid": "account-sections" },
+          ACCOUNT_LINKS.map((link) =>
+            el("a", { class: "occasion", href: link.href, "data-testid": "account-link" }, [
+              el("span", { class: "occasion__name", text: link.name }),
+              el("span", { class: "occasion__hint", text: link.hint }),
+            ]))),
+      ]),
       el("button", {
         class: "btn",
         type: "button",
@@ -1008,10 +1089,13 @@ function viewAccount() {
         // means to be signed out" is how one of them ends up forgetting a key.
         onclick: () => {
           clearCustomerAuth();
-          location.hash = "#/catalog";
+          /* Home, not the catalogue. Signing out returns you to the platform's front
+             door, which is the styling experience. */
+          location.hash = "#/";
           route();
         },
-      })
+      }),
+      ])
     );
   }
 
