@@ -2,11 +2,19 @@
 
 | Field | Value |
 |---|---|
-| Status | **DECIDED** — implemented in Phase 2 |
+| Status | **SUPERSEDED by `ADR-0004`** (2026-08-25) — was DECIDED, implemented in Phase 2 |
+| Superseded by | `ADR-0004` — React + TypeScript on a build stage |
 | Date | 2026-08-25 |
 | Owner | Technical lead (successor agent) |
 | Supersedes | none |
 | Related | `ADR-0002` §2.0, `DEDUNET_DESIGN_SYSTEM.md`, `DEDUNET_CONSUMER_PLATFORM_UX.md` |
+
+> **SUPERSEDED.** `ADR-0004` replaces this decision. The reasoning below is retained
+> because it records real constraints, but **its central premise is wrong**: it claims no
+> build stage can be added without changing the container's security posture. A
+> multi-stage Dockerfile builds in one stage and copies static output into the nginx
+> stage — the runtime root filesystem stays read-only. The constraint is real about
+> *runtime writes* and false about *build stages*.
 
 ## Context
 
