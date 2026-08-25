@@ -79,7 +79,9 @@ window.FASHION_POC_API_BASE = "http://api.test:18080";
 window.DEDUNET_BRAND = { name: "DEDUNET", assets: {} };
 window.fetch = () => Promise.reject(new Error("network disabled in this test"));
 
-for (const file of ["media-url.js", "app.js"]) {
+/* Dependency order, mirroring index.html. app.js consumes the design system and
+     the data layer at load, so they must be evaluated first. */
+  for (const file of ["media-url.js", "ds.js", "data.js", "app.js"]) {
   window.eval(fs.readFileSync(path.join(WEB, file), "utf8"));
 }
 

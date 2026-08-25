@@ -104,7 +104,9 @@ function boot({ token = "", role = "", cart = "", responder }) {
   if (role) window.localStorage.setItem("dedunet_role", role);
   if (cart) window.localStorage.setItem("dedunet_cart", cart);
   window.fetch = responder;
-  for (const file of ["media-url.js", "app.js"]) {
+  /* Dependency order, mirroring index.html. app.js consumes the design system and
+     the data layer at load, so they must be evaluated first. */
+  for (const file of ["media-url.js", "ds.js", "data.js", "app.js"]) {
     window.eval(fs.readFileSync(path.join(WEB, file), "utf8"));
   }
   return window;

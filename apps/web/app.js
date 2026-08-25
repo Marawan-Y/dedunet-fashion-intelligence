@@ -1,5 +1,5 @@
 /**
- * DEDUNET storefront — prototype build.
+ * DEDUNET consumer platform — routes and views.
  *
  * SECURITY (closes SB-RISK-003, stored XSS)
  * -----------------------------------------
@@ -28,8 +28,14 @@ const assetUrl = (path) => window.DedunetAssets.assetUrl(path, API_BASE);
    the API base is known. Runs immediately: these elements are in the initial HTML. */
 window.DedunetAssets.hydrateAssetElements(document, API_BASE);
 
-const MINOR_UNIT_EXPONENTS = { EUR: 2 };
-const CURRENCY_SYMBOLS = { EUR: "€" };
+/* Primitives come from the design system so the platform has ONE element factory and ONE
+   money formatter. Aliased rather than rewritten at each site, so the several dozen call
+   sites below are untouched and this refactor cannot quietly change what any of them
+   renders. `money` moved across verbatim, degradation path included. */
+const el = window.DS.el;
+const money = window.DS.money;
+const icon = window.DS.icon;
+const DATA = window.DedunetData;
 
 /* One-time migration of browser storage keys from the legacy brand prefix.
    Renaming a key without moving its value signs every existing session out and silently
@@ -64,40 +70,6 @@ const state = {
    else, so a payload naming anything else -- including PUBLIC_COMMERCE_MODE -- describes a
    deployment that cannot say what it is, and leaves `state.commerceMode` null. */
 const KNOWN_MODES = ["BRAND_PREVIEW_MODE", "COMMERCE_TEST_MODE"];
-
-/* ----------------------------------------------------------------- formatting */
-
-function money(minorUnits, currency = "EUR") {
-  const exponent = MINOR_UNIT_EXPONENTS[currency];
-  if (exponent === undefined || !Number.isInteger(minorUnits)) {
-    return `${minorUnits} ${currency}`;
-  }
-  const sign = minorUnits < 0 ? "-" : "";
-  const digits = String(Math.abs(minorUnits)).padStart(exponent + 1, "0");
-  const major = digits.slice(0, digits.length - exponent);
-  const minor = digits.slice(digits.length - exponent);
-  const symbol = CURRENCY_SYMBOLS[currency] ?? `${currency} `;
-  return `${sign}${symbol}${major}.${minor}`;
-}
-
-/* ------------------------------------------------------------------ DOM utils */
-
-function el(tag, attrs = {}, children = []) {
-  const node = document.createElement(tag);
-  for (const [key, value] of Object.entries(attrs)) {
-    if (value === null || value === undefined) continue;
-    if (key === "class") node.className = value;
-    else if (key === "text") node.textContent = value; // never innerHTML
-    else if (key.startsWith("on") && typeof value === "function") {
-      node.addEventListener(key.slice(2), value);
-    } else node.setAttribute(key, String(value));
-  }
-  for (const child of [].concat(children)) {
-    if (child === null || child === undefined) continue;
-    node.appendChild(typeof child === "string" ? document.createTextNode(child) : child);
-  }
-  return node;
-}
 
 /* ---------------------------------------------------------------- product media
  *
@@ -404,15 +376,20 @@ function render(...nodes) {
   window.scrollTo(0, 0);
 }
 
-function loading() {
-  render(el("p", { class: "muted", text: "Loading…" }));
+/* A skeleton rather than the word "Loading…". It reserves the grid the content will
+   occupy, so arriving data does not shift the page under a reader's eyes -- and on a slow
+   phone connection that shift is the difference between tapping a card and tapping the one
+   that replaced it. */
+function loading({ skeleton = true, count = 6 } = {}) {
+  render(skeleton
+    ? window.DS.skeletonGrid(count)
+    : el("p", { class: "muted", role: "status", text: "Loading…" }));
 }
 
+/* Delegates to the design system's state component, keeping the three-argument shape
+   every existing caller already uses. */
 function emptyState(message, actionLabel, actionHref) {
-  return el("div", { class: "empty" }, [
-    el("p", { class: "muted", text: message }),
-    actionLabel ? el("a", { class: "btn", href: actionHref, text: actionLabel }) : null,
-  ]);
+  return window.DS.emptyState(message, actionLabel, actionHref);
 }
 
 function totalRow(label, minorUnits, strong = false) {
@@ -1158,11 +1135,541 @@ function viewStylist() {
   render(form, output);
 }
 
+
+/* ===================================================================== PLATFORM VIEWS
+ *
+ * DEDUNET is a personal fashion intelligence platform. The catalogue supports the styling
+ * experience; it is no longer the product's identity. Every view below is built from the
+ * design system, and every module that renders demonstration content carries the fixture
+ * badge -- §29 requires that fixtures can never be mistaken for verified data.
+ */
+
+/** A section wrapper with a heading and an optional "see all" link. */
+function section(title, children, { href = null, linkLabel = "See all", eyebrow = null,
+                                    fixture = false, testid = null } = {}) {
+  return el("section", { class: "ds-section", "data-testid": testid }, [
+    el("div", { class: "ds-container" }, [
+      el("div", { class: "ds-section__head" }, [
+        el("div", {}, [
+          eyebrow ? el("p", { class: "ds-eyebrow", text: eyebrow }) : null,
+          el("h2", {}, [title, fixture ? " " : null, fixture ? window.DS.fixtureBadge() : null]),
+        ]),
+        href ? el("a", { class: "link-btn", href, text: linkLabel }) : null,
+      ]),
+      ...[].concat(children),
+    ]),
+  ]);
+}
+
+/** A Look card. Actions it cannot yet perform are disabled, never faked. */
+function lookCard(look) {
+  const canSave = DATA.SavedService.canSave;
+  return el("article", { class: "card", "data-testid": "look-card" }, [
+    el("div", { class: "card__media card__media--wide", "aria-hidden": "true" },
+      [el("span", { class: "ds-eyebrow", text: look.occasion })]),
+    el("div", { class: "card__body" }, [
+      el("h3", { class: "card__title" }, [
+        el("a", { class: "card__link", href: `#/look/${look.slug}`, text: look.title }),
+      ]),
+      el("p", { class: "card__meta", text: `${look.occasion} · ${look.style}` }),
+      el("p", { class: "price price--sm", text: money(look.total_minor_units, look.currency) }),
+    ]),
+    el("div", { class: "card__foot" }, [
+      window.DS.button("Save", {
+        size: "sm",
+        disabled: !canSave,
+        testid: "look-save",
+        describedBy: canSave ? null : "saved-unavailable",
+      }),
+      window.DS.linkButton("Ask Dido", `#/dido?look=${look.slug}`, { size: "sm" }),
+    ]),
+  ]);
+}
+
+/** A Brand card. Consumer language only -- the ownership type never reaches the page. */
+function brandCard(brand) {
+  return el("article", { class: "card", "data-testid": "brand-card" }, [
+    el("div", { class: "card__media card__media--wide", "aria-hidden": "true" },
+      [el("span", { class: "ds-eyebrow", text: brand.name.slice(0, 1) })]),
+    el("div", { class: "card__body" }, [
+      el("h3", { class: "card__title" }, [
+        el("a", { class: "card__link", href: `#/brand/${brand.slug}`, text: brand.name }),
+      ]),
+      el("p", { class: "card__meta", text: DATA.BrandsService.consumerLabel(brand) }),
+      brand.first_party ? null : window.DS.fixtureBadge("Shape demo"),
+    ]),
+  ]);
+}
+
+/** A capability that does not exist yet, said plainly. Never a fake result. */
+function unavailableState(payload, { testid = null } = {}) {
+  return el("div", { class: "state", "data-testid": testid || "unavailable-state" }, [
+    el("p", { class: "state__title", text: `${payload.capability} is not built yet` }),
+    el("p", { class: "state__body",
+              text: `This arrives in ${payload.arrivesIn}. DEDUNET will not show you a ` +
+                    `result it cannot actually produce.` }),
+  ]);
+}
+
+/* ------------------------------------------------------------------------ home */
+
+async function viewHome() {
+  const brand = window.DEDUNET_BRAND || { name: "DEDUNET" };
+
+  const hero = el("section", { class: "hero", "data-testid": "hero" }, [
+    el("div", { class: "hero__art", "aria-hidden": "true", "data-hero-art": "true" }),
+    el("div", { class: "hero__inner" }, [
+      el("h1", { class: "hero__wordmark", text: brand.name }),
+      el("p", { class: "hero__promise", text: "Personal fashion intelligence." }),
+      el("p", { class: "hero__body",
+                text: "DEDUNET helps you decide what to wear, then helps you find it. " +
+                      "Tell Dido where you're going and it builds complete looks — " +
+                      "explained, priced, and traceable to the brands that make them." }),
+      el("div", { class: "hero__ctas" }, [
+        window.DS.linkButton("Style me with Dido", "#/dido", { variant: "accent", testid: "cta-dido" }),
+        window.DS.linkButton("Discover looks", "#/discover", { testid: "cta-discover" }),
+      ]),
+    ]),
+  ]);
+
+  const occasions = section(
+    "What are you dressing for?",
+    el("div", { class: "occasions", "data-testid": "occasions" },
+      DATA.OCCASIONS.map((o) =>
+        el("a", { class: "occasion", href: `#/dido?occasion=${o.slug}`, "data-testid": "occasion-card" }, [
+          el("span", { class: "occasion__name", text: o.name }),
+          el("span", { class: "occasion__hint", text: o.hint }),
+        ]))),
+    { testid: "occasion-picker" }
+  );
+
+  const [trending, editors, under100, under200, brands, forYou] = await Promise.all([
+    DATA.LooksService.list({ category: "trending" }),
+    DATA.LooksService.list({ category: "editors" }),
+    DATA.LooksService.list({ maxMinorUnits: 10000 }),
+    DATA.LooksService.list({ maxMinorUnits: 20000 }),
+    DATA.BrandsService.list(),
+    DATA.LooksService.forYou(),
+  ]);
+
+  const rail = (looks) => el("div", { class: "ds-rail" }, looks.map(lookCard));
+
+  render(
+    hero,
+    occasions,
+    /* "Selected for you" would be a personalisation claim, and no engine exists to make it
+       true. §6 forbids that, so the module states what it is instead of pretending. */
+    section("Looks selected for you", unavailableState(forYou, { testid: "for-you" }),
+            { eyebrow: "Personalised", testid: "module-for-you" }),
+    section("Trending looks", rail(trending), { href: "#/discover/trending", fixture: true, testid: "module-trending" }),
+    section("Editor's picks", rail(editors), { href: "#/discover/editors", fixture: true, testid: "module-editors" }),
+    section("Looks under €100", rail(under100), { href: "#/looks", fixture: true, testid: "module-under-100" }),
+    section("Looks under €200", rail(under200), { href: "#/looks", fixture: true, testid: "module-under-200" }),
+    section("Discover brands", el("div", { class: "ds-grid" }, brands.map(brandCard)),
+            { href: "#/brands", testid: "module-brands" }),
+    section("Meet Dido", el("div", { class: "dido-stage" }, [
+      window.DS.didoFigure("idle"),
+      el("div", {}, [
+        el("p", { class: "ds-lede",
+                  text: "Dido is DEDUNET's stylist. It asks what you're dressing for, " +
+                        "what you already own and what you'd rather avoid — then builds " +
+                        "looks it can explain." }),
+        window.DS.linkButton("Start with Dido", "#/dido", { variant: "primary" }),
+      ]),
+    ]), { testid: "module-dido" }),
+    section("For brands", el("div", {}, [
+      el("p", { class: "ds-lede",
+                text: "Reach customers through styling intelligence and fashion discovery, " +
+                      "whether or not you already sell online." }),
+      window.DS.linkButton("DEDUNET for Brands", "#/for-brands"),
+    ]), { testid: "module-for-brands" })
+  );
+}
+
+/* -------------------------------------------------------------------- discover */
+
+async function viewDiscover(category = null) {
+  loading();
+  const looks = await DATA.LooksService.list({ category });
+  const known = category ? DATA.DISCOVER_CATEGORIES[category] : null;
+
+  if (category && !known) {
+    return render(el("div", { class: "ds-container ds-section" },
+      [window.DS.errorState({ status: 404 })]));
+  }
+
+  const groups = DATA.DISCOVER_GROUPS.map((group) =>
+    el("div", { class: "ds-stack" }, [
+      el("p", { class: "ds-eyebrow", text: group.title }),
+      el("div", { class: "chip-row" }, group.slugs.map((slug) =>
+        window.DS.chip(DATA.DISCOVER_CATEGORIES[slug].name, {
+          href: `#/discover/${slug}`,
+          pressed: slug === category,
+          testid: "discover-chip",
+        }))),
+    ]));
+
+  render(
+    el("div", { class: "ds-container ds-section" }, [
+      el("h1", { text: known ? known.name : "Discover" }),
+      el("p", { class: "ds-lede",
+                text: known ? known.blurb
+                            : "Complete looks, grouped by the moment you're dressing for, " +
+                              "the season and the way you like to dress." }),
+      el("div", { class: "ds-stack", "data-testid": "discover-filters" }, groups),
+    ]),
+    section(known ? known.name : "All looks",
+      looks.length
+        ? el("div", { class: "ds-grid" }, looks.map(lookCard))
+        : emptyState("No looks in this category yet.", "See all looks", "#/discover"),
+      { fixture: looks.length > 0, testid: "discover-results" })
+  );
+}
+
+/* ----------------------------------------------------------------------- looks */
+
+async function viewLooks() {
+  loading();
+  const looks = await DATA.LooksService.list();
+  render(
+    el("div", { class: "ds-container ds-section" }, [
+      el("h1", {}, ["Looks ", window.DS.fixtureBadge()]),
+      el("p", { class: "ds-lede",
+                text: "A look is a complete outfit with its reasoning attached — what it's " +
+                      "for, why these pieces, and what it costs." }),
+    ]),
+    section("All looks", el("div", { class: "ds-grid" }, looks.map(lookCard)),
+            { testid: "looks-list" })
+  );
+}
+
+async function viewLook(slug) {
+  loading({ skeleton: false });
+  const look = await DATA.LooksService.get(slug);
+  if (!look) {
+    return render(el("div", { class: "ds-container ds-section" },
+      [window.DS.errorState({ status: 404, message: "That look does not exist." })]));
+  }
+
+  const items = el("ul", { class: "look-items", "data-testid": "look-items" },
+    look.items.map((item) =>
+      el("li", { class: "look-item" }, [
+        el("div", { class: "look-item__media", "aria-hidden": "true" }),
+        el("div", {}, [
+          el("p", { class: "look-item__slot", text: item.slot }),
+          el("p", { class: "look-item__name", text: item.name }),
+          el("p", { class: "card__meta", text: item.brand }),
+        ]),
+        el("p", { class: "price price--sm", text: money(item.price_minor_units, look.currency) }),
+      ])));
+
+  render(
+    el("div", { class: "ds-container ds-section" }, [
+      el("nav", { class: "crumbs", "aria-label": "Breadcrumb" },
+        [el("a", { href: "#/looks", text: "← Looks" })]),
+      el("div", { class: "detail" }, [
+        el("div", { class: "detail__media" }, [
+          el("div", { class: "card__media card__media--wide", "aria-hidden": "true" }),
+        ]),
+        el("div", { class: "detail__info" }, [
+          window.DS.fixtureBadge("Demonstration look"),
+          el("p", { class: "detail__brand", text: look.occasion }),
+          el("h1", { class: "detail__title", text: look.title }),
+          el("p", { class: "card__meta", text: look.style }),
+          el("p", { text: look.rationale }),
+          el("h2", { class: "ds-eyebrow", text: "The pieces" }),
+          items,
+          el("div", { class: "look-total" }, [
+            el("span", { class: "ds-eyebrow", text: "Total" }),
+            el("span", { class: "price", text: money(look.total_minor_units, look.currency) }),
+          ]),
+          el("div", { class: "ds-row" }, [
+            window.DS.button("Save look", {
+              disabled: !DATA.SavedService.canSave,
+              describedBy: "saved-unavailable",
+              testid: "look-save",
+            }),
+            window.DS.linkButton("Ask Dido about this", `#/dido?look=${look.slug}`),
+          ]),
+          el("p", {
+            class: "ds-subtle", id: "saved-unavailable",
+            text: "Saving arrives with the styling platform phase. Nothing is stored yet.",
+          }),
+          el("p", { class: "disclaimer",
+                    text: "Demonstration look. Assembled to exercise the platform, not " +
+                          "produced by a recommendation engine, and not personalised." }),
+        ]),
+      ]),
+    ])
+  );
+}
+
+/* ---------------------------------------------------------------------- brands */
+
+async function viewBrands() {
+  loading();
+  const brands = await DATA.BrandsService.list();
+  render(
+    el("div", { class: "ds-container ds-section" }, [
+      el("h1", { text: "Brands" }),
+      el("p", { class: "ds-lede",
+                text: "DEDUNET's own capsule, partner brands we host, and brands we list " +
+                      "and link to. Only DEDUNET is live today." }),
+    ]),
+    section("All brands", el("div", { class: "ds-grid" }, brands.map(brandCard)),
+            { testid: "brands-list" })
+  );
+}
+
+async function viewBrand(slug) {
+  loading({ skeleton: false });
+  const brand = await DATA.BrandsService.get(slug);
+  if (!brand) {
+    return render(el("div", { class: "ds-container ds-section" },
+      [window.DS.errorState({ status: 404, message: "That brand does not exist." })]));
+  }
+
+  /* Commerce language is derived from the route, never from the ownership type. §11: the
+     technical terms must not reach a consumer, and §21 of the architecture: a route is
+     where the money goes, which is a different question from who owns the data. */
+  const ROUTE_COPY = {
+    HOSTED: "Available on DEDUNET",
+    EXTERNAL: "Purchase on the brand's own site",
+    REFERRAL: "View at the brand",
+    NON_PURCHASABLE: "Not available to buy",
+  };
+
+  render(
+    el("div", { class: "ds-container ds-section" }, [
+      el("nav", { class: "crumbs", "aria-label": "Breadcrumb" },
+        [el("a", { href: "#/brands", text: "← Brands" })]),
+      el("div", { class: "detail" }, [
+        el("div", { class: "detail__media" },
+          [el("div", { class: "card__media card__media--wide", "aria-hidden": "true" })]),
+        el("div", { class: "detail__info" }, [
+          brand.first_party ? null : window.DS.fixtureBadge("Shape demo"),
+          el("p", { class: "detail__brand", text: DATA.BrandsService.consumerLabel(brand) }),
+          el("h1", { class: "detail__title", text: brand.name }),
+          el("p", { text: brand.story }),
+          el("p", { class: "availability availability--preview",
+                    "data-testid": "brand-commerce",
+                    text: ROUTE_COPY[brand.commerce_route] || "Not available to buy" }),
+          brand.product_count
+            ? window.DS.linkButton(`See ${brand.product_count} pieces`, "#/shop")
+            : el("p", { class: "ds-subtle", text: "No catalogue on DEDUNET yet." }),
+          el("p", { class: "disclaimer",
+                    text: brand.first_party
+                      ? "DEDUNET's own prototype capsule. Material and origin fields are " +
+                        "stated intentions, not substantiated claims."
+                      : "Placeholder illustrating how this kind of brand would appear. " +
+                        "No such brand exists and none has been approached." }),
+        ]),
+      ]),
+    ])
+  );
+}
+
+/* ----------------------------------------------------------------------- saved */
+
+async function viewSaved() {
+  loading({ skeleton: false });
+  const [looks, products, brands] = await Promise.all([
+    DATA.SavedService.looks(),
+    DATA.SavedService.products(),
+    DATA.SavedService.brands(),
+  ]);
+  render(
+    el("div", { class: "ds-container ds-section" }, [
+      el("h1", { text: "Saved" }),
+      el("p", { class: "ds-lede",
+                text: "Looks, products and brands you keep. Nothing is stored yet — " +
+                      "persistence arrives with the styling platform." }),
+      el("div", { class: "ds-stack" }, [
+        el("section", {}, [el("h2", { text: "Saved looks" }),
+                           unavailableState(looks, { testid: "saved-looks" })]),
+        el("section", {}, [el("h2", { text: "Saved products" }),
+                           unavailableState(products, { testid: "saved-products" })]),
+        el("section", {}, [el("h2", { text: "Saved brands" }),
+                           unavailableState(brands, { testid: "saved-brands" })]),
+      ]),
+    ])
+  );
+}
+
+/* -------------------------------------------------------------------- my style */
+
+async function viewMyStyle() {
+  loading({ skeleton: false });
+  const profile = await DATA.StyleProfileService.get();
+  render(
+    el("div", { class: "ds-container ds-section" }, [
+      el("nav", { class: "crumbs", "aria-label": "Breadcrumb" },
+        [el("a", { href: "#/account", text: "← Account" })]),
+      el("h1", { text: "My Style" }),
+      el("p", { class: "ds-lede",
+                text: "Your Style DNA is what lets Dido recommend for you rather than at " +
+                      "you. You will be able to see, edit and delete every part of it." }),
+      unavailableState(profile, { testid: "style-profile" }),
+      el("div", { class: "ds-grid ds-grid--tight", "data-testid": "style-sections" },
+        DATA.StyleProfileService.sections.map((s) =>
+          el("article", { class: "card" }, [
+            el("div", { class: "card__body" }, [
+              el("h2", { class: "card__title", text: s.name }),
+              el("p", { class: "card__meta", text: s.hint }),
+              el("p", { class: "ds-subtle", text: "Not collected yet" }),
+            ]),
+          ]))),
+      el("p", { class: "disclaimer",
+                text: "DEDUNET stores nothing about your style today. When it does, this " +
+                      "page is where you view, edit, delete and switch it off." }),
+    ])
+  );
+}
+
+/* --------------------------------------------------------------------- dido */
+
+/**
+ * The Dido experience shell.
+ *
+ * Phase 2 builds the SURFACE: character, states, conversation layout, message and option
+ * components, accessibility and reduced motion. There is no orchestration behind it, and
+ * the shell says so rather than scripting a fake exchange. §5 is explicit: prefer
+ * functional navigation over fake AI.
+ */
+async function viewDido() {
+  const params = new URLSearchParams((location.hash.split("?")[1] || ""));
+  const session = await DATA.DidoService.openSession(params.get("occasion"));
+
+  const figure = window.DS.didoFigure("asking");
+  const animator = window.DS.didoAnimator(figure);
+
+  const log = el("div", { class: "dido-log", "data-testid": "dido-log" }, [
+    window.DS.didoMessage(session.opening),
+    window.DS.didoMessage(
+      "I can't build looks yet — my styling engine arrives in a later platform phase. " +
+      "Until then, browse what the editorial desk has put together."
+    ),
+  ]);
+
+  /* Choosing an occasion moves the character through its states. This is the animation
+     seam being exercised, not a simulated answer: no recommendation is produced. */
+  const options = el("div", { class: "dido-options", "data-testid": "dido-options" },
+    DATA.OCCASIONS.slice(0, 6).map((o) =>
+      window.DS.didoOption(o.name, {
+        hint: o.hint,
+        testid: "dido-option",
+        onclick: () => {
+          log.appendChild(window.DS.didoMessage(o.name, { from: "user" }));
+          animator.setState("thinking");
+          const thinking = window.DS.didoThinking();
+          log.appendChild(thinking);
+          window.DS.announce("Dido is thinking");
+          setTimeout(() => {
+            thinking.remove();
+            animator.setState("presenting");
+            log.appendChild(window.DS.didoMessage(
+              `${o.name}. Noted — but I can't style it yet. ` +
+              `Here is what the editorial desk has for ${o.name.toLowerCase()}.`
+            ));
+            log.appendChild(el("p", { class: "ds-row" },
+              [window.DS.linkButton(`See ${o.name} looks`, "#/discover", { size: "sm" })]));
+            window.DS.announce(`Dido replied about ${o.name}`);
+          }, 600);
+        },
+      })));
+
+  render(
+    el("div", { class: "ds-container ds-section" }, [
+      el("h1", { class: "sr-only", text: "Style with Dido" }),
+      el("div", { class: "dido-stage" }, [
+        el("div", {}, [
+          figure,
+          el("p", { class: "ds-eyebrow", style: "text-align:center;margin-top:1rem", text: "Dido Net" }),
+        ]),
+        el("div", { class: "dido-convo", "data-testid": "dido-convo" }, [
+          log,
+          el("h2", { class: "ds-eyebrow", text: "Where are we going?" }),
+          options,
+          el("p", { class: "ds-subtle", "data-testid": "dido-disclosure",
+                    text: "Styling intelligence arrives in a later platform phase. " +
+                          "Dido will not invent a recommendation it cannot justify." }),
+        ]),
+      ]),
+    ])
+  );
+}
+
+/* ----------------------------------------------------------------- for brands */
+
+function viewForBrands() {
+  const available = [
+    "A hosted brand page on dedunet.com",
+    "Your catalogue, media and story presented editorially",
+    "Discovery through looks and occasions",
+  ];
+  const later = [
+    "Recommendation exposure through Dido",
+    "Connected catalogue sync from Shopify, WooCommerce or a feed",
+    "Hosted checkout and order routing",
+    "Analytics on impressions, clicks and conversion",
+    "Subscription plans and billing",
+  ];
+
+  render(
+    el("div", { class: "ds-container ds-section" }, [
+      el("p", { class: "ds-eyebrow", text: "DEDUNET for Brands" }),
+      el("h1", { text: "Reach customers through styling intelligence." }),
+      el("p", { class: "ds-lede",
+                text: "People come to DEDUNET to decide what to wear. Brands appear at the " +
+                      "moment that decision is being made — inside a complete look, with " +
+                      "the reasoning attached." }),
+      el("div", { class: "pitch", "data-testid": "for-brands-pitch" }, [
+        el("div", { class: "pitch__item" }, [
+          el("h3", { text: "If you already sell online" }),
+          el("p", { text: "Connect your catalogue. DEDUNET handles discovery and styling; " +
+                          "the sale stays on your own site." }),
+        ]),
+        el("div", { class: "pitch__item" }, [
+          el("h3", { text: "If you have no website" }),
+          el("p", { text: "DEDUNET becomes your commerce surface: brand page, catalogue, " +
+                          "media, inventory and checkout, hosted here. This is a core " +
+                          "capability, not an edge case." }),
+        ]),
+      ]),
+      el("h2", { text: "What is available now" }),
+      el("ul", { class: "status-list", "data-testid": "brands-available" },
+        available.map((t) => el("li", {}, [window.DS.badge("Available", "success"), el("span", { text: t })]))),
+      el("h2", { text: "What is coming later" }),
+      el("ul", { class: "status-list", "data-testid": "brands-later" },
+        later.map((t) => el("li", {}, [window.DS.badge("Later", "preview"), el("span", { text: t })]))),
+      el("div", { class: "alert alert--warning", "data-testid": "for-brands-honesty" }, [
+        el("p", { text: "Merchant onboarding is not open. DEDUNET is not accepting brands " +
+                        "yet, has no commercial agreements with any brand, and the merchant " +
+                        "platform described above is not built. This page explains the " +
+                        "intended product, not a live service." }),
+      ]),
+    ])
+  );
+}
+
 /* -------------------------------------------------------------------- routing */
 
 const ROUTES = [
+  [/^#\/?$/, viewHome],
+  [/^#\/home$/, viewHome],
+  [/^#\/dido/, viewDido],
+  [/^#\/discover\/([\w-]+)$/, viewDiscover],
+  [/^#\/discover$/, () => viewDiscover(null)],
+  [/^#\/looks$/, viewLooks],
+  [/^#\/look\/([\w-]+)$/, viewLook],
+  [/^#\/brands$/, viewBrands],
+  [/^#\/brand\/([\w-]+)$/, viewBrand],
+  [/^#\/saved$/, viewSaved],
+  [/^#\/my-style$/, viewMyStyle],
+  [/^#\/for-brands$/, viewForBrands],
   [/^#\/product\/(.+)$/, viewProduct],
   [/^#\/order\/(.+)$/, viewOrder],
+  [/^#\/shop/, viewCatalog],
   [/^#\/catalog/, viewCatalog],
   [/^#\/stylist$/, viewStylist],
   [/^#\/cart$/, viewCart],
@@ -1173,19 +1680,62 @@ const ROUTES = [
 
 function route() {
   setBanner("");
-  const hash = location.hash || "#/catalog";
+  /* Home, not the catalogue. DEDUNET is a fashion intelligence platform whose landing
+     experience is styling; the shop is one destination within it rather than the front
+     door. This single default is the difference between "clothing store with extras" and
+     "platform with a shop". */
+  const hash = location.hash || "#/";
   for (const [pattern, handler] of ROUTES) {
     const match = hash.match(pattern);
     if (match) {
       Promise.resolve(handler(match[1])).catch((error) =>
         // A route must never fail silently and leave a blank page.
-        render(emptyState(`Something went wrong. ${error.message}`, "Back to collection", "#/catalog"))
+        render(el("div", { class: "ds-container ds-section" },
+          [window.DS.errorState(error, { onRetry: () => route() })]))
       );
+      markActiveNav();
       return;
     }
   }
-  render(emptyState("That page does not exist.", "Back to collection", "#/catalog"));
+  render(el("div", { class: "ds-container ds-section" }, [
+    window.DS.errorState({ status: 404, message: "That page does not exist." }),
+    el("p", { class: "ds-row" }, [window.DS.linkButton("Back to DEDUNET", "#/")]),
+  ]));
+  markActiveNav();
 }
+
+/**
+ * Mark the current route in both navigations.
+ *
+ * `aria-current="page"` is the source of truth and the CSS keys off it, so the visual
+ * highlight and what a screen reader announces are the same fact rather than two that can
+ * drift apart.
+ */
+function markActiveNav() {
+  const hash = location.hash || "#/";
+  for (const link of document.querySelectorAll("[data-route]")) {
+    const prefix = link.getAttribute("data-route");
+    const active = prefix === "#/" ? hash === "#/" || hash === "" : hash.startsWith(prefix);
+    if (active) link.setAttribute("aria-current", "page");
+    else link.removeAttribute("aria-current");
+  }
+}
+
+/* Published for the jsdom test harnesses, which drive these directly rather than through
+   a browser. Classic-script scope already puts function declarations on `window`; this is
+   an explicit, greppable list of what the tests are entitled to depend on. */
+window.viewHome = viewHome;
+window.viewDiscover = viewDiscover;
+window.viewLooks = viewLooks;
+window.viewLook = viewLook;
+window.viewBrands = viewBrands;
+window.viewBrand = viewBrand;
+window.viewSaved = viewSaved;
+window.viewMyStyle = viewMyStyle;
+window.viewDido = viewDido;
+window.viewForBrands = viewForBrands;
+window.route = route;
+window.markActiveNav = markActiveNav;
 
 window.addEventListener("hashchange", route);
 window.addEventListener("DOMContentLoaded", route);
