@@ -380,6 +380,103 @@ still demanded of all eight envelopes.
 
 ---
 
+## PHASE 2 — Professional design system + consumer platform foundation
+
+**Starting HEAD:** `5b85fc5` · **ADR-0002 approved as revised; Phase 2 authorized.**
+
+| Field | Result |
+|---|---|
+| Implementation | **PASS** — design system, 13 routes, component library, Dido shell |
+| Tests | **PASS** — 493 passed, 2 skipped (+59) |
+| Security | **PASS** — 8/8 mutations over `app.js` detected; scan extended to 5 client scripts |
+| Regression | **PASS** — every accepted behaviour re-verified and unchanged |
+| Human Test | **PARTIAL** — desktop browser verified. **Mobile NOT TESTED**, see 2.4 |
+| Documentation | **PASS** — UX spec, design system, ADR-0003, evidence, limitations, README |
+
+**Evidence:** `evidence/phase-2/PHASE_2_CONSUMER_PLATFORM_EVIDENCE.md`
+
+**Commits:** `ef82d00`, `ccf3504`, `24f67ce`, `7f18980`, and the documentation commit.
+
+### 2.1 The repositioning, in one line
+
+```diff
+- const hash = location.hash || "#/catalog";
++ const hash = location.hash || "#/";
+```
+
+A platform whose front door is a product grid is a shop with extra pages. Everything else
+follows from what that route now shows: hero on *personal fashion intelligence*, "Style me
+with Dido" as the primary CTA, eleven occasions, and the catalogue demoted to one
+destination among seven.
+
+### 2.2 Three findings
+
+**A palette nobody had reconciled.** `packages/brand/tokens.css` — the authoritative Side A
+delivery — existed since the DEDUNET integration and the storefront never adopted it,
+carrying its own `--ink`/`--sand`/`--bone` instead with no drift check between them. The
+design system is now built on the delivered tokens, emitted into both clients like the
+brand seam already was, and covered by the drift check. Proven load-bearing by tampering.
+
+**A bug every test passed through.** `ds.js` and `app.js` each declared a top-level `el` —
+a `SyntaxError` that stops the whole page in classic scripts. **All jsdom tests passed and
+the page was blank**, because those harnesses `window.eval` each file into its own scope
+and a browser does not. Found by opening the page. A jsdom suite verifies what a function
+renders, not that the page loads.
+
+**A real AA contrast failure.** `--ds-text-subtle` at **4.09:1**, on the 14px copy
+explaining what is fixture content and why a control is disabled. Remapped at the semantic
+layer to 5.95:1 — a one-line change to a *role*, not to a delivered brand value. Nothing in
+the brief asked for a contrast measurement; the palette would have passed review.
+
+### 2.3 Honesty, enforced by test
+
+The two ways a demonstration build starts lying, each with a guard:
+
+| Rule | Guard |
+|---|---|
+| Fixtures are always badged | every service record carries `source`; badge count asserted |
+| "Not built" ≠ "empty" | `unavailableState` names the capability and the phase; asserted distinct from `emptyState` |
+| No faked personalisation | "Looks selected for you" renders *not built yet*, asserted |
+| No faked AI | Dido answers that it cannot style yet; two tests |
+| No invented partnerships | both non-DEDUNET brands say no such brand exists |
+| No fabricated persistence | Saved reports unavailable rather than writing to `localStorage` |
+
+### 2.4 Human acceptance — PARTIAL, and the gap matters
+
+**Desktop browser: verified.** All 16 routes render, no horizontal overflow at 375px or
+1280px, correct navigation per breakpoint, Dido driving `asking → thinking → presenting`
+with live-region announcements, and `#/shop` with no API degrading to a named error rather
+than a blank page.
+
+**Physical iPhone Safari: `NOT TESTED`. Android emulator: `NOT TESTED`.**
+
+Phase 2 replaced **every consumer surface on the web**. The iPhone and Android acceptances
+passed against the pre-Phase-2 storefront, so those results describe a build that no longer
+exists on that surface. No device access exists in this environment.
+
+This is stated rather than inferred. §37 requires "physical iPhone Safari regression
+verified" for Phase 2 completion, and that criterion **is not met**.
+
+The native Android binary is unaffected — no mobile file was changed — but its web-parity
+claims are not.
+
+### 2.5 Remaining issues
+
+| Item | Status |
+|---|---|
+| Physical iPhone Safari regression | **NOT TESTED** — blocks §37 |
+| Android emulator regression | **NOT TESTED** |
+| Automated accessibility audit, screen-reader pass | **NOT RUN** |
+| Visual regression snapshots | **NOT BUILT** — §31 permits an alternative; route-level DOM assertions and measured layout used instead |
+| Dido engine, recommendation, outfit, merchant backend, Saved/Style DNA persistence | **NOT STARTED** — later phases, as scoped |
+
+**Decision: `PHASE_2_BLOCKED`** — on the mobile acceptance criterion in §37 only.
+
+Implementation, tests, security, regression and documentation all pass. What is missing is
+a human with a device, which no amount of engineering here can supply.
+
+---
+
 ## Platform decisions
 
 Re-stated at every phase boundary, deliberately separate.
