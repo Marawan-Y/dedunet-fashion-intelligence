@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-25T10:26:49.100837+00:00",
+  "generated_at": "2026-08-25T15:42:13.890840+00:00",
   "generator": "scripts/brand/build_brand_package.py",
   "source_package": "handoffs/incoming/side-a/DEDUNET_Platform_Integration_v1",
   "source_manifest_entries": 54,

@@ -42,6 +42,23 @@ SIDE_A = ROOT / "handoffs" / "incoming" / "side-a" / "DEDUNET_Platform_Integrati
 SRC = SIDE_A / "data" / "brand-prototype"
 OUT = ROOT / "packages" / "brand"
 
+# Where each browser client's generated artefacts are written.
+#
+# The value is a repository-relative directory, not a client name, because the three
+# clients do not have the same shape. `web` and `admin` are static files nginx serves
+# verbatim, so their artefacts sit at the app root. `consumer` is a Vite application
+# (ADR-0004) whose `public/` directory is copied to the served root untouched — which is
+# exactly the same guarantee, reached by a different path.
+#
+# Generated rather than hand-copied for the reason recorded below: the storefront once
+# carried its own invented palette that had never been reconciled with the delivered Side A
+# token set. Adding a client here is what keeps that from happening again.
+CLIENT_DIRS = {
+    "web": "apps/web",
+    "admin": "apps/admin",
+    "consumer": "apps/consumer/public",
+}
+
 # The backend owns the money contract. Importing it rather than re-implementing keeps one
 # definition of "integer minor units" in the repository.
 sys.path.insert(0, str(ROOT / "services" / "commerce-api"))
@@ -704,8 +721,8 @@ def build(check_only: bool) -> int:
     # Only when building the real package. A drift rebuild targets a temp directory and
     # must not touch the working tree it is inspecting.
     if OUT == ROOT / "packages" / "brand":
-        for client in ("web", "admin"):
-            (ROOT / "apps" / client / "brand.generated.js").write_text(seam, encoding="utf-8")
+        for target in CLIENT_DIRS.values():
+            (ROOT / target / "brand.generated.js").write_text(seam, encoding="utf-8")
     else:
         (OUT / "brand.generated.js").write_text(seam, encoding="utf-8")
 
@@ -719,8 +736,8 @@ def build(check_only: bool) -> int:
     # the Side A token set delivered in the package. Two palettes, one brand, and no check
     # that they agreed. The design system now consumes these and only these.
     if OUT == ROOT / "packages" / "brand":
-        for client in ("web", "admin"):
-            (ROOT / "apps" / client / "tokens.generated.css").write_text(css, encoding="utf-8")
+        for target in CLIENT_DIRS.values():
+            (ROOT / target / "tokens.generated.css").write_text(css, encoding="utf-8")
     else:
         (OUT / "tokens.generated.css").write_text(css, encoding="utf-8")
 
@@ -813,11 +830,12 @@ def verify_no_drift() -> int:
         stale_seams = []
         for artefact in CLIENT_ARTEFACTS:
             expected = (rebuilt / artefact).read_text(encoding="utf-8")
-            for client in ("web", "admin"):
-                copy = ROOT / "apps" / client / artefact
+            for client, target in CLIENT_DIRS.items():
+                copy = ROOT / target / artefact
                 if not copy.is_file() or copy.read_text(encoding="utf-8") != expected:
                     stale_seams.append(f"{client}/{artefact}")
-        print(f"seam            : {'STALE ' + str(stale_seams) if stale_seams else 'match (web, admin)'}")
+        _clients = ", ".join(CLIENT_DIRS)
+        print(f"seam            : {'STALE ' + str(stale_seams) if stale_seams else f'match ({_clients})'}")
 
         if missing or extra or differing or counts_differ or stale_seams:
             print("\nRESULT: BRAND_PACKAGE_DRIFT_DETECTED")
