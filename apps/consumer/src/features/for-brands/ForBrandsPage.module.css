@@ -1,0 +1,61 @@
+.hero {
+  display: grid;
+  gap: var(--ds-space-6);
+  align-items: center;
+}
+
+@media (min-width: 900px) {
+  .hero {
+    grid-template-columns: minmax(0, 6fr) minmax(0, 5fr);
+    gap: var(--ds-space-8);
+  }
+}
+
+.heroCopy { display: flex; flex-direction: column; gap: var(--ds-space-4); }
+
+.pitchItem {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ds-space-2);
+  padding: var(--ds-space-5);
+  background: var(--ds-surface);
+  border: var(--ds-border-width) solid var(--ds-border);
+  height: 100%;
+}
+
+.pitchTitle {
+  font-family: var(--ds-font-display);
+  font-size: var(--ds-subheading);
+  margin: 0;
+}
+
+.pitchBody { color: var(--ds-text-muted); font-size: var(--ds-text-sm); margin: 0; }
+
+/* The honesty block reads as a document, not as a banner: inverted, full width, and set at
+   body size. A disclaimer styled as a warning strip gets skimmed as decoration. */
+.honesty {
+  padding: var(--ds-space-7) var(--ds-space-6);
+  background: var(--ds-surface-inverse);
+  color: var(--ds-text-inverse);
+}
+
+.honestyTitle {
+  font-size: var(--ds-display-3);
+  margin: 0 0 var(--ds-space-5);
+}
+
+.honestyList {
+  list-style: none;
+  margin: 0 0 var(--ds-space-5);
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--ds-space-4);
+  max-width: 68ch;
+}
+
+.honestyList li {
+  padding-inline-start: var(--ds-space-5);
+  border-inline-start: 2px solid var(--ds-accent);
+  line-height: var(--ds-leading-body);
+}

@@ -1,0 +1,37 @@
+.header {
+  display: grid;
+  gap: var(--ds-space-6);
+  align-items: center;
+}
+
+@media (min-width: 900px) {
+  .header {
+    grid-template-columns: minmax(0, 6fr) minmax(0, 5fr);
+    gap: var(--ds-space-8);
+  }
+}
+
+.headerCopy { display: flex; flex-direction: column; gap: var(--ds-space-4); }
+
+.badges { display: flex; gap: var(--ds-space-2); flex-wrap: wrap; }
+
+/* Same reasoning as the product specs: stacked until there is room for two columns. */
+.facts {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--ds-space-1) var(--ds-space-5);
+  margin: 0;
+  padding-top: var(--ds-space-4);
+  border-top: var(--ds-border-width) solid var(--ds-border);
+  font-size: var(--ds-text-sm);
+}
+
+@media (min-width: 480px) {
+  .facts {
+    grid-template-columns: max-content minmax(0, 1fr);
+    gap: var(--ds-space-2) var(--ds-space-5);
+  }
+}
+
+.facts dt { color: var(--ds-text-muted); }
+.facts dd { margin: 0; }

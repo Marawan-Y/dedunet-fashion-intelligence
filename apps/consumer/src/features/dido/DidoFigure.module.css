@@ -1,0 +1,92 @@
+/* Dido Net.
+ *
+ * Ancient Egyptian visual intelligence translated into contemporary fashion technology —
+ * which means geometry, not iconography. There is no pharaoh here, no scarab and no
+ * tourism mascot: the form is a cartouche reduced to a hard vertical frame, an aperture
+ * that behaves like an eye without drawing one, and a rhythm of horizontal rules taken
+ * from the brand's own passage-lines pattern.
+ *
+ * Every state is a change in that geometry rather than a change of expression. A character
+ * that emotes needs a face; a character that THINKS needs a mechanism.
+ */
+
+.figure {
+  --dido-line: var(--ds-text);
+  --dido-accent: var(--ds-accent);
+  display: block;
+  width: 100%;
+  height: auto;
+  max-width: 220px;
+  color: var(--dido-line);
+}
+
+.frame {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.25;
+}
+
+/* The aperture. Scales and shifts opacity by state, which is the whole expressive range. */
+.aperture {
+  fill: var(--dido-accent);
+  transform-origin: 60px 74px;
+  transition:
+    transform var(--ds-duration-slow) var(--ds-ease-standard),
+    opacity var(--ds-duration-slow) var(--ds-ease-standard);
+}
+
+.rules {
+  stroke: currentColor;
+  stroke-width: 0.75;
+  opacity: 0.35;
+}
+
+/* The scan line. Only mounted for the working states, so nothing animates at rest. */
+.scan {
+  stroke: var(--dido-accent);
+  stroke-width: 1.5;
+  animation: scan 1.9s var(--ds-ease-standard) infinite;
+}
+
+@keyframes scan {
+  0%   { transform: translateY(0); opacity: 0; }
+  12%  { opacity: 1; }
+  88%  { opacity: 1; }
+  100% { transform: translateY(58px); opacity: 0; }
+}
+
+/* Listening: the frame breathes. Slow enough to read as attention rather than as a pulse
+   animation, and it is the only idle-adjacent motion in the system. */
+.listening .frame { animation: breathe 3.4s var(--ds-ease-standard) infinite; }
+
+@keyframes breathe {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.55; }
+}
+
+.idle .aperture { transform: scaleY(0.34); opacity: 0.5; }
+.welcome .aperture { transform: scaleY(1); opacity: 1; }
+.listening .aperture { transform: scaleY(0.86); opacity: 0.9; }
+.asking .aperture { transform: scaleY(1); opacity: 1; }
+.thinking .aperture { transform: scaleY(0.18); opacity: 0.75; }
+.searching .aperture { transform: scaleY(0.5); opacity: 0.85; }
+.styling .aperture { transform: scaleY(0.72); opacity: 1; }
+.comparing .aperture { transform: scaleX(0.6) scaleY(0.8); opacity: 0.95; }
+.assembling .aperture { transform: scaleY(0.9); opacity: 1; }
+.presenting .aperture { transform: scale(1.08); opacity: 1; }
+.success .aperture { fill: var(--ds-success); transform: scale(1); opacity: 1; }
+.error .aperture { fill: var(--ds-error); transform: scaleY(0.24); opacity: 1; }
+
+/* Offline drains the colour entirely. A greyed Dido reads as unreachable without needing
+   a word, and the word is there too. */
+.offline { color: var(--ds-text-subtle); }
+.offline .aperture { fill: var(--ds-text-subtle); transform: scaleY(0.2); opacity: 0.6; }
+
+/* Reduced motion stills Dido completely rather than slowing it. A character that keeps
+   moving is exactly what someone with a vestibular disorder turned the setting on to
+   prevent, and the state is still legible because it is geometry, not animation. */
+@media (prefers-reduced-motion: reduce) {
+  .scan { animation: none; opacity: 1; }
+  .listening .frame { animation: none; }
+  .aperture { transition: none; }
+}

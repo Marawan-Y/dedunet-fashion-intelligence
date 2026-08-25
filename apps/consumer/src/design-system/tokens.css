@@ -1,0 +1,158 @@
+/* The SEMANTIC layer.
+ *
+ * tokens.generated.css holds the delivered Side A brand values. It is generated and
+ * immutable. This file maps those values to ROLES. Everything in the application refers to
+ * a role and never to a brand value, so a palette correction happens here and nowhere else.
+ *
+ * That separation is not theoretical. Phase 2 measured --ddn-color-smoke at 4.09:1 against
+ * the page background, a real WCAG AA failure on 14px text, and on exactly the copy a
+ * customer needs in order to understand what is and is not real. It was corrected by
+ * repointing the ROLE, which left the delivered token untouched and still available for
+ * non-text use. --ds-text-subtle must never point back at it, and a test asserts that.
+ */
+
+:root {
+  /* ----------------------------------------------------------------- colour roles */
+  --ds-bg: var(--ddn-color-background);
+  --ds-surface: var(--ddn-color-surface);
+  --ds-surface-raised: var(--ddn-color-surfaceelevated);
+  --ds-surface-inverse: var(--ddn-color-darksurface);
+
+  --ds-text: var(--ddn-color-textprimary);
+  --ds-text-muted: var(--ddn-color-textsecondary);
+  /* Deliberately the same token as --ds-text-muted. See the note above. */
+  --ds-text-subtle: var(--ddn-color-textsecondary);
+  --ds-text-inverse: var(--ddn-color-background);
+
+  --ds-accent: var(--ddn-color-accent);
+  --ds-accent-text: var(--ddn-color-background);
+  --ds-border: var(--ddn-color-border);
+  --ds-border-strong: var(--ddn-color-textprimary);
+
+  --ds-success: var(--ddn-color-success);
+  --ds-warning: var(--ddn-color-warning);
+  --ds-error: var(--ddn-color-error);
+  --ds-info: var(--ddn-color-info);
+
+  --ds-success-wash: color-mix(in srgb, var(--ds-success) 10%, transparent);
+  --ds-warning-wash: color-mix(in srgb, var(--ds-warning) 12%, transparent);
+  --ds-error-wash: color-mix(in srgb, var(--ds-error) 10%, transparent);
+  --ds-info-wash: color-mix(in srgb, var(--ds-info) 10%, transparent);
+
+  /* ------------------------------------------------------------- typography roles */
+  --ds-font-display: var(--ddn-type-displayfont), var(--ddn-type-displayfallback);
+  --ds-font-body: var(--ddn-type-bodyfont), var(--ddn-type-bodyfallback);
+
+  /* A fashion-editorial scale: a large jump into display sizes over a tight interface
+     range. Fluid between a phone and a desktop so nothing steps at a breakpoint. */
+  --ds-display-1: clamp(2.75rem, 1.6rem + 5.4vw, 6rem);
+  --ds-display-2: clamp(2.15rem, 1.5rem + 3.1vw, 4rem);
+  --ds-display-3: clamp(1.75rem, 1.35rem + 1.9vw, 2.75rem);
+  --ds-heading: clamp(1.35rem, 1.15rem + 0.9vw, 1.85rem);
+  --ds-subheading: 1.15rem;
+  --ds-text-lg: 1.125rem;
+  --ds-text-base: 1rem;
+  --ds-text-sm: 0.875rem;
+  --ds-text-xs: 0.75rem;
+
+  --ds-weight-display: var(--ddn-type-headingweight);
+  --ds-weight-body: var(--ddn-type-bodyweight);
+  --ds-weight-medium: 500;
+  --ds-weight-strong: 600;
+
+  --ds-leading-display: 1.02;
+  --ds-leading-heading: 1.16;
+  --ds-leading-body: 1.6;
+
+  /* Didone faces are drawn tight. Negative tracking at display sizes is what makes them
+     read as fashion typography rather than as a large serif. */
+  --ds-tracking-display: -0.022em;
+  --ds-tracking-body: 0;
+  /* The eyebrow is the one place wide tracking belongs. */
+  --ds-tracking-eyebrow: 0.16em;
+
+  /* ---------------------------------------------------------------------- spacing */
+  --ds-space-1: 0.25rem;
+  --ds-space-2: 0.5rem;
+  --ds-space-3: 0.75rem;
+  --ds-space-4: 1rem;
+  --ds-space-5: 1.5rem;
+  --ds-space-6: 2rem;
+  --ds-space-7: 3rem;
+  --ds-space-8: 4rem;
+  --ds-space-9: 6rem;
+
+  --ds-content-max: var(--ddn-space-contentmaxwidth);
+  --ds-editorial-max: var(--ddn-space-editorialmaxwidth);
+  --ds-gutter: var(--ds-space-5);
+  --ds-card-gap: var(--ddn-space-cardgap);
+  --ds-section-gap: var(--ddn-space-sectiongapmobile);
+
+  /* ------------------------------------------------------------------------ shape */
+  /* All zero in the delivered token set: the brand is architectural, not rounded.
+     Referring to the role means a brand revision is not a find-and-replace. */
+  --ds-radius: var(--ddn-shape-cardradius);
+  --ds-radius-button: var(--ddn-shape-buttonradius);
+  --ds-radius-input: var(--ddn-shape-inputradius);
+  --ds-border-width: var(--ddn-shape-borderwidth);
+
+  /* -------------------------------------------------------------------- elevation */
+  /* Restrained on purpose. This palette carries hierarchy through the warm ground and
+     hairline rules; drop shadows over sand read as grey smudge. */
+  --ds-elevation-1: 0 1px 2px color-mix(in srgb, var(--ddn-color-primary) 7%, transparent);
+  --ds-elevation-2: 0 8px 24px color-mix(in srgb, var(--ddn-color-primary) 10%, transparent);
+  --ds-elevation-3: 0 20px 60px color-mix(in srgb, var(--ddn-color-primary) 14%, transparent);
+
+  /* ----------------------------------------------------------------------- motion */
+  --ds-duration-instant: 90ms;
+  --ds-duration-fast: 160ms;
+  --ds-duration-base: 240ms;
+  --ds-duration-slow: 420ms;
+  --ds-duration-reveal: 620ms;
+
+  /* Standard is the workhorse. Entrance eases out long so an arriving card feels placed
+     rather than teleported; exit does not, because leaving should not draw the eye. */
+  --ds-ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --ds-ease-entrance: cubic-bezier(0.16, 1, 0.3, 1);
+  --ds-ease-exit: cubic-bezier(0.4, 0, 1, 1);
+
+  /* ----------------------------------------------------------------- media shapes */
+  --ds-ratio-portrait: 4 / 5;
+  --ds-ratio-editorial: 3 / 2;
+  --ds-ratio-hero: 16 / 9;
+  --ds-ratio-square: 1 / 1;
+
+  /* ------------------------------------------------------------------------ focus */
+  --ds-focus-width: 2px;
+  --ds-focus-offset: 3px;
+  --ds-focus-color: var(--ddn-color-accent);
+
+  /* -------------------------------------------------------------- interaction floor */
+  /* Section 27. Every interactive control derives its minimum from this, so the floor is
+     one number rather than a rule each component is trusted to remember. */
+  --ds-target-min: 44px;
+
+  --ds-header-height: 64px;
+  --ds-tabbar-height: 64px;
+}
+
+@media (min-width: 768px) {
+  :root {
+    --ds-gutter: var(--ds-space-6);
+    --ds-section-gap: var(--ddn-space-sectiongap);
+    --ds-header-height: 72px;
+  }
+}
+
+/* Section 9. Reduced motion is honoured centrally, by zeroing the durations every
+   animation in the system reads from. A component cannot forget to respect it, because it
+   never had a duration of its own to forget. */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --ds-duration-instant: 0.01ms;
+    --ds-duration-fast: 0.01ms;
+    --ds-duration-base: 0.01ms;
+    --ds-duration-slow: 0.01ms;
+    --ds-duration-reveal: 0.01ms;
+  }
+}

@@ -1,0 +1,170 @@
+/* Layout primitives.
+ *
+ * CSS Modules, so every name in here is compiled and hashed. A component asking for a
+ * class this file does not define gets `undefined` and renders no class attribute at all —
+ * which is why the Phase 2 defect (17 class names with no rule behind them) cannot recur
+ * in this shape. That is the structural fix, not a lint rule.
+ */
+
+.container {
+  width: 100%;
+  max-width: var(--ds-content-max);
+  margin-inline: auto;
+  padding-inline: var(--ds-gutter);
+}
+
+/* The editorial measure. Long-form copy set at the full content width is unreadable; this
+   is the column a magazine would set it in. */
+.editorial {
+  width: 100%;
+  max-width: var(--ds-editorial-max);
+}
+
+.section {
+  padding-block: var(--ds-section-gap);
+}
+
+/* Half a section. For modules that belong to the one above them rather than standing
+   alone, which is most of the rhythm on a long editorial page. */
+.sectionTight {
+  padding-block: calc(var(--ds-section-gap) / 2);
+}
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ds-space-4);
+}
+
+.stackLoose { gap: var(--ds-space-6); }
+.stackTight { gap: var(--ds-space-2); }
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: var(--ds-space-3);
+  flex-wrap: wrap;
+}
+
+.rowBetween {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--ds-space-4);
+  flex-wrap: wrap;
+}
+
+/* auto-fill rather than auto-fit: auto-fit collapses empty tracks and stretches a lone
+   card to the full width, which looks like a bug rather than a layout. */
+.grid {
+  display: grid;
+  gap: var(--ds-card-gap);
+  grid-template-columns: repeat(auto-fill, minmax(min(260px, 100%), 1fr));
+}
+
+.gridWide {
+  display: grid;
+  gap: var(--ds-card-gap);
+  grid-template-columns: repeat(auto-fill, minmax(min(340px, 100%), 1fr));
+}
+
+.gridTwo {
+  display: grid;
+  gap: var(--ds-card-gap);
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 768px) {
+  .gridTwo { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+/* The horizontal rail.
+ *
+ * A swipe on a phone, a grid on a desktop. Scroll snapping makes the swipe land on a card
+ * rather than between two, which is the difference between a rail and a runaway. */
+.rail {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(72vw, 300px);
+  gap: var(--ds-card-gap);
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scroll-padding-inline: var(--ds-gutter);
+  /* Bleed to the viewport edge so the rail reads as continuing past the screen, then pad
+     the gutter back in so the first card still aligns with the page text above it. */
+  margin-inline: calc(var(--ds-gutter) * -1);
+  padding-inline: var(--ds-gutter);
+  padding-bottom: var(--ds-space-3);
+  scrollbar-width: thin;
+  overscroll-behavior-x: contain;
+}
+
+.rail > * { scroll-snap-align: start; }
+
+/* The rail is tabbable (see Rail in primitives.tsx) so that a keyboard can scroll it, and
+   anything tabbable must show where focus is. Found on WebKit, where links are not in the
+   default tab order and the rail is therefore the FIRST thing Tab reaches — with no ring
+   on it, keyboard navigation started in an invisible place. */
+.rail:focus-visible {
+  outline: var(--ds-focus-width) solid var(--ds-focus-color);
+  outline-offset: calc(var(--ds-focus-offset) * -1);
+}
+
+@media (min-width: 768px) {
+  .rail {
+    grid-auto-flow: row;
+    grid-template-columns: repeat(auto-fill, minmax(min(260px, 100%), 1fr));
+    overflow-x: visible;
+    margin-inline: 0;
+    padding-inline: 0;
+    scroll-snap-type: none;
+  }
+}
+
+/* The eyebrow. Small, letterspaced, above a heading — the one place wide tracking earns
+   its keep, and the main device that makes a page read as editorial rather than as an app. */
+.eyebrow {
+  font-family: var(--ds-font-body);
+  font-size: var(--ds-text-xs);
+  font-weight: var(--ds-weight-strong);
+  letter-spacing: var(--ds-tracking-eyebrow);
+  text-transform: uppercase;
+  color: var(--ds-text-muted);
+  margin: 0;
+}
+
+.lede {
+  font-size: var(--ds-text-lg);
+  line-height: 1.5;
+  color: var(--ds-text-muted);
+  max-width: var(--ds-editorial-max);
+}
+
+.muted { color: var(--ds-text-muted); }
+
+.subtle {
+  color: var(--ds-text-subtle);
+  font-size: var(--ds-text-sm);
+}
+
+.divider {
+  border: 0;
+  border-top: var(--ds-border-width) solid var(--ds-border);
+  margin: 0;
+}
+
+/* A section heading with its eyebrow and an optional action on the right. */
+.sectionHead {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--ds-space-4);
+  flex-wrap: wrap;
+  margin-bottom: var(--ds-space-6);
+}
+
+.sectionHeadText {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ds-space-2);
+}

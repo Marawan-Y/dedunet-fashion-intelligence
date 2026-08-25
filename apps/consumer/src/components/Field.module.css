@@ -1,0 +1,141 @@
+/* Form controls.
+ *
+ * The Account page at 9b63791 rendered bare <label> and <input> with no CSS behind them,
+ * because index.html had stopped loading the stylesheet that styled them. Labels and fields
+ * ran together and it was the single most visible failure a human reported. This is the
+ * replacement, and it is a component rather than a page style so no route can render a
+ * field the design system has never seen.
+ */
+
+.field {
+  display: flex;
+  flex-direction: column;
+  /* The gap IS the fix. A label sitting directly on top of its input is what "ran
+     together" describes, and spacing it here means every form gets it. */
+  gap: var(--ds-space-2);
+}
+
+.label {
+  font-family: var(--ds-font-body);
+  font-size: var(--ds-text-sm);
+  font-weight: var(--ds-weight-strong);
+  letter-spacing: 0.02em;
+  color: var(--ds-text);
+}
+
+.optional {
+  font-weight: var(--ds-weight-body);
+  color: var(--ds-text-muted);
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.control {
+  width: 100%;
+  min-height: var(--ds-target-min);
+  padding: var(--ds-space-3) var(--ds-space-4);
+  background: var(--ds-surface);
+  color: var(--ds-text);
+  border: var(--ds-border-width) solid var(--ds-border-strong);
+  border-radius: var(--ds-radius-input);
+  font-size: var(--ds-text-base);
+  transition:
+    border-color var(--ds-duration-fast) var(--ds-ease-standard),
+    box-shadow var(--ds-duration-fast) var(--ds-ease-standard);
+}
+
+.control::placeholder { color: var(--ds-text-subtle); }
+
+.control:hover:not(:disabled) { border-color: var(--ds-accent); }
+
+.control:disabled {
+  background: var(--ds-surface-raised);
+  cursor: not-allowed;
+}
+
+/* Driven by aria-invalid rather than by a class, so the thing a screen reader is told and
+   the thing a sighted user sees are the same fact and cannot drift apart. */
+.control[aria-invalid="true"] {
+  border-color: var(--ds-error);
+  box-shadow: inset 0 0 0 1px var(--ds-error);
+}
+
+.hint {
+  font-size: var(--ds-text-sm);
+  color: var(--ds-text-muted);
+  margin: 0;
+}
+
+/* Never colour alone: the error carries an icon and a word as well as the red, because
+   section 27 forbids status that only exists as a hue. */
+.error {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--ds-space-2);
+  font-size: var(--ds-text-sm);
+  font-weight: var(--ds-weight-medium);
+  color: var(--ds-error);
+  margin: 0;
+}
+
+.errorMark { flex: none; margin-top: 0.15em; }
+
+.select {
+  appearance: none;
+  background-image: linear-gradient(45deg, transparent 50%, currentColor 50%),
+    linear-gradient(135deg, currentColor 50%, transparent 50%);
+  background-position: calc(100% - 20px) calc(50% + 2px), calc(100% - 14px) calc(50% + 2px);
+  background-size: 6px 6px, 6px 6px;
+  background-repeat: no-repeat;
+  padding-inline-end: var(--ds-space-8);
+}
+
+/* A password field with a reveal control sharing the border. */
+.withAction { position: relative; display: flex; align-items: stretch; }
+.withAction .control { padding-inline-end: 5.5rem; }
+
+.action {
+  position: absolute;
+  inset-inline-end: var(--ds-border-width);
+  top: var(--ds-border-width);
+  bottom: var(--ds-border-width);
+  padding-inline: var(--ds-space-4);
+  min-width: var(--ds-target-min);
+  font-size: var(--ds-text-xs);
+  font-weight: var(--ds-weight-strong);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ds-text-muted);
+  background: transparent;
+}
+
+.action:hover { color: var(--ds-text); }
+
+.checkbox {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--ds-space-3);
+  /* The whole row is the target, which is what gets a checkbox past 44px without drawing
+     a 44px box. */
+  min-height: var(--ds-target-min);
+  padding-block: var(--ds-space-2);
+  cursor: pointer;
+}
+
+.checkboxInput {
+  width: 22px;
+  height: 22px;
+  margin: 0;
+  flex: none;
+  accent-color: var(--ds-accent);
+  cursor: pointer;
+}
+
+.checkboxLabel { font-size: var(--ds-text-sm); line-height: 1.45; }
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ds-space-5);
+  max-width: 30rem;
+}

@@ -1,0 +1,157 @@
+/* The hero.
+ *
+ * Asymmetric on a desktop, stacked on a phone: the type column is deliberately narrower
+ * than the image so the composition has a long edge and a short one rather than reading as
+ * two equal halves, which is the difference between an editorial spread and a template. */
+.hero {
+  position: relative;
+  display: grid;
+  gap: var(--ds-space-7);
+  padding-block: var(--ds-space-8) var(--ds-space-9);
+  align-items: center;
+}
+
+@media (min-width: 900px) {
+  .hero {
+    grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
+    gap: var(--ds-space-9);
+    padding-block: var(--ds-space-9);
+  }
+}
+
+.heroCopy {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ds-space-5);
+  /* Sits above the pattern. */
+  position: relative;
+  z-index: 1;
+}
+
+.heroTitle {
+  font-size: var(--ds-display-1);
+  line-height: var(--ds-leading-display);
+  letter-spacing: var(--ds-tracking-display);
+  margin: 0;
+  /* The brand name is one word and must never break.
+   *
+   * At 1440px the display size resolved to 96px in a 552px column, and "DEDUNET" set at
+   * that size is wider than the column — so it wrapped to "DEDUNE / T". A wordmark broken
+   * across two lines is not a typographic decision, it is a bug that only a person looking
+   * at the page would ever catch. */
+  text-wrap: nowrap;
+  white-space: nowrap;
+}
+
+/* The promise, set as a display line rather than as body copy. It is the product
+   positioning and it should read like a masthead, not like a paragraph. */
+.heroPromise {
+  font-family: var(--ds-font-display);
+  font-size: var(--ds-display-3);
+  font-style: italic;
+  font-weight: 500;
+  line-height: 1.2;
+  letter-spacing: var(--ds-tracking-display);
+  color: var(--ds-accent);
+  margin: 0;
+  max-width: 18ch;
+}
+
+.heroLede {
+  font-size: var(--ds-text-lg);
+  line-height: 1.55;
+  color: var(--ds-text-muted);
+  max-width: 46ch;
+  margin: 0;
+}
+
+.heroCtas {
+  display: flex;
+  gap: var(--ds-space-3);
+  flex-wrap: wrap;
+  margin-top: var(--ds-space-3);
+}
+
+.heroMedia { position: relative; }
+
+/* The brand's own line pattern, behind the type at low opacity. The Egyptian reference in
+   section 6 is meant to be structural geometry, not iconography — this is a rhythm of
+   rules, which is what the delivered pattern asset is. */
+.heroPattern {
+  position: absolute;
+  inset-block: 0;
+  inset-inline-start: -10%;
+  width: 55%;
+  opacity: 0.06;
+  pointer-events: none;
+  object-fit: cover;
+  z-index: 0;
+}
+
+/* ------------------------------------------------------------------- occasions */
+
+.occasionGrid {
+  display: grid;
+  gap: var(--ds-space-3);
+  /* 190px, not 160: the tile carries a display-size word plus 24px of padding either
+     side, and a track narrower than the longest word is what forced the page wide. */
+  grid-template-columns: repeat(auto-fill, minmax(min(210px, 100%), 1fr));
+}
+
+/* ---------------------------------------------------------------- dido module */
+
+.didoModule {
+  display: grid;
+  gap: var(--ds-space-6);
+  padding: var(--ds-space-7) var(--ds-gutter);
+  background: var(--ds-surface-inverse);
+  color: var(--ds-text-inverse);
+}
+
+@media (min-width: 900px) {
+  .didoModule {
+    grid-template-columns: minmax(0, 4fr) minmax(0, 7fr);
+    align-items: center;
+    padding: var(--ds-space-9) var(--ds-space-8);
+    gap: var(--ds-space-9);
+  }
+}
+
+.didoCopy { display: flex; flex-direction: column; gap: var(--ds-space-4); }
+
+.didoTitle {
+  font-size: var(--ds-display-3);
+  letter-spacing: var(--ds-tracking-display);
+  margin: 0;
+}
+
+.didoBody { color: color-mix(in srgb, var(--ds-text-inverse) 78%, transparent); margin: 0; }
+
+/* ------------------------------------------------------------------- editorial */
+
+/* A wide editorial band: one image, one argument, set against the raised surface so it
+   reads as a change of register rather than another row of cards. */
+.editorialBand {
+  display: grid;
+  gap: var(--ds-space-6);
+  align-items: center;
+  background: var(--ds-surface-raised);
+}
+
+@media (min-width: 900px) {
+  .editorialBand {
+    grid-template-columns: minmax(0, 6fr) minmax(0, 5fr);
+    gap: var(--ds-space-8);
+  }
+}
+
+.editorialCopy {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ds-space-4);
+  padding: var(--ds-space-7) var(--ds-gutter);
+}
+
+@media (min-width: 900px) {
+  .editorialCopy { padding: var(--ds-space-8); padding-inline-start: var(--ds-space-9); }
+}

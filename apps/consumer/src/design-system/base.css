@@ -1,0 +1,98 @@
+/* Document defaults.
+ *
+ * Almost everything here is an ELEMENT selector. That is deliberate: the Phase 2 defect
+ * was 17 class names rendering with no rule behind them, and the structural answer is to
+ * have as few global class names as possible. Components style themselves through CSS
+ * Modules, where a name that does not exist compiles to undefined and renders no class at
+ * all rather than an unstyled one.
+ *
+ * The two utility classes below are the exceptions, and they earn it: both are contracts
+ * with assistive technology rather than visual styling.
+ */
+
+body {
+  margin: 0;
+  background: var(--ds-bg);
+  color: var(--ds-text);
+  font-family: var(--ds-font-body);
+  font-size: var(--ds-text-base);
+  font-weight: var(--ds-weight-body);
+  line-height: var(--ds-leading-body);
+  letter-spacing: var(--ds-tracking-body);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  /* The mobile tab bar is fixed over the page. Without this the last section of every
+     route sits underneath it and the final control cannot be tapped. */
+  padding-bottom: var(--ds-tabbar-height);
+}
+
+@media (min-width: 768px) {
+  body { padding-bottom: 0; }
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--ds-font-display);
+  font-weight: var(--ds-weight-display);
+  line-height: var(--ds-leading-heading);
+  letter-spacing: var(--ds-tracking-display);
+  text-wrap: balance;
+}
+
+h1 { font-size: var(--ds-display-2); line-height: var(--ds-leading-display); }
+h2 { font-size: var(--ds-display-3); }
+h3 { font-size: var(--ds-heading); }
+h4 { font-size: var(--ds-subheading); }
+
+p { max-width: var(--ds-editorial-max); }
+
+a { text-decoration-thickness: 1px; text-underline-offset: 0.2em; }
+
+/* Focus.
+ *
+ * :focus-visible rather than :focus, so a mouse click does not leave a ring behind while
+ * keyboard navigation still shows exactly where it is. An invisible focus indicator turns
+ * keyboard use into guesswork, which is why a test asserts this computes to something. */
+:focus-visible {
+  outline: var(--ds-focus-width) solid var(--ds-focus-color);
+  outline-offset: var(--ds-focus-offset);
+}
+
+/* Screen-reader-only. Not display:none, which removes it from the accessibility tree as
+   well as from the page, and therefore from the announcement it exists to make. */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* The skip link. Visually hidden until focused, which is the entire point: the first Tab
+   on any page must reach it. */
+.skip-link {
+  position: absolute;
+  top: var(--ds-space-2);
+  left: var(--ds-space-2);
+  z-index: 100;
+  padding: var(--ds-space-3) var(--ds-space-4);
+  background: var(--ds-surface-inverse);
+  color: var(--ds-text-inverse);
+  font-size: var(--ds-text-sm);
+  font-weight: var(--ds-weight-strong);
+  text-decoration: none;
+  transform: translateY(calc(-100% - var(--ds-space-4)));
+  transition: transform var(--ds-duration-fast) var(--ds-ease-standard);
+}
+
+.skip-link:focus-visible {
+  transform: translateY(0);
+}
+
+::selection {
+  background: var(--ds-accent);
+  color: var(--ds-accent-text);
+}

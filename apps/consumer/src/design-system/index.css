@@ -1,0 +1,10 @@
+/* The design system, in dependency order.
+ *
+ * Order matters and is not stylistic: a custom property must be declared before the rule
+ * that reads it. tokens.generated.css is loaded ahead of all of this by index.html, from
+ * public/, because it is a GENERATED artefact of the brand package and is emitted rather
+ * than hand-copied. See scripts/brand/build_brand_package.py, CLIENT_DIRS.
+ */
+@import "./reset.css";
+@import "./tokens.css";
+@import "./base.css";

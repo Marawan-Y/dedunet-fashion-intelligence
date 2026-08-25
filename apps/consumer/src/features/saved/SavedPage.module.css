@@ -1,0 +1,49 @@
+/* The counts row. Three big numbers, because a zero stated plainly is more honest than a
+   section that simply is not there. */
+.summary {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--ds-space-4);
+  grid-template-columns: repeat(auto-fit, minmax(min(180px, 100%), 1fr));
+}
+
+.summaryItem {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ds-space-1);
+  padding: var(--ds-space-5);
+  background: var(--ds-surface);
+  border: var(--ds-border-width) solid var(--ds-border);
+}
+
+.summaryCount {
+  font-family: var(--ds-font-display);
+  font-size: var(--ds-display-3);
+  line-height: 1;
+  letter-spacing: var(--ds-tracking-display);
+}
+
+.summaryLabel {
+  font-size: var(--ds-text-sm);
+  font-weight: var(--ds-weight-strong);
+}
+
+.summaryHolds { font-size: var(--ds-text-sm); color: var(--ds-text-muted); }
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ds-space-4);
+  padding-top: var(--ds-space-5);
+  border-top: var(--ds-border-width) solid var(--ds-border);
+}
+
+.panelTitle {
+  font-family: var(--ds-font-display);
+  font-size: var(--ds-heading);
+  margin: 0;
+}
+
+.purpose { color: var(--ds-text-muted); margin: 0; }

@@ -1,0 +1,95 @@
+.base {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--ds-space-2);
+  /* The 44px floor from section 27, derived from the token rather than restated, so the
+     whole system moves together if it ever changes. */
+  min-height: var(--ds-target-min);
+  min-width: var(--ds-target-min);
+  padding: var(--ds-space-3) var(--ds-space-6);
+  border: var(--ds-border-width) solid transparent;
+  border-radius: var(--ds-radius-button);
+  font-family: var(--ds-font-body);
+  font-size: var(--ds-text-sm);
+  font-weight: var(--ds-weight-strong);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  text-decoration: none;
+  text-align: center;
+  cursor: pointer;
+  transition:
+    background-color var(--ds-duration-fast) var(--ds-ease-standard),
+    color var(--ds-duration-fast) var(--ds-ease-standard),
+    border-color var(--ds-duration-fast) var(--ds-ease-standard),
+    transform var(--ds-duration-instant) var(--ds-ease-standard);
+}
+
+/* A press that moves is a press that registered. One pixel, because this is a fashion
+   surface and not a toy. */
+.base:active:not(:disabled) { transform: translateY(1px); }
+
+.base:disabled {
+  cursor: not-allowed;
+  /* Deliberately NOT reduced to a low-contrast grey. A disabled control still has to be
+     readable, because in preview mode the disabled control IS the message: it says "not
+     available to buy" and that sentence has to be legible. */
+  opacity: 0.72;
+}
+
+.primary {
+  background: var(--ds-text);
+  color: var(--ds-text-inverse);
+  border-color: var(--ds-text);
+}
+
+.primary:hover:not(:disabled) {
+  background: var(--ddn-color-primaryhover);
+  border-color: var(--ddn-color-primaryhover);
+}
+
+.accent {
+  background: var(--ds-accent);
+  color: var(--ds-accent-text);
+  border-color: var(--ds-accent);
+}
+
+.accent:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--ds-accent) 86%, black);
+  border-color: color-mix(in srgb, var(--ds-accent) 86%, black);
+}
+
+.secondary {
+  background: transparent;
+  color: var(--ds-text);
+  border-color: var(--ds-border-strong);
+}
+
+.secondary:hover:not(:disabled) {
+  background: var(--ds-text);
+  color: var(--ds-text-inverse);
+}
+
+.quiet {
+  background: transparent;
+  color: var(--ds-text);
+  border-color: var(--ds-border);
+}
+
+.quiet:hover:not(:disabled) { border-color: var(--ds-border-strong); }
+
+/* A text button that still meets the target floor. Padding does the work, not size. */
+.link {
+  background: none;
+  border-color: transparent;
+  padding-inline: 0;
+  color: var(--ds-text);
+  text-transform: none;
+  letter-spacing: 0;
+  text-decoration: underline;
+  text-underline-offset: 0.25em;
+}
+
+.link:hover:not(:disabled) { color: var(--ds-accent); }
+
+.full { width: 100%; }

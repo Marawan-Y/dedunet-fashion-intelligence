@@ -1,0 +1,60 @@
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ds-space-2);
+  padding: var(--ds-space-1) var(--ds-space-3);
+  border: var(--ds-border-width) solid var(--ds-border);
+  font-family: var(--ds-font-body);
+  font-size: var(--ds-text-xs);
+  font-weight: var(--ds-weight-strong);
+  letter-spacing: var(--ds-tracking-eyebrow);
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.neutral { color: var(--ds-text-muted); }
+.accent { border-color: var(--ds-accent); color: var(--ds-accent); }
+.success { border-color: var(--ds-success); color: var(--ds-success); background: var(--ds-success-wash); }
+.warning { border-color: var(--ds-warning); color: var(--ds-warning); background: var(--ds-warning-wash); }
+.info { border-color: var(--ds-info); color: var(--ds-info); background: var(--ds-info-wash); }
+
+/* The dot is not decoration. Section 27 forbids status carried by colour alone, and a
+   badge that reads "Preview" in a colour is still readable when the colour is not. */
+.dot { width: 6px; height: 6px; flex: none; background: currentColor; }
+
+/* -------------------------------------------------------------------------- chips */
+
+/* A filter chip. A real control, not a label — it toggles and says so. */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--ds-target-min);
+  padding: var(--ds-space-2) var(--ds-space-4);
+  border: var(--ds-border-width) solid var(--ds-border-strong);
+  background: transparent;
+  color: var(--ds-text);
+  font-size: var(--ds-text-sm);
+  font-weight: var(--ds-weight-medium);
+  white-space: nowrap;
+  text-decoration: none;
+  transition:
+    background-color var(--ds-duration-fast) var(--ds-ease-standard),
+    color var(--ds-duration-fast) var(--ds-ease-standard);
+}
+
+.chip:hover { background: var(--ds-surface-raised); }
+
+.chipSelected {
+  background: var(--ds-text);
+  color: var(--ds-text-inverse);
+  border-color: var(--ds-text);
+}
+
+.chipSelected:hover { background: var(--ddn-color-primaryhover); }
+
+.chipRow {
+  display: flex;
+  gap: var(--ds-space-2);
+  flex-wrap: wrap;
+}

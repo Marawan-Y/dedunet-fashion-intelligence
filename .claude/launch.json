@@ -4,8 +4,36 @@
     {
       "name": "dedunet-web",
       "runtimeExecutable": "python",
-      "runtimeArgs": ["-m", "http.server", "13500", "--bind", "127.0.0.1"],
+      "runtimeArgs": [
+        "-m",
+        "http.server",
+        "13500",
+        "--bind",
+        "127.0.0.1"
+      ],
       "port": 13500
+    },
+    {
+      "name": "dedunet-consumer",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "dev",
+        "--prefix",
+        "apps/consumer"
+      ],
+      "port": 13600
+    },
+    {
+      "name": "dedunet-consumer-build",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "preview",
+        "--prefix",
+        "apps/consumer"
+      ],
+      "port": 13600
     }
   ]
 }

@@ -25,6 +25,13 @@ dist/
 build/
 *.log
 
+# Playwright working output. Traces and videos are large and are
+# regenerated on every run; the SCREENS under evidence/ are the
+# deliberate artefact and are committed.
+e2e-results/
+playwright-report/
+.playwright/
+
 # Local databases and generated artifacts.
 # The -wal/-shm suffixes matter: SQLite in WAL mode writes sidecar files that a bare
 # *.sqlite3 pattern does not match, and they would otherwise be committed.

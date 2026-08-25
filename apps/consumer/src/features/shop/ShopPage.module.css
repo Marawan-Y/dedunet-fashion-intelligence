@@ -1,0 +1,13 @@
+.controls {
+  display: grid;
+  gap: var(--ds-space-4);
+  padding: var(--ds-space-5);
+  background: var(--ds-surface);
+  border: var(--ds-border-width) solid var(--ds-border);
+}
+
+@media (min-width: 768px) {
+  /* The search field earns the extra column: it is the control people reach for first,
+     and a three-equal-column row makes it look like a peer of the sort dropdown. */
+  .controls { grid-template-columns: 2fr 1fr 1fr; align-items: end; }
+}

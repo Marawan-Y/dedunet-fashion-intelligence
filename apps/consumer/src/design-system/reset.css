@@ -1,0 +1,32 @@
+/* Reset. Opinionated only where an opinion prevents a class of bug. */
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+body, h1, h2, h3, h4, h5, h6, p, figure, blockquote, dl, dd, ol, ul {
+  margin: 0;
+  padding: 0;
+}
+
+ul[role="list"], ol[role="list"] { list-style: none; }
+
+/* max-width 100% on every replaced element is the single most effective guard against the
+   horizontal overflow that section 26 forbids at eight widths. display:block removes the
+   inline descender gap that otherwise shows as a hairline under every image. */
+img, picture, video, canvas, svg {
+  display: block;
+  max-width: 100%;
+}
+
+input, button, textarea, select { font: inherit; color: inherit; }
+
+button { background: none; border: none; cursor: pointer; }
+
+/* Long product and brand names must wrap rather than push the layout wide. */
+p, h1, h2, h3, h4, h5, h6 { overflow-wrap: break-word; }
+
+a { color: inherit; }
+
+/* Anchors would otherwise land underneath the sticky header. */
+html { scroll-padding-top: 6rem; }

@@ -1,0 +1,80 @@
+.state {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--ds-space-3);
+  padding: var(--ds-space-7) var(--ds-space-5);
+  border: var(--ds-border-width) solid var(--ds-border);
+  background: var(--ds-surface);
+  max-width: var(--ds-editorial-max);
+}
+
+.error { border-inline-start: 3px solid var(--ds-error); background: var(--ds-error-wash); }
+.warning { border-inline-start: 3px solid var(--ds-warning); background: var(--ds-warning-wash); }
+.info { border-inline-start: 3px solid var(--ds-info); background: var(--ds-info-wash); }
+
+.title {
+  font-family: var(--ds-font-display);
+  font-size: var(--ds-heading);
+  font-weight: var(--ds-weight-display);
+  letter-spacing: var(--ds-tracking-display);
+  margin: 0;
+}
+
+.body { color: var(--ds-text-muted); margin: 0; }
+
+/* The raw failure, kept and shown rather than replaced by "something went wrong".
+   Small, quiet, and the only thing that makes a report actionable. */
+.detail {
+  font-family: ui-monospace, "SF Mono", "Cascadia Mono", Menlo, Consolas, monospace;
+  font-size: var(--ds-text-xs);
+  color: var(--ds-text-subtle);
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.actions { display: flex; gap: var(--ds-space-3); flex-wrap: wrap; margin-top: var(--ds-space-2); }
+
+/* ------------------------------------------------------------------- skeletons */
+
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--ds-surface-raised) 25%,
+    color-mix(in srgb, var(--ds-surface-raised) 55%, var(--ds-surface)) 50%,
+    var(--ds-surface-raised) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.4s linear infinite;
+}
+
+/* The shimmer is the one animation that must stop under reduced motion AND still leave
+   the box visible, because it is the box that communicates "loading", not the movement. */
+@media (prefers-reduced-motion: reduce) {
+  .skeleton { animation: none; }
+}
+
+@keyframes shimmer {
+  from { background-position: 200% 0; }
+  to { background-position: -200% 0; }
+}
+
+.skeletonMedia { aspect-ratio: var(--ds-ratio-portrait); width: 100%; }
+.skeletonLine { height: 0.85rem; width: 100%; }
+.skeletonLineShort { height: 0.85rem; width: 55%; }
+
+.skeletonCard {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ds-space-3);
+  border: var(--ds-border-width) solid var(--ds-border);
+  background: var(--ds-surface);
+  padding-bottom: var(--ds-space-4);
+}
+
+.skeletonCardBody {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ds-space-2);
+  padding-inline: var(--ds-space-4);
+}

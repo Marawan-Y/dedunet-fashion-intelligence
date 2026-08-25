@@ -1,0 +1,155 @@
+.layout {
+  display: grid;
+  gap: var(--ds-space-7);
+}
+
+@media (min-width: 900px) {
+  .layout {
+    grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+    gap: var(--ds-space-8);
+    align-items: start;
+  }
+}
+
+.gallery { min-width: 0; }
+
+/* The thumbnail strip.
+ *
+ * This is the element that broke at 9b63791: `.pdp__thumbs` had no rule at all, so three
+ * thumbnails stacked at full width and made the page 4,766px tall. A row that scrolls is
+ * the whole fix, and it is here rather than in a page stylesheet so it cannot be
+ * disconnected from the markup again. */
+.thumbs {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 72px;
+  gap: var(--ds-space-3);
+  margin-top: var(--ds-space-3);
+  overflow-x: auto;
+  padding-bottom: var(--ds-space-2);
+}
+
+.thumb {
+  padding: 0;
+  border: var(--ds-border-width) solid var(--ds-border);
+  background: var(--ds-surface);
+  cursor: pointer;
+  transition: border-color var(--ds-duration-fast) var(--ds-ease-standard);
+  /* The image inside is the target; 72px is under the 44px floor only in the sense that
+     it exceeds it. Stated explicitly so a future shrink cannot silently break it. */
+  min-width: 72px;
+  min-height: 72px;
+}
+
+.thumb:hover { border-color: var(--ds-text-muted); }
+
+.thumbActive { border-color: var(--ds-text); border-width: 2px; }
+
+.info { min-width: 0; }
+
+@media (min-width: 900px) {
+  .info { position: sticky; top: calc(var(--ds-header-height) + var(--ds-space-5)); }
+}
+
+.brandLink { text-decoration: none; }
+.brandLink:hover { text-decoration: underline; }
+
+.title { font-size: var(--ds-display-3); margin: 0; }
+
+.collection {
+  font-size: var(--ds-text-sm);
+  color: var(--ds-text-muted);
+  letter-spacing: 0.04em;
+  margin: 0;
+}
+
+.price { padding-block: var(--ds-space-2); }
+
+.priceValue {
+  font-family: var(--ds-font-display);
+  font-size: var(--ds-heading);
+}
+
+.priceAbsent {
+  font-family: var(--ds-font-display);
+  font-size: var(--ds-heading);
+  font-style: italic;
+  color: var(--ds-text-muted);
+}
+
+.purchase { display: flex; flex-direction: column; gap: var(--ds-space-3); }
+
+/* The refusal reason. Bordered and set apart, because it is the answer to "why can I not
+   buy this" and it has to be findable, not tucked under the button as fine print. */
+.refusal {
+  margin: 0;
+  padding: var(--ds-space-3) var(--ds-space-4);
+  border-inline-start: 3px solid var(--ds-warning);
+  background: var(--ds-warning-wash);
+  font-size: var(--ds-text-sm);
+  color: var(--ds-text);
+}
+
+.description {
+  font-size: var(--ds-text-base);
+  line-height: var(--ds-leading-body);
+  color: var(--ds-text-muted);
+  margin: 0;
+}
+
+.specHeading {
+  font-family: var(--ds-font-body);
+  font-size: var(--ds-text-xs);
+  font-weight: var(--ds-weight-strong);
+  letter-spacing: var(--ds-tracking-eyebrow);
+  text-transform: uppercase;
+  color: var(--ds-text-muted);
+  margin-bottom: var(--ds-space-3);
+}
+
+.chips { display: flex; gap: var(--ds-space-2); flex-wrap: wrap; }
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 36px;
+  padding: var(--ds-space-1) var(--ds-space-4);
+  border: var(--ds-border-width) solid var(--ds-border);
+  font-size: var(--ds-text-sm);
+}
+
+/* Stacked by default, two columns only when there is room.
+ *
+ * `max-content | 1fr` is the natural shape for a definition list and it is also a reliable
+ * way to overflow a phone: the first column refuses to shrink and anything unbreakable in
+ * the second sets a floor under the whole grid. Narrow screens get the stacked form, which
+ * cannot overflow whatever the content turns out to be. */
+.specs {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--ds-space-1) var(--ds-space-5);
+  margin: 0;
+  font-size: var(--ds-text-sm);
+}
+
+@media (min-width: 600px) {
+  .specs {
+    grid-template-columns: max-content minmax(0, 1fr);
+    gap: var(--ds-space-3) var(--ds-space-5);
+  }
+}
+
+.specs dt { margin-top: var(--ds-space-3); }
+
+@media (min-width: 600px) {
+  .specs dt { margin-top: 0; }
+}
+
+.specs dt { color: var(--ds-text-muted); }
+.specs dd { margin: 0; }
+
+/* An unverified claim is marked inline, next to the claim itself. A disclaimer at the foot
+   of the page is read by nobody who is looking at the material line. */
+.claim { color: var(--ds-text-muted); font-style: italic; }
+
+.actions { display: flex; gap: var(--ds-space-3); flex-wrap: wrap; }

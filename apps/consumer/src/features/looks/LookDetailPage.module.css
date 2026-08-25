@@ -1,0 +1,117 @@
+.layout {
+  display: grid;
+  gap: var(--ds-space-7);
+}
+
+@media (min-width: 900px) {
+  .layout {
+    grid-template-columns: minmax(0, 7fr) minmax(0, 4fr);
+    gap: var(--ds-space-8);
+    align-items: start;
+  }
+}
+
+.main { min-width: 0; }
+
+.itemsHeading {
+  font-family: var(--ds-font-body);
+  font-size: var(--ds-text-xs);
+  font-weight: var(--ds-weight-strong);
+  letter-spacing: var(--ds-tracking-eyebrow);
+  text-transform: uppercase;
+  color: var(--ds-text-muted);
+  margin-bottom: var(--ds-space-5);
+}
+
+.items {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--ds-space-4);
+}
+
+/* A look item is a row, not a card: the pieces are read as a list of decisions rather
+   than browsed as a grid, and the role each piece plays is the point of the row. */
+.item {
+  display: grid;
+  grid-template-columns: 84px minmax(0, 1fr) auto;
+  gap: var(--ds-space-4);
+  align-items: start;
+  padding-bottom: var(--ds-space-4);
+  border-bottom: var(--ds-border-width) solid var(--ds-border);
+}
+
+.item:last-child { border-bottom: none; padding-bottom: 0; }
+
+.itemMedia { width: 84px; }
+
+.itemBody { display: flex; flex-direction: column; gap: var(--ds-space-1); min-width: 0; }
+
+.itemBrand {
+  font-size: var(--ds-text-xs);
+  font-weight: var(--ds-weight-strong);
+  letter-spacing: var(--ds-tracking-eyebrow);
+  text-transform: uppercase;
+  color: var(--ds-text-muted);
+}
+
+.itemName {
+  font-family: var(--ds-font-display);
+  font-size: var(--ds-subheading);
+  margin: 0;
+}
+
+.itemName a { text-decoration: none; }
+.itemName a:hover { text-decoration: underline; }
+
+/* The reason this piece is in the look. The italic is doing real work: it marks the
+   sentence as editorial voice rather than as product metadata. */
+.itemRole {
+  font-family: var(--ds-font-display);
+  font-style: italic;
+  font-size: var(--ds-text-base);
+  color: var(--ds-accent);
+  margin: 0;
+}
+
+.itemMeta { font-size: var(--ds-text-sm); color: var(--ds-text-muted); margin: 0; }
+
+.itemAside { display: flex; align-items: flex-start; }
+
+.aside {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ds-space-4);
+  padding: var(--ds-space-5);
+  background: var(--ds-surface);
+  border: var(--ds-border-width) solid var(--ds-border);
+}
+
+@media (min-width: 900px) {
+  .aside { position: sticky; top: calc(var(--ds-header-height) + var(--ds-space-5)); }
+}
+
+/* Same reasoning as the product specs: stacked until there is room for two columns. */
+.summary {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--ds-space-1) var(--ds-space-5);
+  margin: 0;
+  font-size: var(--ds-text-sm);
+}
+
+@media (min-width: 480px) {
+  .summary {
+    grid-template-columns: max-content minmax(0, 1fr);
+    gap: var(--ds-space-2) var(--ds-space-5);
+  }
+}
+
+.summary dt { color: var(--ds-text-muted); }
+.summary dd { margin: 0; font-weight: var(--ds-weight-medium); }
+
+.noPrice { color: var(--ds-text-muted); font-style: italic; }
+
+.asideActions { display: flex; flex-direction: column; gap: var(--ds-space-3); }

@@ -1,0 +1,75 @@
+/* The media slot.
+ *
+ * At 9b63791 there were 27 of these on the editorial routes and every one was empty: a
+ * coloured rectangle where the clothing should be. A fashion platform showing no clothing
+ * is the failure that ended Phase 2, so this component cannot render nothing. It renders
+ * an image, or it renders a placeholder that SAYS it is a placeholder.
+ */
+
+.slot {
+  position: relative;
+  display: block;
+  width: 100%;
+  overflow: hidden;
+  background: var(--ds-surface-raised);
+  aspect-ratio: var(--slot-ratio, var(--ds-ratio-portrait));
+}
+
+.image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  /* Fades in once decoded. Without it an image pops in at whatever moment the network
+     finishes, which on a slow connection reads as the layout twitching. */
+  opacity: 0;
+  transition: opacity var(--ds-duration-slow) var(--ds-ease-standard);
+}
+
+.loaded { opacity: 1; }
+
+/* contain, not cover: the delivered product artwork is line-drawn concept work on a flat
+   ground, and cropping it cuts the garment rather than filling a frame with texture. */
+.contain { object-fit: contain; padding: var(--ds-space-4); }
+
+/* The zoom-on-hover that makes a grid of cards feel like a shop rather than a table.
+   Scoped to the card, applied here, and it inherits the reduced-motion duration. */
+.zoom { transition: transform var(--ds-duration-slow) var(--ds-ease-standard), opacity var(--ds-duration-slow) var(--ds-ease-standard); }
+
+/* An honest placeholder.
+ *
+ * Not decoration. It states that the image does not exist, which is the difference between
+ * a gap a reader can interpret and a gap that reads as a broken page. */
+.placeholder {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--ds-space-2);
+  padding: var(--ds-space-4);
+  text-align: center;
+  background: var(--ds-surface-raised);
+  color: var(--ds-text-muted);
+}
+
+.placeholderMark { opacity: 0.5; }
+
+.placeholderText {
+  font-size: var(--ds-text-xs);
+  letter-spacing: var(--ds-tracking-eyebrow);
+  text-transform: uppercase;
+}
+
+/* A caption that sits over the foot of the image. Used for the concept-artwork note, which
+   has to travel with the image rather than live in a legend somewhere else. */
+.note {
+  position: absolute;
+  inset-inline: 0;
+  bottom: 0;
+  padding: var(--ds-space-2) var(--ds-space-3);
+  background: color-mix(in srgb, var(--ds-surface) 88%, transparent);
+  color: var(--ds-text-muted);
+  font-size: var(--ds-text-xs);
+  letter-spacing: 0.04em;
+}

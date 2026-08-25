@@ -1,0 +1,42 @@
+.group {
+  padding-bottom: var(--ds-space-6);
+  border-bottom: var(--ds-border-width) solid var(--ds-border);
+}
+
+.group:last-child { border-bottom: none; }
+
+.groupBody {
+  color: var(--ds-text-muted);
+  margin: calc(var(--ds-space-5) * -1) 0 var(--ds-space-5);
+}
+
+.signals {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--ds-space-2);
+  grid-template-columns: repeat(auto-fill, minmax(min(220px, 100%), 1fr));
+}
+
+/* A signal row, not a chip: it has a value slot, and the value is currently empty.
+   Showing the slot is what makes "not set" a fact rather than an absence. */
+.signal {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ds-space-3);
+  min-height: var(--ds-target-min);
+  padding: var(--ds-space-2) var(--ds-space-4);
+  background: var(--ds-surface);
+  border: var(--ds-border-width) solid var(--ds-border);
+  font-size: var(--ds-text-sm);
+}
+
+.notSet {
+  font-size: var(--ds-text-xs);
+  letter-spacing: var(--ds-tracking-eyebrow);
+  text-transform: uppercase;
+  color: var(--ds-text-muted);
+  white-space: nowrap;
+}

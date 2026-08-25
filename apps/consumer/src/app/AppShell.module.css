@@ -1,0 +1,238 @@
+/* The commerce disclosure.
+ *
+ * Ships with copy that is true in EVERY permitted mode, because at parse time the page does
+ * not know which one it is in. It previously shipped "nothing here is available to
+ * purchase" and never revised it, which was false in COMMERCE_TEST_MODE where synthetic
+ * stock is purchasable. If the mode cannot be resolved this text stays, so the fallback
+ * claims nothing that could turn out to be wrong. */
+.notice {
+  margin: 0;
+  padding: var(--ds-space-2) var(--ds-gutter);
+  background: var(--ds-surface-inverse);
+  color: var(--ds-text-inverse);
+  font-size: var(--ds-text-xs);
+  letter-spacing: 0.03em;
+  text-align: center;
+}
+
+.header {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: color-mix(in srgb, var(--ds-bg) 92%, transparent);
+  backdrop-filter: blur(12px);
+  border-bottom: var(--ds-border-width) solid var(--ds-border);
+}
+
+.headerInner {
+  display: flex;
+  align-items: center;
+  gap: var(--ds-space-5);
+  min-height: var(--ds-header-height);
+  max-width: var(--ds-content-max);
+  margin-inline: auto;
+  padding-inline: var(--ds-gutter);
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--ds-target-min);
+  text-decoration: none;
+  flex: none;
+}
+
+.brandMark { height: 20px; width: auto; }
+
+/* Desktop navigation. The mobile tab bar is NOT this shrunk: it is a different information
+   architecture for a different context, which is why only one is ever mounted visible. */
+.nav { display: none; }
+
+@media (min-width: 900px) {
+  .nav {
+    display: flex;
+    align-items: center;
+    gap: var(--ds-space-5);
+  }
+}
+
+.navLink {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--ds-target-min);
+  font-size: var(--ds-text-sm);
+  font-weight: var(--ds-weight-medium);
+  letter-spacing: 0.02em;
+  text-decoration: none;
+  color: var(--ds-text);
+  position: relative;
+  transition: color var(--ds-duration-fast) var(--ds-ease-standard);
+}
+
+.navLink:hover { color: var(--ds-accent); }
+
+/* aria-current is the source of truth and the CSS keys off it, so the visual highlight and
+   what a screen reader announces are the same fact rather than two that can drift. */
+.navLink[aria-current="page"]::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 14px;
+  height: 1px;
+  background: var(--ds-text);
+}
+
+/* Dido is the primary action, not one link among seven. */
+.navDido {
+  font-weight: var(--ds-weight-strong);
+  color: var(--ds-accent);
+}
+
+.headerActions {
+  margin-inline-start: auto;
+  display: flex;
+  align-items: center;
+  gap: var(--ds-space-2);
+}
+
+.iconButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--ds-target-min);
+  min-height: var(--ds-target-min);
+  color: var(--ds-text);
+  text-decoration: none;
+}
+
+.iconButton:hover { color: var(--ds-accent); }
+
+/* ------------------------------------------------------------------ mobile tab bar */
+
+.tabBar {
+  position: fixed;
+  inset-inline: 0;
+  bottom: 0;
+  z-index: 30;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  background: var(--ds-surface);
+  border-top: var(--ds-border-width) solid var(--ds-border);
+  /* Clears the iOS home indicator. Without it the last row of targets sits under it. */
+  padding-bottom: env(safe-area-inset-bottom, 0);
+}
+
+@media (min-width: 900px) {
+  .tabBar { display: none; }
+}
+
+.tab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-height: var(--ds-tabbar-height);
+  padding-block: var(--ds-space-2);
+  font-size: 0.6875rem;
+  letter-spacing: 0.02em;
+  text-decoration: none;
+  color: var(--ds-text-muted);
+  transition: color var(--ds-duration-fast) var(--ds-ease-standard);
+}
+
+.tab[aria-current="page"] { color: var(--ds-text); }
+
+.tabIcon { width: 22px; height: 22px; }
+
+/* Dido raised at the centre, because Dido is the primary action rather than the third of
+   five equals. */
+.tabDido { color: var(--ds-accent); }
+
+.tabDidoMark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  margin-top: -14px;
+  background: var(--ds-accent);
+  color: var(--ds-accent-text);
+  box-shadow: var(--ds-elevation-2);
+}
+
+.tabDido[aria-current="page"] .tabDidoMark {
+  background: var(--ds-text);
+}
+
+/* ----------------------------------------------------------------------- footer */
+
+.footer {
+  margin-top: var(--ds-section-gap);
+  padding-block: var(--ds-space-8) var(--ds-space-7);
+  background: var(--ds-surface-inverse);
+  color: var(--ds-text-inverse);
+}
+
+.footerGrid {
+  display: grid;
+  gap: var(--ds-space-7);
+  grid-template-columns: 1fr;
+  margin-bottom: var(--ds-space-8);
+}
+
+@media (min-width: 600px) {
+  .footerGrid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+.footerHeading {
+  font-family: var(--ds-font-body);
+  font-size: var(--ds-text-xs);
+  font-weight: var(--ds-weight-strong);
+  letter-spacing: var(--ds-tracking-eyebrow);
+  text-transform: uppercase;
+  opacity: 0.6;
+  margin-bottom: var(--ds-space-4);
+}
+
+.footerList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--ds-space-1);
+}
+
+.footerLink {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--ds-target-min);
+  text-decoration: none;
+  font-size: var(--ds-text-sm);
+  opacity: 0.85;
+}
+
+.footerLink:hover { opacity: 1; text-decoration: underline; }
+
+.legal {
+  font-size: var(--ds-text-xs);
+  line-height: 1.6;
+  opacity: 0.65;
+  max-width: 62ch;
+}
+
+/* ------------------------------------------------------------- page transition */
+
+/* The page transition. A short fade and a few pixels of rise — enough to signal that the
+   content changed, short enough that it never delays reading it. Zeroed under reduced
+   motion by the duration token, not by a second rule here. */
+.page {
+  animation: pageIn var(--ds-duration-base) var(--ds-ease-entrance) both;
+}
+
+@keyframes pageIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
+}

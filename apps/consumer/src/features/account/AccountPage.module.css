@@ -1,0 +1,67 @@
+.columns {
+  display: grid;
+  gap: var(--ds-space-6);
+}
+
+@media (min-width: 900px) {
+  /* Sign in is the common case and gets the wider column. Two equal panels present
+     "create an account" as an equally likely action, which for a returning customer it
+     is not. */
+  .columns { grid-template-columns: minmax(0, 6fr) minmax(0, 5fr); gap: var(--ds-space-7); }
+}
+
+.panel {
+  padding: var(--ds-space-6);
+  background: var(--ds-surface);
+  border: var(--ds-border-width) solid var(--ds-border);
+}
+
+.panelTitle {
+  font-family: var(--ds-font-display);
+  font-size: var(--ds-heading);
+  margin: 0 0 var(--ds-space-5);
+}
+
+.formActions {
+  display: flex;
+  align-items: center;
+  gap: var(--ds-space-5);
+  flex-wrap: wrap;
+}
+
+.forgot {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--ds-target-min);
+  font-size: var(--ds-text-sm);
+  color: var(--ds-text-muted);
+}
+
+.sections {
+  display: grid;
+  gap: var(--ds-space-4);
+  grid-template-columns: repeat(auto-fill, minmax(min(240px, 100%), 1fr));
+}
+
+.sectionCard {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ds-space-2);
+  min-height: var(--ds-target-min);
+  padding: var(--ds-space-5);
+  background: var(--ds-surface);
+  border: var(--ds-border-width) solid var(--ds-border);
+  text-decoration: none;
+  transition:
+    border-color var(--ds-duration-fast) var(--ds-ease-standard),
+    background-color var(--ds-duration-fast) var(--ds-ease-standard);
+}
+
+.sectionCard:hover { border-color: var(--ds-border-strong); background: var(--ds-surface-raised); }
+
+.sectionTitle {
+  font-family: var(--ds-font-display);
+  font-size: var(--ds-subheading);
+}
+
+.sectionBody { font-size: var(--ds-text-sm); color: var(--ds-text-muted); }

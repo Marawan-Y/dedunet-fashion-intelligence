@@ -1,0 +1,143 @@
+.card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  background: var(--ds-surface);
+  border: var(--ds-border-width) solid var(--ds-border);
+  border-radius: var(--ds-radius);
+  height: 100%;
+  transition:
+    border-color var(--ds-duration-base) var(--ds-ease-standard),
+    transform var(--ds-duration-base) var(--ds-ease-standard),
+    box-shadow var(--ds-duration-base) var(--ds-ease-standard);
+}
+
+/* Hover belongs to the card, not to the image, so the whole object responds as one thing.
+   The lift is small deliberately: this is a fashion grid, and cards that leap read as a
+   toy. Both properties inherit the reduced-motion duration from the token layer. */
+.card:hover {
+  border-color: var(--ds-border-strong);
+  box-shadow: var(--ds-elevation-2);
+}
+
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  .card:hover { transform: translateY(-2px); }
+  .card:hover .media img { transform: scale(1.03); }
+}
+
+/* Focus reaches the card through the link inside it, so the ring must be drawn around the
+   whole card rather than around the invisible stretched anchor. */
+.card:focus-within {
+  outline: var(--ds-focus-width) solid var(--ds-focus-color);
+  outline-offset: var(--ds-focus-offset);
+}
+
+.card:focus-within .link:focus-visible { outline: none; }
+
+.media { position: relative; overflow: hidden; }
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ds-space-2);
+  padding: var(--ds-space-4);
+  flex: 1;
+}
+
+.brandName {
+  font-family: var(--ds-font-body);
+  font-size: var(--ds-text-xs);
+  font-weight: var(--ds-weight-strong);
+  letter-spacing: var(--ds-tracking-eyebrow);
+  text-transform: uppercase;
+  color: var(--ds-text-muted);
+}
+
+.title {
+  font-family: var(--ds-font-display);
+  font-size: var(--ds-subheading);
+  font-weight: var(--ds-weight-display);
+  line-height: var(--ds-leading-heading);
+  letter-spacing: var(--ds-tracking-display);
+  margin: 0;
+}
+
+.meta {
+  font-size: var(--ds-text-sm);
+  color: var(--ds-text-muted);
+  margin: 0;
+}
+
+/* The stretched link. Covers the card so the whole surface is the target, while the
+   accessible name stays on the real anchor text rather than on a bare region. */
+.link {
+  text-decoration: none;
+  color: inherit;
+}
+
+.link::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+}
+
+.foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ds-space-2);
+  flex-wrap: wrap;
+  padding: 0 var(--ds-space-4) var(--ds-space-4);
+}
+
+/* Controls inside a card must sit above the stretched link or they cannot be clicked. */
+.foot > * { position: relative; z-index: 1; }
+
+/* ---------------------------------------------------------------- occasion card */
+
+/* The "what are you dressing for" tiles. A different object from a product card: no
+   image, all type, and the whole tile is the target. */
+.occasion {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--ds-space-1);
+  /* Grid and flex items default to min-width:auto, which refuses to shrink below their
+     content and is the usual cause of a track pushing a layout wide. */
+  min-width: 0;
+  min-height: var(--ds-target-min);
+  padding: var(--ds-space-5);
+  background: var(--ds-surface);
+  border: var(--ds-border-width) solid var(--ds-border);
+  text-decoration: none;
+  text-align: left;
+  transition:
+    background-color var(--ds-duration-base) var(--ds-ease-standard),
+    color var(--ds-duration-base) var(--ds-ease-standard),
+    border-color var(--ds-duration-base) var(--ds-ease-standard);
+}
+
+.occasion:hover {
+  background: var(--ds-text);
+  border-color: var(--ds-text);
+  color: var(--ds-text-inverse);
+}
+
+.occasionName {
+  font-family: var(--ds-font-display);
+  font-weight: var(--ds-weight-display);
+  letter-spacing: var(--ds-tracking-display);
+  line-height: var(--ds-leading-heading);
+  /* Sized to the tile rather than to the page.
+   *
+   * At the full heading size these names were wider than the tile and broke mid-word —
+   * "Streetwe / ar", "Contemp / orary". Breaking is still allowed as the last resort that
+   * prevents overflow, but the type now fits, so it never gets there. */
+  font-size: clamp(1.15rem, 1rem + 0.55vw, 1.5rem);
+  overflow-wrap: break-word;
+}
+
+.occasionHint {
+  font-size: var(--ds-text-sm);
+  opacity: 0.75;
+}

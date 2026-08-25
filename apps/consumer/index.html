@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>DEDUNET — Personal fashion intelligence</title>
+
+    <!-- Mode-independent, for the same reason the in-page disclosure is: a static tag
+         cannot know which commerce mode the deployment is in, and "nothing is available to
+         purchase" was false in COMMERCE_TEST_MODE. -->
+    <meta
+      name="description"
+      content="DEDUNET helps you decide what to wear, then helps you find it. Personal fashion intelligence: complete looks, explained, from brands you can reach."
+    />
+
+    <!-- This build must never be indexed: it is a non-public demonstration with prototype
+         products and sandbox payments. The document structure is SEO-ready, which is what
+         the semantic headings provide, but the readiness is structural. Indexing stays off
+         until public launch is authorized. -->
+    <meta name="robots" content="noindex, nofollow" />
+    <meta name="theme-color" content="#F6F1E7" />
+
+    <!-- GENERATED brand token layer, emitted into public/ by
+         scripts/brand/build_brand_package.py. Loaded ahead of the bundle because the
+         semantic layer inside it consumes these custom properties, and a property must be
+         declared before the rule that reads it. -->
+    <link rel="stylesheet" href="/tokens.generated.css" />
+
+    <!-- GENERATED brand seam. A plain script rather than a bundled import, so it stays an
+         emitted artefact the drift check can compare across all three clients. -->
+    <script src="/brand.generated.js"></script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
