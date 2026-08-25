@@ -1,0 +1,375 @@
+/* DEDUNET platform shell — navigation, page layouts, Dido surface.
+ *
+ * Mobile-first throughout. Every `@media (min-width: …)` below is an enhancement, which is
+ * what stops this being a desktop layout that has merely been shrunk: the phone gets a
+ * bottom tab bar and swipeable rails by DEFAULT, and the desktop header is the addition.
+ */
+
+/* ==================================================================== header */
+
+.site-header {
+  position: sticky; top: 0; z-index: var(--ds-z-sticky);
+  background: color-mix(in srgb, var(--ds-bg) 92%, transparent);
+  backdrop-filter: blur(8px);
+  border-bottom: var(--ds-border-width) solid var(--ds-border);
+}
+
+.site-header__inner {
+  display: flex; align-items: center; gap: var(--ds-space-4);
+  padding: var(--ds-space-3) var(--ds-gutter);
+  max-width: var(--ds-content-max); margin: 0 auto;
+}
+
+.brand {
+  display: inline-flex; align-items: center; gap: var(--ds-space-2);
+  font-family: var(--ds-font-display);
+  font-size: var(--ds-text-lg);
+  letter-spacing: var(--ds-tracking-wider);
+  text-decoration: none; text-transform: uppercase;
+  flex: none;
+}
+.brand__mark { height: 22px; width: auto; }
+
+/* Desktop navigation. Hidden on phones, where `.mobile-nav` takes over. */
+.nav { display: none; }
+@media (min-width: 1024px) {
+  .nav {
+    display: flex; align-items: center; gap: var(--ds-space-5);
+    margin-inline-start: var(--ds-space-6);
+    flex: 1;
+  }
+  .nav a {
+    text-decoration: none; font-size: var(--ds-text-xs);
+    text-transform: uppercase; letter-spacing: var(--ds-tracking-wide);
+    padding-block: var(--ds-space-2);
+    border-bottom: 2px solid transparent;
+    white-space: nowrap;
+  }
+  .nav a:hover { border-bottom-color: var(--ds-border-strong); }
+  /* `aria-current` drives the active style, so the visual state and the state a screen
+     reader announces are the same fact rather than two that can drift. */
+  .nav a[aria-current="page"] { border-bottom-color: var(--ds-accent); }
+  /* Dido is the primary action, not a peer link. */
+  .nav a.nav__dido { color: var(--ds-accent); font-weight: 700; }
+}
+
+.site-header__actions { margin-inline-start: auto; display: flex; align-items: center; gap: var(--ds-space-1); }
+
+/* ==================================================================== mobile nav */
+
+.mobile-nav {
+  position: fixed; left: 0; right: 0; bottom: 0;
+  z-index: var(--ds-z-mobilenav);
+  display: grid; grid-template-columns: repeat(5, 1fr);
+  background: var(--ds-surface);
+  border-top: var(--ds-border-width) solid var(--ds-border);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+@media (min-width: 1024px) { .mobile-nav { display: none; } }
+
+.mobile-nav a {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 2px; padding: var(--ds-space-2) 0 var(--ds-space-3);
+  min-height: 56px;
+  font-size: 0.6875rem; letter-spacing: 0.02em;
+  text-decoration: none; color: var(--ds-text-muted);
+}
+.mobile-nav a[aria-current="page"] { color: var(--ds-text); }
+.mobile-nav svg { width: 22px; height: 22px; }
+
+/* Dido is the centre action and is raised out of the bar. */
+.mobile-nav a.mobile-nav__dido { color: var(--ds-accent); }
+.mobile-nav__dido-mark {
+  display: flex; align-items: center; justify-content: center;
+  width: 40px; height: 40px; margin-top: -14px;
+  border-radius: var(--ds-radius-pill);
+  background: var(--ds-accent); color: var(--ds-accent-text);
+  box-shadow: var(--ds-shadow-md);
+}
+.mobile-nav__dido-mark svg { width: 22px; height: 22px; }
+
+/* The fixed bar would otherwise cover the end of every page. */
+body { padding-bottom: 72px; }
+@media (min-width: 1024px) { body { padding-bottom: 0; } }
+
+/* ==================================================================== main / footer */
+
+main { display: block; }
+main:focus { outline: none; }
+
+.site-footer {
+  border-top: var(--ds-border-width) solid var(--ds-border);
+  margin-top: var(--ds-section-gap-mobile);
+  padding-block: var(--ds-space-7);
+  font-size: var(--ds-text-sm);
+  color: var(--ds-text-muted);
+}
+.site-footer__grid {
+  display: grid; gap: var(--ds-space-6);
+  grid-template-columns: repeat(auto-fit, minmax(min(200px, 100%), 1fr));
+}
+.site-footer h2 {
+  font-family: var(--ds-font-body); font-size: var(--ds-text-xs);
+  text-transform: uppercase; letter-spacing: var(--ds-tracking-wider);
+  color: var(--ds-text); margin: 0 0 var(--ds-space-3);
+}
+.site-footer ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--ds-space-2); }
+.site-footer a { text-decoration: none; }
+.site-footer a:hover { text-decoration: underline; text-underline-offset: 3px; }
+.site-footer__legal {
+  margin-top: var(--ds-space-6); padding-top: var(--ds-space-4);
+  border-top: var(--ds-border-width) solid var(--ds-border);
+  font-size: var(--ds-text-xs);
+}
+
+/* ==================================================================== hero */
+
+.hero {
+  position: relative;
+  padding-block: var(--ds-space-8) var(--ds-space-7);
+  border-bottom: var(--ds-border-width) solid var(--ds-border);
+  overflow: hidden;
+}
+.hero__inner { position: relative; z-index: 1; max-width: var(--ds-content-max); margin: 0 auto; padding-inline: var(--ds-gutter); }
+.hero__wordmark {
+  font-family: var(--ds-font-display);
+  font-size: var(--ds-text-hero);
+  line-height: 0.95;
+  letter-spacing: var(--ds-tracking-wide);
+  margin: 0 0 var(--ds-space-3);
+  text-transform: uppercase;
+}
+.hero__promise {
+  font-family: var(--ds-font-display);
+  font-size: var(--ds-text-2xl);
+  line-height: var(--ds-leading-snug);
+  margin: 0 0 var(--ds-space-4);
+  max-width: 18ch;
+}
+.hero__body { max-width: 52ch; color: var(--ds-text-muted); font-size: var(--ds-text-lg); }
+.hero__ctas { display: flex; gap: var(--ds-space-3); flex-wrap: wrap; margin-top: var(--ds-space-6); }
+.hero__ctas .btn { flex: 1 1 auto; min-width: 200px; }
+@media (min-width: 768px) { .hero__ctas .btn { flex: 0 0 auto; } }
+
+.hero__art {
+  position: absolute; inset: 0; z-index: 0;
+  opacity: 0.13; pointer-events: none;
+  background-repeat: no-repeat; background-position: right center; background-size: contain;
+}
+@media (min-width: 768px) { .hero__art { opacity: 0.2; } }
+
+/* ==================================================================== occasion picker */
+
+.occasions {
+  display: grid; gap: var(--ds-space-3);
+  grid-template-columns: repeat(auto-fill, minmax(min(150px, 100%), 1fr));
+}
+
+/* ==================================================================== product / look detail */
+
+.detail {
+  display: grid; gap: var(--ds-space-6);
+  align-items: start;
+}
+@media (min-width: 900px) {
+  .detail { grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: var(--ds-space-8); }
+  .detail__media { position: sticky; top: 92px; }
+}
+.detail__info { display: flex; flex-direction: column; gap: var(--ds-space-4); }
+.detail__brand {
+  font-size: var(--ds-text-xs); text-transform: uppercase;
+  letter-spacing: var(--ds-tracking-wider); color: var(--ds-text-muted);
+  text-decoration: none;
+}
+.detail__title { margin: 0; font-size: var(--ds-text-3xl); }
+
+.specs { display: grid; grid-template-columns: max-content 1fr; gap: var(--ds-space-2) var(--ds-space-4); margin: 0; font-size: var(--ds-text-sm); }
+.specs dt { color: var(--ds-text-muted); }
+.specs dd { margin: 0; }
+
+.sizes { display: flex; gap: var(--ds-space-2); flex-wrap: wrap; }
+.size {
+  min-width: 52px; min-height: 44px; padding: var(--ds-space-2) var(--ds-space-3);
+  border: var(--ds-border-width) solid var(--ds-border);
+  border-radius: var(--ds-radius-button);
+  background: var(--ds-surface); cursor: pointer; font-size: var(--ds-text-sm);
+}
+.size--on { background: var(--ds-primary); color: var(--ds-text-inverse); border-color: var(--ds-primary); }
+.size:disabled { opacity: 0.4; cursor: not-allowed; text-decoration: line-through; }
+
+/* ==================================================================== look items */
+
+.look-items { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--ds-space-3); }
+.look-item {
+  display: grid; grid-template-columns: 64px 1fr auto; gap: var(--ds-space-3);
+  align-items: center;
+  padding: var(--ds-space-3);
+  border: var(--ds-border-width) solid var(--ds-border);
+  border-radius: var(--ds-radius);
+  background: var(--ds-surface);
+}
+.look-item__media { aspect-ratio: 4 / 5; background: var(--ds-surface-raised); overflow: hidden; }
+.look-item__media img { width: 100%; height: 100%; object-fit: cover; }
+.look-item__slot { font-size: var(--ds-text-xs); text-transform: uppercase; letter-spacing: var(--ds-tracking-wide); color: var(--ds-text-muted); }
+.look-item__name { font-weight: 600; }
+
+.look-total {
+  display: flex; align-items: baseline; justify-content: space-between;
+  padding-top: var(--ds-space-4); margin-top: var(--ds-space-2);
+  border-top: var(--ds-border-width) solid var(--ds-border);
+}
+
+/* ==================================================================== filters */
+
+.filters {
+  display: grid; gap: var(--ds-space-3);
+  grid-template-columns: 1fr;
+  margin-bottom: var(--ds-space-6);
+}
+@media (min-width: 768px) { .filters { grid-template-columns: 2fr 1fr 1fr auto; align-items: end; } }
+
+/* ==================================================================== DIDO
+ *
+ * Dido Net — the fashion intelligence character.
+ *
+ * The visual language is a vertical cartouche frame, a stacked-lintel head silhouette and
+ * a single accent iris. It reads as Egyptian PROPORTION and geometry rather than costume:
+ * no headdress, no crook and flail, no gold-mask pastiche. §8 rules those out explicitly,
+ * and they are also the things that would date the brand to a gift shop.
+ *
+ * Everything animated here is decorative. `prefers-reduced-motion` collapses all of it via
+ * the design system's duration tokens plus the explicit rules at the end.
+ */
+
+.dido-stage {
+  display: grid; gap: var(--ds-space-6);
+  align-items: center;
+}
+@media (min-width: 900px) { .dido-stage { grid-template-columns: minmax(0, 4fr) minmax(0, 6fr); } }
+
+.dido-figure {
+  position: relative;
+  aspect-ratio: 3 / 4;
+  max-width: 320px; width: 100%; margin-inline: auto;
+  border: var(--ds-border-width) solid var(--ds-border);
+  background: linear-gradient(180deg, var(--ds-surface-raised), var(--ds-surface));
+  display: flex; align-items: center; justify-content: center;
+}
+.dido-figure svg { width: 72%; height: auto; }
+
+/* State is carried on a data attribute so JS sets ONE value and CSS owns the presentation
+   of all ten states. A component that set styles directly would have ten code paths that
+   could disagree with the stylesheet. */
+.dido-figure[data-state="thinking"] .dido-iris { animation: dido-pulse 1.6s var(--ds-ease) infinite; }
+.dido-figure[data-state="listening"] .dido-iris { animation: dido-breathe 2.4s var(--ds-ease) infinite; }
+.dido-figure[data-state="presenting"] .dido-rays { opacity: 1; }
+.dido-figure[data-state="error"] .dido-iris { fill: var(--ds-error); }
+.dido-figure[data-state="offline"] { filter: grayscale(1); opacity: 0.7; }
+
+.dido-iris { fill: var(--ds-accent); transform-origin: center; }
+.dido-rays { opacity: 0; transition: opacity var(--ds-duration-slow) var(--ds-ease); }
+
+@keyframes dido-pulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.18); opacity: 0.75; }
+}
+@keyframes dido-breathe {
+  0%, 100% { opacity: 0.65; }
+  50% { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dido-iris { animation: none !important; }
+  .dido-rays { opacity: 1; }
+}
+
+/* ---------------------------------------------------------------- conversation shell */
+
+.dido-convo {
+  display: flex; flex-direction: column; gap: var(--ds-space-4);
+  border: var(--ds-border-width) solid var(--ds-border);
+  border-radius: var(--ds-radius);
+  background: var(--ds-surface);
+  padding: var(--ds-space-4);
+  min-height: 280px;
+}
+.dido-log { display: flex; flex-direction: column; gap: var(--ds-space-3); flex: 1; }
+
+.dido-msg { display: flex; gap: var(--ds-space-3); max-width: 100%; }
+.dido-msg__body {
+  padding: var(--ds-space-3) var(--ds-space-4);
+  border-radius: var(--ds-radius);
+  background: var(--ds-surface-raised);
+  font-size: var(--ds-text-sm);
+  max-width: 60ch;
+}
+.dido-msg--user { justify-content: flex-end; }
+.dido-msg--user .dido-msg__body { background: var(--ds-primary); color: var(--ds-text-inverse); }
+.dido-msg__who {
+  font-size: var(--ds-text-xs); text-transform: uppercase;
+  letter-spacing: var(--ds-tracking-wide); color: var(--ds-text-muted);
+  margin-bottom: var(--ds-space-1);
+}
+
+.dido-thinking { display: inline-flex; gap: 4px; align-items: center; padding: var(--ds-space-3) var(--ds-space-4); }
+.dido-thinking span {
+  width: 6px; height: 6px; border-radius: var(--ds-radius-pill);
+  background: var(--ds-text-muted);
+  animation: dido-dot 1.2s var(--ds-ease) infinite;
+}
+.dido-thinking span:nth-child(2) { animation-delay: 0.15s; }
+.dido-thinking span:nth-child(3) { animation-delay: 0.3s; }
+@keyframes dido-dot { 0%, 60%, 100% { opacity: 0.3; } 30% { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .dido-thinking span { animation: none; opacity: 0.6; } }
+
+.dido-options { display: grid; gap: var(--ds-space-2); grid-template-columns: repeat(auto-fill, minmax(min(200px, 100%), 1fr)); }
+.dido-option {
+  text-align: left; padding: var(--ds-space-3) var(--ds-space-4);
+  border: var(--ds-border-width) solid var(--ds-border);
+  border-radius: var(--ds-radius);
+  background: var(--ds-surface); cursor: pointer; min-height: 44px;
+}
+.dido-option:hover:not(:disabled) { border-color: var(--ds-accent); }
+.dido-option:disabled { opacity: 0.5; cursor: not-allowed; }
+.dido-option__label { font-weight: 600; display: block; }
+.dido-option__hint { font-size: var(--ds-text-xs); color: var(--ds-text-muted); }
+
+/* ==================================================================== for brands */
+
+.pitch {
+  display: grid; gap: var(--ds-space-5);
+  grid-template-columns: repeat(auto-fit, minmax(min(260px, 100%), 1fr));
+}
+.pitch__item {
+  padding: var(--ds-space-5);
+  border: var(--ds-border-width) solid var(--ds-border);
+  background: var(--ds-surface);
+}
+.pitch__item h3 { margin-top: 0; }
+
+.status-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--ds-space-3); }
+.status-list li { display: flex; align-items: flex-start; gap: var(--ds-space-3); }
+
+/* ==================================================================== tables */
+
+.table { width: 100%; border-collapse: collapse; font-size: var(--ds-text-sm); }
+.table th, .table td { text-align: left; padding: var(--ds-space-3); border-bottom: var(--ds-border-width) solid var(--ds-border); }
+.table th { font-weight: 600; color: var(--ds-text-muted); font-size: var(--ds-text-xs); text-transform: uppercase; letter-spacing: var(--ds-tracking-wide); }
+.table-wrap { overflow-x: auto; }
+
+.totals__row { display: flex; justify-content: space-between; padding: var(--ds-space-2) 0; }
+
+/* ==================================================================== list */
+
+.list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--ds-space-3); }
+.list > li {
+  padding: var(--ds-space-4);
+  border: var(--ds-border-width) solid var(--ds-border);
+  background: var(--ds-surface);
+  display: flex; align-items: center; justify-content: space-between; gap: var(--ds-space-3);
+  flex-wrap: wrap;
+}
+
+.crumbs { margin-bottom: var(--ds-space-4); font-size: var(--ds-text-sm); }
+.crumbs a { text-decoration: none; color: var(--ds-text-muted); }
+.crumbs a:hover { color: var(--ds-text); }

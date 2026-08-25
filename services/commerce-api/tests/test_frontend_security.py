@@ -28,8 +28,15 @@ def _repo_root() -> Path:
 
 
 REPO_ROOT = _repo_root()
+# Every script the browser clients load, not just the biggest one. Phase 2 split the
+# storefront into a design system, a data layer and the routes; scanning only `app.js`
+# afterwards would have left the two new files — one of which builds every element on the
+# platform — outside the guard that exists because this exact sink shipped once already.
 CLIENT_SCRIPTS = [
     REPO_ROOT / "apps" / "web" / "app.js",
+    REPO_ROOT / "apps" / "web" / "ds.js",
+    REPO_ROOT / "apps" / "web" / "data.js",
+    REPO_ROOT / "apps" / "web" / "media-url.js",
     REPO_ROOT / "apps" / "admin" / "admin.js",
 ]
 

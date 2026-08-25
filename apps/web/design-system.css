@@ -1,0 +1,323 @@
+/* DEDUNET design system — semantic layer.
+ *
+ * Two layers, deliberately separated:
+ *
+ *   tokens.generated.css   --ddn-*   the Side A brand delivery. GENERATED, never edited.
+ *   this file              --ds-*    semantic roles. What a colour is FOR, not what it is.
+ *
+ * Components reference `--ds-*` only. Nothing below the token layer names a hex value, so
+ * a brand revision is a regeneration rather than a search-and-replace, and a component
+ * cannot quietly invent a colour that is not in the delivered palette.
+ *
+ * The storefront previously carried its own palette (--ink, --sand, --bone, --clay) that
+ * had never been reconciled with the tokens Side A actually delivered. Two palettes, one
+ * brand, no check that they agreed. Those names are kept as aliases at the bottom of this
+ * file so nothing that still uses them breaks, and they now RESOLVE to the real tokens.
+ */
+
+:root {
+  /* ---------------------------------------------------------------- surface */
+  --ds-bg: var(--ddn-color-background);
+  --ds-surface: var(--ddn-color-surface);
+  --ds-surface-raised: var(--ddn-color-surfaceelevated);
+  --ds-surface-inverse: var(--ddn-color-darksurface);
+  --ds-border: var(--ddn-color-border);
+  --ds-border-strong: var(--ddn-color-textsecondary);
+
+  /* ---------------------------------------------------------------- text */
+  --ds-text: var(--ddn-color-textprimary);
+  --ds-text-muted: var(--ddn-color-textsecondary);
+  --ds-text-subtle: var(--ddn-color-smoke);
+  --ds-text-inverse: var(--ddn-color-background);
+
+  /* ---------------------------------------------------------------- accent */
+  --ds-accent: var(--ddn-color-accent);
+  --ds-accent-text: #ffffff;
+  --ds-primary: var(--ddn-color-primary);
+  --ds-primary-hover: var(--ddn-color-primaryhover);
+  --ds-secondary: var(--ddn-color-secondary);
+
+  /* ---------------------------------------------------------------- semantic state
+   * Each state has a foreground and a wash. The wash is the same hue at low alpha rather
+   * than a second hand-picked colour, so a palette change carries both.
+   */
+  --ds-success: var(--ddn-color-success);
+  --ds-warning: var(--ddn-color-warning);
+  --ds-error: var(--ddn-color-error);
+  --ds-info: var(--ddn-color-info);
+  --ds-success-wash: color-mix(in srgb, var(--ds-success) 12%, transparent);
+  --ds-warning-wash: color-mix(in srgb, var(--ds-warning) 14%, transparent);
+  --ds-error-wash: color-mix(in srgb, var(--ds-error) 12%, transparent);
+  --ds-info-wash: color-mix(in srgb, var(--ds-info) 12%, transparent);
+
+  /* ---------------------------------------------------------------- typography */
+  --ds-font-display: var(--ddn-type-displayfont), var(--ddn-type-displayfallback);
+  --ds-font-body: var(--ddn-type-bodyfont), var(--ddn-type-bodyfallback);
+  --ds-weight-body: var(--ddn-type-bodyweight);
+  --ds-weight-heading: var(--ddn-type-headingweight);
+
+  /* Modular scale, 1.25. Declared as steps so a component asks for a STEP, not a size. */
+  --ds-text-xs: 0.75rem;
+  --ds-text-sm: 0.875rem;
+  --ds-text-base: 1rem;
+  --ds-text-lg: 1.125rem;
+  --ds-text-xl: 1.375rem;
+  --ds-text-2xl: 1.75rem;
+  --ds-text-3xl: 2.25rem;
+  --ds-text-4xl: clamp(2.25rem, 5vw, 3.5rem);
+  --ds-text-hero: clamp(2.5rem, 7vw, 4.75rem);
+
+  --ds-leading-tight: 1.15;
+  --ds-leading-snug: 1.35;
+  --ds-leading-normal: 1.6;
+  --ds-tracking-wide: 0.08em;
+  --ds-tracking-wider: 0.18em;
+
+  /* ---------------------------------------------------------------- spacing
+   * 4px base. Named by step, not by pixel, so "space-4" means the same rhythm everywhere.
+   */
+  --ds-space-1: 0.25rem;
+  --ds-space-2: 0.5rem;
+  --ds-space-3: 0.75rem;
+  --ds-space-4: 1rem;
+  --ds-space-5: 1.5rem;
+  --ds-space-6: 2rem;
+  --ds-space-7: 3rem;
+  --ds-space-8: 4rem;
+  --ds-space-9: 6rem;
+
+  --ds-section-gap: var(--ddn-space-sectiongap);
+  --ds-section-gap-mobile: var(--ddn-space-sectiongapmobile);
+  --ds-card-gap: var(--ddn-space-cardgap);
+
+  /* ---------------------------------------------------------------- layout */
+  --ds-content-max: var(--ddn-space-contentmaxwidth);
+  --ds-editorial-max: var(--ddn-space-editorialmaxwidth);
+  --ds-gutter: var(--ds-space-4);
+
+  /* ---------------------------------------------------------------- shape
+   * The delivered radii are 0. That is an editorial decision by Side A, not an omission,
+   * so the design system honours it rather than rounding things "because it looks modern".
+   */
+  --ds-radius: var(--ddn-shape-cardradius);
+  --ds-radius-button: var(--ddn-shape-buttonradius);
+  --ds-radius-input: var(--ddn-shape-inputradius);
+  --ds-radius-pill: 999px;
+  --ds-border-width: var(--ddn-shape-borderwidth);
+
+  /* ---------------------------------------------------------------- elevation
+   * Restrained on purpose: an editorial fashion surface uses line and space, not shadow.
+   */
+  --ds-shadow-sm: 0 1px 2px rgba(20, 18, 15, 0.06);
+  --ds-shadow-md: 0 4px 16px rgba(20, 18, 15, 0.08);
+  --ds-shadow-lg: 0 12px 40px rgba(20, 18, 15, 0.14);
+
+  /* ---------------------------------------------------------------- motion
+   * Every duration is routed through these, so `prefers-reduced-motion` can zero them all
+   * in one place instead of each component remembering to opt out.
+   */
+  --ds-duration-fast: 120ms;
+  --ds-duration: 220ms;
+  --ds-duration-slow: 420ms;
+  --ds-ease: cubic-bezier(0.2, 0, 0.2, 1);
+
+  /* ---------------------------------------------------------------- z-index
+   * A named scale. Ad-hoc z-index values are how a dialog ends up behind a sticky header.
+   */
+  --ds-z-base: 0;
+  --ds-z-sticky: 100;
+  --ds-z-mobilenav: 200;
+  --ds-z-drawer: 300;
+  --ds-z-dialog: 400;
+  --ds-z-toast: 500;
+
+  /* ---------------------------------------------------------------- focus */
+  --ds-focus-ring: 2px solid var(--ds-accent);
+  --ds-focus-offset: 2px;
+}
+
+/* Breakpoints, for reference. CSS custom properties cannot be used in media queries, so
+   these are documentation and the queries below repeat the values literally.
+
+     sm   >= 480px   large phone
+     md   >= 768px   tablet
+     lg   >= 1024px  laptop
+     xl   >= 1280px  desktop
+
+   Mobile is the base. Every rule below `@media (min-width: …)` is an ENHANCEMENT, which is
+   what stops the layout being a shrunk desktop. */
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --ds-duration-fast: 1ms;
+    --ds-duration: 1ms;
+    --ds-duration-slow: 1ms;
+  }
+  *, *::before, *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ==================================================================== reset */
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  margin: 0;
+  background: var(--ds-bg);
+  color: var(--ds-text);
+  font-family: var(--ds-font-body);
+  font-size: var(--ddn-type-basesize);
+  font-weight: var(--ds-weight-body);
+  line-height: var(--ds-leading-normal);
+  -webkit-font-smoothing: antialiased;
+}
+
+img, svg, video { max-width: 100%; height: auto; display: block; }
+
+button, input, select, textarea { font: inherit; color: inherit; }
+
+/* Visible focus is required for keyboard navigation. Do not remove.
+   `:focus-visible` rather than `:focus` so a mouse click does not leave a ring behind. */
+:focus-visible {
+  outline: var(--ds-focus-ring);
+  outline-offset: var(--ds-focus-offset);
+}
+
+/* ==================================================================== typography */
+
+h1, h2, h3, h4 {
+  font-family: var(--ds-font-display);
+  font-weight: var(--ds-weight-heading);
+  line-height: var(--ds-leading-tight);
+  margin: 0 0 var(--ds-space-4);
+  letter-spacing: 0.005em;
+}
+
+h1 { font-size: var(--ds-text-4xl); }
+h2 { font-size: var(--ds-text-2xl); }
+h3 { font-size: var(--ds-text-xl); }
+h4 { font-size: var(--ds-text-lg); }
+
+p { margin: 0 0 var(--ds-space-4); }
+
+a { color: inherit; }
+
+.ds-eyebrow {
+  font-family: var(--ds-font-body);
+  font-size: var(--ds-text-xs);
+  text-transform: uppercase;
+  letter-spacing: var(--ds-tracking-wider);
+  color: var(--ds-text-muted);
+  margin: 0 0 var(--ds-space-3);
+}
+
+.ds-lede {
+  font-size: var(--ds-text-lg);
+  line-height: var(--ds-leading-snug);
+  color: var(--ds-text-muted);
+  max-width: var(--ds-editorial-max);
+}
+
+.muted, .ds-muted { color: var(--ds-text-muted); }
+.ds-subtle { color: var(--ds-text-subtle); font-size: var(--ds-text-sm); }
+
+/* ==================================================================== utilities */
+
+.sr-only {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+
+.skip {
+  position: absolute; left: -9999px; top: 0;
+  background: var(--ds-surface-inverse); color: var(--ds-text-inverse);
+  padding: var(--ds-space-3) var(--ds-space-4); z-index: var(--ds-z-toast);
+}
+.skip:focus { left: 0; }
+
+/* ==================================================================== layout */
+
+.ds-container {
+  width: 100%;
+  max-width: var(--ds-content-max);
+  margin: 0 auto;
+  padding-inline: var(--ds-gutter);
+}
+
+.ds-editorial { max-width: var(--ds-editorial-max); }
+
+.ds-section { padding-block: var(--ds-section-gap-mobile); }
+@media (min-width: 1024px) {
+  .ds-section { padding-block: var(--ds-section-gap); }
+}
+
+.ds-section__head {
+  display: flex; align-items: baseline; justify-content: space-between;
+  gap: var(--ds-space-4); flex-wrap: wrap; margin-bottom: var(--ds-space-5);
+}
+.ds-section__head h2 { margin: 0; }
+
+.ds-stack { display: flex; flex-direction: column; gap: var(--ds-space-4); }
+.ds-row { display: flex; align-items: center; gap: var(--ds-space-3); flex-wrap: wrap; }
+
+/* Auto-fitting grid. `minmax(min(<floor>, 100%), 1fr)` is the part that matters: without
+   the `min(…, 100%)` a card with a 260px floor overflows a 320px phone viewport. */
+.ds-grid {
+  display: grid;
+  gap: var(--ds-card-gap);
+  grid-template-columns: repeat(auto-fill, minmax(min(260px, 100%), 1fr));
+}
+.ds-grid--wide {
+  grid-template-columns: repeat(auto-fill, minmax(min(320px, 100%), 1fr));
+}
+.ds-grid--tight {
+  grid-template-columns: repeat(auto-fill, minmax(min(180px, 100%), 1fr));
+  gap: var(--ds-space-4);
+}
+
+/* A horizontally scrolling rail on small screens, a grid once there is room. Used by the
+   home modules, where a phone should swipe rather than scroll a tall column of cards. */
+.ds-rail {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(76%, 1fr);
+  gap: var(--ds-card-gap);
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  padding-bottom: var(--ds-space-3);
+  scrollbar-width: thin;
+}
+.ds-rail > * { scroll-snap-align: start; }
+@media (min-width: 768px) {
+  .ds-rail {
+    grid-auto-flow: row;
+    grid-template-columns: repeat(auto-fill, minmax(min(260px, 100%), 1fr));
+    overflow-x: visible;
+  }
+}
+
+/* ==================================================================== legacy aliases
+ *
+ * The pre-Phase-2 stylesheet's names, remapped onto the real tokens. Kept so that any
+ * markup or test still referencing them keeps working AND starts rendering the delivered
+ * palette. New code must not use these.
+ */
+:root {
+  --ink: var(--ds-text);
+  --bone: var(--ds-bg);
+  --sand: var(--ds-secondary);
+  --clay: var(--ddn-color-clay);
+  --accent: var(--ds-accent);
+  --ok: var(--ds-success);
+  --error: var(--ds-error);
+  --line: var(--ds-border);
+  --font-display: var(--ds-font-display);
+  --font-body: var(--ds-font-body);
+  --radius: var(--ds-radius);
+}

@@ -709,6 +709,21 @@ def build(check_only: bool) -> int:
     else:
         (OUT / "brand.generated.js").write_text(seam, encoding="utf-8")
 
+    # --- generated design tokens for the two static browser clients ------------------
+    #
+    # Same reasoning as the brand seam above, for the same reason: no build step means the
+    # clients cannot @import from packages/brand, and nginx serves only `apps/`.
+    #
+    # Emitted rather than hand-copied because the storefront previously carried its OWN
+    # invented palette (--ink, --sand, --bone, --clay) that had never been reconciled with
+    # the Side A token set delivered in the package. Two palettes, one brand, and no check
+    # that they agreed. The design system now consumes these and only these.
+    if OUT == ROOT / "packages" / "brand":
+        for client in ("web", "admin"):
+            (ROOT / "apps" / client / "tokens.generated.css").write_text(css, encoding="utf-8")
+    else:
+        (OUT / "tokens.generated.css").write_text(css, encoding="utf-8")
+
     (OUT / "README.md").write_text(
         "# packages/brand — GENERATED\n\n"
         "Normalized runtime brand package. **Do not edit by hand.**\n\n"
@@ -759,15 +774,17 @@ def verify_no_drift() -> int:
             print("FAIL: rebuild did not succeed")
             return 1
 
-        # `brand.generated.js` is emitted into apps/web and apps/admin, not into the
-        # package, so it is compared separately below rather than treated as a package file.
-        SEAM = "brand.generated.js"
+        # Emitted into apps/web and apps/admin rather than into the package, so these are
+        # compared separately below instead of being treated as package files. Both are
+        # client artefacts of the same build and drift in either is the same defect: a
+        # browser client rendering brand values the package no longer contains.
+        CLIENT_ARTEFACTS = ("brand.generated.js", "tokens.generated.css")
         committed_files = {
             p.relative_to(committed).as_posix() for p in committed.rglob("*") if p.is_file()
-        } - {SEAM}
+        } - set(CLIENT_ARTEFACTS)
         rebuilt_files = {
             p.relative_to(rebuilt).as_posix() for p in rebuilt.rglob("*") if p.is_file()
-        } - {SEAM}
+        } - set(CLIENT_ARTEFACTS)
 
         missing = sorted(rebuilt_files - committed_files)
         extra = sorted(committed_files - rebuilt_files)
@@ -791,15 +808,15 @@ def verify_no_drift() -> int:
         print(f"differing       : {len(differing)}  {differing[:5]}")
         print(f"counts          : {'DIFFER' if counts_differ else 'match'} {report_committed['counts']}")
 
-        # The generated browser seam must match in BOTH static clients. A stale copy in
+        # The generated browser artefacts must match in BOTH static clients. A stale copy in
         # one of them is exactly the drift this check exists to catch.
-        expected_seam = (rebuilt / SEAM).read_text(encoding="utf-8")
-        stale_seams = [
-            client
-            for client in ("web", "admin")
-            if not (ROOT / "apps" / client / SEAM).is_file()
-            or (ROOT / "apps" / client / SEAM).read_text(encoding="utf-8") != expected_seam
-        ]
+        stale_seams = []
+        for artefact in CLIENT_ARTEFACTS:
+            expected = (rebuilt / artefact).read_text(encoding="utf-8")
+            for client in ("web", "admin"):
+                copy = ROOT / "apps" / client / artefact
+                if not copy.is_file() or copy.read_text(encoding="utf-8") != expected:
+                    stale_seams.append(f"{client}/{artefact}")
         print(f"seam            : {'STALE ' + str(stale_seams) if stale_seams else 'match (web, admin)'}")
 
         if missing or extra or differing or counts_differ or stale_seams:

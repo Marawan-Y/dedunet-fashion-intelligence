@@ -1,0 +1,350 @@
+/* DEDUNET component library.
+ *
+ * Every value here is a `--ds-*` token. No hex, no magic pixel sizes, no per-component
+ * palette. If something needs a value the design system does not have, the design system
+ * gains a token — a component inventing one is how two "primary buttons" end up different.
+ *
+ * Naming is block__element--modifier. Flat, no nesting deeper than one element, because a
+ * deeply nested selector is a specificity problem waiting for a `!important`.
+ */
+
+/* ==================================================================== button */
+
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: var(--ds-space-2);
+  padding: var(--ds-space-3) var(--ds-space-5);
+  min-height: 44px;                     /* pointer target floor, WCAG 2.2 target size */
+  border: var(--ds-border-width) solid var(--ds-primary);
+  border-radius: var(--ds-radius-button);
+  background: transparent;
+  color: var(--ds-primary);
+  font-size: var(--ds-text-sm);
+  font-weight: 600;
+  letter-spacing: var(--ds-tracking-wide);
+  text-transform: uppercase;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background var(--ds-duration) var(--ds-ease),
+              color var(--ds-duration) var(--ds-ease),
+              border-color var(--ds-duration) var(--ds-ease);
+}
+.btn:hover:not(:disabled) { background: var(--ds-primary); color: var(--ds-text-inverse); }
+
+.btn--primary { background: var(--ds-primary); color: var(--ds-text-inverse); }
+.btn--primary:hover:not(:disabled) { background: var(--ds-primary-hover); border-color: var(--ds-primary-hover); }
+
+.btn--accent { background: var(--ds-accent); border-color: var(--ds-accent); color: var(--ds-accent-text); }
+.btn--accent:hover:not(:disabled) { filter: brightness(0.93); }
+
+.btn--ghost { border-color: transparent; padding-inline: var(--ds-space-3); }
+.btn--ghost:hover:not(:disabled) { background: var(--ds-surface-raised); color: var(--ds-text); }
+
+.btn--sm { min-height: 36px; padding: var(--ds-space-2) var(--ds-space-3); font-size: var(--ds-text-xs); }
+.btn--block { width: 100%; }
+
+/* A disabled control must LOOK unavailable, not merely refuse. The storefront previously
+   offered an ordinary "Add to cart" that the server answered with 409. */
+.btn:disabled, .btn[aria-disabled="true"] {
+  opacity: 0.55;
+  cursor: not-allowed;
+  background: transparent;
+  color: var(--ds-text-muted);
+  border-color: var(--ds-border);
+}
+
+.btn__spinner {
+  width: 1em; height: 1em; border-radius: var(--ds-radius-pill);
+  border: 2px solid currentColor; border-top-color: transparent;
+  animation: ds-spin 700ms linear infinite;
+}
+
+.icon-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 44px; height: 44px;
+  border: none; background: transparent; color: inherit; cursor: pointer;
+  border-radius: var(--ds-radius-button);
+}
+.icon-btn:hover { background: var(--ds-surface-raised); }
+
+.link-btn {
+  background: none; border: none; padding: 0; cursor: pointer;
+  color: var(--ds-text); text-decoration: underline; text-underline-offset: 3px;
+  font-size: inherit;
+}
+
+/* ==================================================================== form */
+
+.field { display: flex; flex-direction: column; gap: var(--ds-space-2); }
+.field__label { font-size: var(--ds-text-sm); font-weight: 600; }
+.field__hint { font-size: var(--ds-text-xs); color: var(--ds-text-muted); }
+.field__error { font-size: var(--ds-text-xs); color: var(--ds-error); }
+
+.input, .textarea, .select {
+  width: 100%;
+  padding: var(--ds-space-3);
+  min-height: 44px;
+  border: var(--ds-border-width) solid var(--ds-border);
+  border-radius: var(--ds-radius-input);
+  background: var(--ds-surface);
+  color: var(--ds-text);
+}
+.input:focus-visible, .textarea:focus-visible, .select:focus-visible { border-color: var(--ds-accent); }
+.textarea { min-height: 120px; resize: vertical; }
+
+/* `aria-invalid` drives the styling, so the visual state and the state a screen reader
+   announces cannot diverge. */
+.input[aria-invalid="true"], .textarea[aria-invalid="true"], .select[aria-invalid="true"] {
+  border-color: var(--ds-error);
+}
+
+.check { display: flex; align-items: flex-start; gap: var(--ds-space-3); cursor: pointer; }
+.check input { width: 20px; height: 20px; margin-top: 2px; flex: none; accent-color: var(--ds-accent); }
+
+.switch { display: inline-flex; align-items: center; gap: var(--ds-space-3); cursor: pointer; }
+.switch__track {
+  width: 44px; height: 26px; border-radius: var(--ds-radius-pill);
+  background: var(--ds-border); position: relative;
+  transition: background var(--ds-duration) var(--ds-ease);
+}
+.switch__thumb {
+  position: absolute; top: 3px; left: 3px; width: 20px; height: 20px;
+  border-radius: var(--ds-radius-pill); background: var(--ds-surface);
+  box-shadow: var(--ds-shadow-sm);
+  transition: transform var(--ds-duration) var(--ds-ease);
+}
+.switch input:checked + .switch__track { background: var(--ds-accent); }
+.switch input:checked + .switch__track .switch__thumb { transform: translateX(18px); }
+
+/* ==================================================================== card */
+
+.card {
+  display: flex; flex-direction: column;
+  background: var(--ds-surface);
+  border: var(--ds-border-width) solid var(--ds-border);
+  border-radius: var(--ds-radius);
+  overflow: hidden;
+}
+.card__body { padding: var(--ds-space-4); display: flex; flex-direction: column; gap: var(--ds-space-2); flex: 1; }
+.card__title { font-family: var(--ds-font-display); font-size: var(--ds-text-lg); margin: 0; }
+.card__meta { font-size: var(--ds-text-sm); color: var(--ds-text-muted); margin: 0; }
+.card__foot { padding: 0 var(--ds-space-4) var(--ds-space-4); display: flex; gap: var(--ds-space-2); flex-wrap: wrap; }
+
+/* The whole card is clickable via a stretched pseudo-element on the title link, so the hit
+   area is the card while the accessible name stays the title. Nested interactive controls
+   in `.card__foot` sit above it via z-index. */
+.card__link { text-decoration: none; }
+.card__link::after { content: ""; position: absolute; inset: 0; }
+.card { position: relative; }
+.card__foot, .card__actions { position: relative; z-index: 1; }
+
+.card__media {
+  aspect-ratio: 4 / 5;
+  background: var(--ds-surface-raised);
+  display: flex; align-items: center; justify-content: center;
+  overflow: hidden;
+}
+.card__media img { width: 100%; height: 100%; object-fit: cover; }
+.card__media--wide { aspect-ratio: 3 / 2; }
+
+/* ==================================================================== occasion card */
+
+.occasion {
+  display: flex; flex-direction: column; align-items: flex-start; justify-content: flex-end;
+  gap: var(--ds-space-1);
+  min-height: 132px;
+  padding: var(--ds-space-4);
+  border: var(--ds-border-width) solid var(--ds-border);
+  border-radius: var(--ds-radius);
+  background: var(--ds-surface);
+  color: var(--ds-text);
+  text-align: left; text-decoration: none; cursor: pointer;
+  transition: border-color var(--ds-duration) var(--ds-ease),
+              background var(--ds-duration) var(--ds-ease);
+}
+.occasion:hover { border-color: var(--ds-primary); background: var(--ds-surface-raised); }
+.occasion__name { font-family: var(--ds-font-display); font-size: var(--ds-text-lg); }
+.occasion__hint { font-size: var(--ds-text-xs); color: var(--ds-text-muted); }
+
+/* ==================================================================== badge / chip */
+
+.badge {
+  display: inline-flex; align-items: center; gap: var(--ds-space-1);
+  padding: var(--ds-space-1) var(--ds-space-2);
+  font-size: var(--ds-text-xs); letter-spacing: var(--ds-tracking-wide);
+  text-transform: uppercase; font-weight: 600;
+  border: var(--ds-border-width) solid var(--ds-border);
+  border-radius: var(--ds-radius);
+  color: var(--ds-text-muted);
+  background: var(--ds-surface);
+}
+.badge--fixture { border-color: var(--ds-warning); color: var(--ds-warning); background: var(--ds-warning-wash); }
+.badge--preview { border-color: var(--ds-info); color: var(--ds-info); background: var(--ds-info-wash); }
+.badge--success { border-color: var(--ds-success); color: var(--ds-success); background: var(--ds-success-wash); }
+.badge--error { border-color: var(--ds-error); color: var(--ds-error); background: var(--ds-error-wash); }
+
+.chip {
+  display: inline-flex; align-items: center; gap: var(--ds-space-2);
+  padding: var(--ds-space-2) var(--ds-space-4);
+  min-height: 40px;
+  border: var(--ds-border-width) solid var(--ds-border);
+  border-radius: var(--ds-radius-pill);
+  background: var(--ds-surface); color: var(--ds-text);
+  font-size: var(--ds-text-sm); text-decoration: none; cursor: pointer;
+  white-space: nowrap;
+}
+.chip:hover { border-color: var(--ds-primary); }
+.chip[aria-pressed="true"], .chip--on { background: var(--ds-primary); color: var(--ds-text-inverse); border-color: var(--ds-primary); }
+
+.chip-row { display: flex; gap: var(--ds-space-2); flex-wrap: wrap; }
+.chip-row--scroll {
+  flex-wrap: nowrap; overflow-x: auto; padding-bottom: var(--ds-space-2);
+  scrollbar-width: thin;
+}
+
+/* ==================================================================== price / availability */
+
+.price { font-family: var(--ds-font-display); font-size: var(--ds-text-xl); }
+.price--sm { font-size: var(--ds-text-base); }
+.price__from { font-size: var(--ds-text-xs); color: var(--ds-text-muted); text-transform: uppercase; letter-spacing: var(--ds-tracking-wide); }
+
+.availability { font-size: var(--ds-text-sm); display: inline-flex; align-items: center; gap: var(--ds-space-2); }
+.availability::before { content: ""; width: 8px; height: 8px; border-radius: var(--ds-radius-pill); background: currentColor; }
+.availability--in { color: var(--ds-success); }
+.availability--out { color: var(--ds-text-muted); }
+.availability--preview { color: var(--ds-info); }
+
+/* ==================================================================== alerts */
+
+.notice {
+  margin: 0; padding: var(--ds-space-3) var(--ds-space-4);
+  background: var(--ds-surface-inverse); color: var(--ds-text-inverse);
+  font-size: var(--ds-text-xs); letter-spacing: var(--ds-tracking-wide); text-align: center;
+}
+.notice__headline { font-weight: 700; }
+.notice__headline, .notice__line { display: inline-block; margin: 0 var(--ds-space-2); }
+
+.banner {
+  padding: var(--ds-space-3) var(--ds-space-4);
+  border-radius: var(--ds-radius);
+  margin: var(--ds-space-4) auto;
+  max-width: var(--ds-content-max);
+  border: var(--ds-border-width) solid transparent;
+}
+.banner--ok { background: var(--ds-success-wash); color: var(--ds-success); border-color: var(--ds-success); }
+.banner--error { background: var(--ds-error-wash); color: var(--ds-error); border-color: var(--ds-error); }
+.banner--info { background: var(--ds-info-wash); color: var(--ds-info); border-color: var(--ds-info); }
+
+.alert {
+  display: flex; gap: var(--ds-space-3); align-items: flex-start;
+  padding: var(--ds-space-4);
+  border: var(--ds-border-width) solid var(--ds-border);
+  border-radius: var(--ds-radius);
+  background: var(--ds-surface);
+  font-size: var(--ds-text-sm);
+}
+.alert--warning { border-color: var(--ds-warning); background: var(--ds-warning-wash); }
+.alert--info { border-color: var(--ds-info); background: var(--ds-info-wash); }
+.alert--error { border-color: var(--ds-error); background: var(--ds-error-wash); }
+
+.disclaimer {
+  font-size: var(--ds-text-xs); color: var(--ds-text-muted);
+  border-top: var(--ds-border-width) solid var(--ds-border);
+  padding-top: var(--ds-space-3); margin-top: var(--ds-space-5);
+}
+
+/* ==================================================================== states */
+
+.state {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: var(--ds-space-4);
+  padding: var(--ds-space-8) var(--ds-space-4);
+  text-align: center;
+  border: var(--ds-border-width) dashed var(--ds-border);
+  border-radius: var(--ds-radius);
+}
+.state__title { font-family: var(--ds-font-display); font-size: var(--ds-text-xl); margin: 0; }
+.state__body { color: var(--ds-text-muted); margin: 0; max-width: 46ch; }
+.state__code { font-size: var(--ds-text-xs); color: var(--ds-text-subtle); letter-spacing: var(--ds-tracking-wide); }
+
+/* ==================================================================== skeleton */
+
+.skeleton {
+  background: linear-gradient(90deg,
+    var(--ds-surface-raised) 25%,
+    color-mix(in srgb, var(--ds-surface-raised) 60%, var(--ds-surface)) 50%,
+    var(--ds-surface-raised) 75%);
+  background-size: 200% 100%;
+  animation: ds-shimmer 1.4s linear infinite;
+  border-radius: var(--ds-radius);
+}
+.skeleton--text { height: 1em; margin-bottom: var(--ds-space-2); }
+.skeleton--title { height: 1.6em; width: 60%; margin-bottom: var(--ds-space-3); }
+.skeleton--media { aspect-ratio: 4 / 5; }
+
+@keyframes ds-shimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+@keyframes ds-spin { to { transform: rotate(360deg); } }
+
+/* Reduced motion: a shimmering skeleton is decorative movement. Hold it still rather than
+   removing the placeholder, which would collapse the layout it exists to reserve. */
+@media (prefers-reduced-motion: reduce) {
+  .skeleton { animation: none; background: var(--ds-surface-raised); }
+  .btn__spinner { animation: none; border-top-color: currentColor; opacity: 0.5; }
+}
+
+/* ==================================================================== dialog / drawer */
+
+.dialog {
+  border: none; padding: 0; max-width: min(560px, calc(100vw - 2rem));
+  border-radius: var(--ds-radius); background: var(--ds-surface); color: var(--ds-text);
+}
+.dialog::backdrop { background: rgba(20, 18, 15, 0.55); }
+.dialog__head {
+  display: flex; align-items: center; justify-content: space-between; gap: var(--ds-space-4);
+  padding: var(--ds-space-4); border-bottom: var(--ds-border-width) solid var(--ds-border);
+}
+.dialog__title { margin: 0; font-size: var(--ds-text-lg); }
+.dialog__body { padding: var(--ds-space-4); }
+.dialog__foot { padding: var(--ds-space-4); display: flex; gap: var(--ds-space-3); justify-content: flex-end; }
+
+.drawer {
+  position: fixed; inset: 0 0 0 auto; width: min(420px, 100vw);
+  background: var(--ds-surface); z-index: var(--ds-z-drawer);
+  border-left: var(--ds-border-width) solid var(--ds-border);
+  display: flex; flex-direction: column;
+}
+
+/* ==================================================================== toast */
+
+.toast-region {
+  position: fixed; left: 50%; bottom: calc(var(--ds-space-6) + env(safe-area-inset-bottom, 0px));
+  transform: translateX(-50%);
+  z-index: var(--ds-z-toast);
+  display: flex; flex-direction: column; gap: var(--ds-space-2);
+  width: min(420px, calc(100vw - 2rem));
+}
+.toast {
+  padding: var(--ds-space-3) var(--ds-space-4);
+  background: var(--ds-surface-inverse); color: var(--ds-text-inverse);
+  border-radius: var(--ds-radius); font-size: var(--ds-text-sm);
+  box-shadow: var(--ds-shadow-lg);
+}
+
+/* ==================================================================== media gallery */
+
+.gallery { display: flex; flex-direction: column; gap: var(--ds-space-3); }
+.gallery__main {
+  aspect-ratio: 4 / 5; background: var(--ds-surface-raised);
+  display: flex; align-items: center; justify-content: center; overflow: hidden;
+}
+.gallery__main img { width: 100%; height: 100%; object-fit: cover; }
+.gallery__thumbs { display: flex; gap: var(--ds-space-2); overflow-x: auto; }
+.gallery__thumb {
+  flex: none; width: 68px; aspect-ratio: 4 / 5; padding: 0; cursor: pointer;
+  border: 2px solid transparent; background: var(--ds-surface-raised); overflow: hidden;
+}
+.gallery__thumb[aria-current="true"] { border-color: var(--ds-primary); }
+.gallery__thumb img { width: 100%; height: 100%; object-fit: cover; }
+.gallery figcaption {
+  font-size: var(--ds-text-xs); color: var(--ds-text-muted);
+  text-transform: uppercase; letter-spacing: var(--ds-tracking-wide);
+}
