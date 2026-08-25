@@ -116,3 +116,73 @@ def test_storefront_discloses_fictional_status() -> None:
     html = (REPO_ROOT / "apps" / "web" / "index.html").read_text(encoding="utf-8").lower()
     assert "fictional" in html, "the storefront must disclose that the brand is fictional"
     assert "sandbox" in html, "the storefront must disclose that payments are sandbox only"
+
+# ---------------------------------------------------------------- the React client
+#
+# ADR-0004 replaced the consumer web client with a React application. The guard has to
+# follow it: SB-RISK-003 was closed by removing every markup sink from the browser
+# clients, and a new client with no scan is a client where the sink can come back
+# unnoticed. React escapes interpolated values by default, which is a real improvement
+# over building DOM by hand — but `dangerouslySetInnerHTML` opts straight back out, and it
+# is the sink this must catch.
+
+
+def _consumer_sources() -> list[Path]:
+    """Every TypeScript and TSX source in the consumer client.
+
+    Enumerated rather than listed, unlike the classic clients above: the file set changes
+    as features are added, and a hand-maintained list is a guard that silently stops
+    covering the file somebody added last week.
+    """
+
+    root = REPO_ROOT / "apps" / "consumer" / "src"
+    if not root.is_dir():
+        return []
+    return sorted(p for p in root.rglob("*") if p.suffix in {".ts", ".tsx"})
+
+
+CONSUMER_SOURCES = _consumer_sources()
+
+# `dangerouslySetInnerHTML` is React's explicit opt-out of escaping. The others are the
+# same DOM sinks the classic clients are scanned for, which are still reachable from React.
+REACT_FORBIDDEN_SINKS = FORBIDDEN_SINKS + ["dangerouslySetInnerHTML"]
+
+
+def test_the_consumer_client_has_sources_to_scan() -> None:
+    """A scan over an empty list passes for the wrong reason.
+
+    If the client moves or is renamed, the parametrised tests below silently collapse to
+    zero cases and report green. This is the assertion that notices.
+    """
+
+    assert CONSUMER_SOURCES, "no consumer sources found; the scan below would be vacuous"
+
+
+@pytest.mark.parametrize("source", CONSUMER_SOURCES, ids=lambda p: p.name)
+def test_the_consumer_client_has_no_markup_sink(source: Path) -> None:
+    """No source in the React client interprets a string as markup or code."""
+
+    offenders = [
+        f"{source.name}:{number}: {code.strip()}"
+        for number, code in strip_comments(source.read_text(encoding="utf-8"))
+        for sink in REACT_FORBIDDEN_SINKS
+        if sink in code
+    ]
+    assert not offenders, "markup sink in the consumer client:" + chr(10) + chr(10).join(offenders)
+
+
+@pytest.mark.parametrize("source", CONSUMER_SOURCES, ids=lambda p: p.name)
+def test_the_consumer_client_does_not_build_javascript_urls(source: Path) -> None:
+    """No source constructs a `javascript:` or inline-HTML data URL.
+
+    React does not escape these: an href is written verbatim, so a value that reaches one
+    executes on click. The classic clients are guarded against the DOM sinks; this is the
+    equivalent hole in a framework that closed the others for us.
+    """
+
+    offenders = [
+        f"{source.name}:{number}: {code.strip()}"
+        for number, code in strip_comments(source.read_text(encoding="utf-8"))
+        if "javascript:" in code.lower() or "data:text/html" in code.lower()
+    ]
+    assert not offenders, "unsafe URL scheme in the consumer client:" + chr(10) + chr(10).join(offenders)
