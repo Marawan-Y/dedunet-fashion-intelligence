@@ -44,14 +44,23 @@ export default defineConfig({
    * crash as failed assertions on the accepted safety guards.
    *
    * REQUEST RATE. The API limits 300 requests per 60 seconds per client IP, and the whole
-   * suite is one IP. At four workers the faster engines exceeded it — measured directly at
-   * 400 concurrent requests: 233 x 200, 167 x 429 — and the application then correctly
-   * rendered its 429 error state, which the suite read as a missing feature. The limiter
-   * was right, the suite was too loud. Two workers keeps it under the threshold.
+   * suite is one IP. Measured directly: a 400-request burst returns 233 x 200 and
+   * 167 x 429, and ONE Home load now costs 22 requests to that origin — 20 of them static
+   * brand media, which the limiter's default rule also covers. That is roughly thirteen
+   * Home loads a minute before a single client is throttled.
+   *
+   * Two workers was enough before the visual rebuild and is not enough after it, because
+   * the page legitimately shows far more imagery. One worker keeps the suite under the
+   * threshold. It is slower and it is honest: the alternative is a gate that fails on
+   * whichever surface happened to receive a 429.
+   *
+   * The limiter is NOT the thing to change here. That media is rate-limited alongside
+   * mutating endpoints is a real observation about the product and is recorded for the
+   * owner in evidence/phase-3/, not worked around in a test config.
    *
    * A suite that fails for reasons that are not about the application is worse than a
    * slower one. Raise this only alongside the limiter it has to live under. */
-  workers: process.env.CI ? 2 : 2,
+  workers: process.env.CI ? 1 : 1,
   reporter: process.env.CI
     ? [["list"], ["html", { open: "never" }]]
     : [["list"], ["html", { open: "never" }]],

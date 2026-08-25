@@ -128,6 +128,36 @@ None of these would have failed an assertion.
 The last one is the most instructive: every crop above it was tuned correctly, and one
 `align-items: stretch` made the container taller than the assumption they all rested on.
 
+## 6b. A finding for the owner: static media is rate-limited
+
+Recorded as an observation about the product, **not** worked around.
+
+The visual rebuild put real imagery on Home, and that changed the request profile. Measured
+on the deployed candidate:
+
+```
+ONE Home load  ->  22 requests to the API origin
+                   20 of them /api/v1/media/  (static brand artwork)
+                    2 of them /api/v1/         (mode + catalogue)
+```
+
+The rate limiter's `default` rule is **300 requests per 60 seconds per client IP** and it
+covers `/api/v1/media/`. That is roughly **thirteen Home loads a minute** before a single
+address is throttled — and a throttled media request renders as a broken plate, because the
+browser completes the request and gets nothing usable.
+
+The limiter is doing exactly what it was written to do; the observation is that its
+`default` bucket is shared between mutating endpoints and the highest-volume, lowest-cost
+endpoint on the platform. Nobody had a page rich enough to notice before.
+
+**Nothing was changed.** No limit was raised, no rule relaxed, no security control touched.
+The browser suite now runs single-worker to stay under the threshold, which is slower and
+honest. Whether static media should have its own bucket, be served without the API prefix,
+or be cached at the edge is a decision for the owner and a backend change, not a test-config
+workaround.
+
+---
+
 ## 7. Verification
 
 | Check | Result |
