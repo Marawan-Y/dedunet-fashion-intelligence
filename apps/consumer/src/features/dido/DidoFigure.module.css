@@ -11,13 +11,18 @@
  */
 
 .figure {
-  --dido-line: var(--ds-text);
   --dido-accent: var(--ds-accent);
   display: block;
   width: 100%;
   height: auto;
   max-width: 220px;
-  color: var(--dido-line);
+  /* The line colour is INHERITED, with the page ground as the fallback.
+   *
+   * It used to be hard-set to --ds-text, which is correct on the page and invisible on the
+   * inverse ground of the Dido moment — the whole stela disappeared there and only the
+   * accent aperture survived. An ancestor sets --dido-line for its own surface; nothing
+   * else changes. */
+  color: var(--dido-line, var(--ds-text));
 }
 
 .frame {
@@ -29,7 +34,7 @@
 /* The aperture. Scales and shifts opacity by state, which is the whole expressive range. */
 .aperture {
   fill: var(--dido-accent);
-  transform-origin: 60px 74px;
+  transform-origin: 60px 99px;
   transition:
     transform var(--ds-duration-slow) var(--ds-ease-standard),
     opacity var(--ds-duration-slow) var(--ds-ease-standard);
@@ -52,7 +57,7 @@
   0%   { transform: translateY(0); opacity: 0; }
   12%  { opacity: 1; }
   88%  { opacity: 1; }
-  100% { transform: translateY(58px); opacity: 0; }
+  100% { transform: translateY(54px); opacity: 0; }
 }
 
 /* Listening: the frame breathes. Slow enough to read as attention rather than as a pulse

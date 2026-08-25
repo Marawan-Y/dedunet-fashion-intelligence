@@ -119,6 +119,14 @@ None of these would have failed an assertion.
 | For-brands artwork **escaping its column and covering the copy** | a scaled image in a grid column with no `overflow: hidden` |
 | Two-item brands rail rendering 620px plates | `1fr` columns make card size a function of item count |
 | Feature plate swamping its copy | unbounded plate width |
+| **The Dido mark read as a shield or a badge** | a rectangle with a V-notch cut from its foot; redrawn as a stela — an upright slab with an arched head and a vertical aperture |
+| **The Dido character was invisible on its own section** | the figure hard-set its line colour to the page ink, which on the inverted ground left only the accent aperture showing. The colour is now inherited, with the page ground as a fallback |
+| **"DEDUNET for Brands" was dark ink on a dark panel** | `secondary` is correct on the page ground and unreadable on the inverse one. A dark surface needs its own button variant rather than local colour overrides |
+| A lifestyle plate cropped through its own type | the lifestyle artwork is composed differently from the product plates, so the product crop landed on its lettering. The view rotation now uses front/detail/back only |
+| The for-brands panel showed the whole source, type and all | a **stretched** grid column grew taller than the source scaled to its width, at which point `cover` fits by HEIGHT and the entire image is in frame. The panel now carries its own ratio |
+
+The last one is the most instructive: every crop above it was tuned correctly, and one
+`align-items: stretch` made the container taller than the assumption they all rested on.
 
 ## 7. Verification
 

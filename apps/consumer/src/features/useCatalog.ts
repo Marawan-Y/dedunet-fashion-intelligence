@@ -84,7 +84,13 @@ export function coloursOf(product: CatalogProduct): string[] {
  *
  * Falls back to the primary image when a product has no artwork in the requested role.
  */
-const VIEW_ROTATION = ["front", "detail", "lifestyle", "back"] as const;
+/* Front, detail and back only.
+ *
+ * NOT lifestyle. The lifestyle plates are composed differently from the product plates —
+ * different geometry, and their baked type sits somewhere else — so the product crop lands
+ * across it and the rail showed a look with stray lettering through the middle of it. The
+ * three product views share one composition and therefore one crop. */
+const VIEW_ROTATION = ["front", "detail", "back"] as const;
 
 export function mediaByRotation(
   product: CatalogProduct,

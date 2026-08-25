@@ -495,7 +495,15 @@
 }
 
 @media (min-width: 900px) {
-  .forBrands { grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); align-items: stretch; }
+  /* `center`, not `stretch`.
+   *
+   * A stretched column grows to whatever the copy beside it needs, and once the panel is
+   * taller than the source scaled to its width, `cover` switches to fitting by HEIGHT and
+   * the ENTIRE source is in frame — including the baked type at the foot of the plate that
+   * every crop above was tuned to exclude. Giving the panel its own ratio makes the crop a
+   * property of the component rather than a function of how long the copy happens to be. */
+  .forBrands { grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); align-items: center; }
+  .forBrandsMedia { aspect-ratio: 5 / 6; min-height: 0; max-height: 34rem; }
 }
 
 .forBrandsMedia {
@@ -515,7 +523,14 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
-  object-position: 50% 45%;
+  /* Weighted high, because this column STRETCHES to the copy beside it.
+   *
+   * The asset is 1080x1920 with its baked type at y 1497..1824. A short panel shows only
+   * the middle band and clears it, but on a wide screen the column stretches to the full
+   * section height and the visible window grows enough to reach that type. Centring the
+   * window at 30% keeps the geometry in frame and the lettering out of it at every panel
+   * height this layout produces. */
+  object-position: 50% 24%;
 }
 
 .forBrandsCopy {

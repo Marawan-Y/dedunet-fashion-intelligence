@@ -393,7 +393,7 @@ export default function HomePage() {
               the fit and the budget. That is a different kind of placement, and a different
               kind of customer, from a search result.
             </p>
-            <ButtonLink to="/for-brands" variant="secondary">
+            <ButtonLink to="/for-brands" variant="inverse">
               DEDUNET for Brands
             </ButtonLink>
             <p className={styles.forBrandsNote}>

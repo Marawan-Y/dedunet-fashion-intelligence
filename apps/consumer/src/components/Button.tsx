@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { cx } from "./primitives";
 import styles from "./Button.module.css";
 
-export type ButtonVariant = "primary" | "accent" | "secondary" | "quiet" | "link";
+export type ButtonVariant = "primary" | "accent" | "secondary" | "inverse" | "quiet" | "link";
 
 function variantClass(variant: ButtonVariant): string {
   return styles[variant]!;

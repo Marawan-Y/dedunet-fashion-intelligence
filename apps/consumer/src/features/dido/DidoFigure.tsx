@@ -73,7 +73,7 @@ export function DidoFigure({ state, decorative = false, className }: DidoFigureP
 
   return (
     <svg
-      viewBox="0 0 120 148"
+      viewBox="0 0 120 168"
       className={classes}
       role={decorative ? "presentation" : "img"}
       aria-label={decorative ? undefined : STATE_LABEL[state]}
@@ -81,24 +81,29 @@ export function DidoFigure({ state, decorative = false, className }: DidoFigureP
       data-dido-state={state}
       focusable="false"
     >
-      {/* The cartouche: a hard vertical frame with cut corners. Egyptian by proportion and
-          by the flat-topped arch, not by ornament. */}
-      <path className={styles.frame} d="M22 14h76v92l-38 30-38-30z" />
-
-      {/* An inner frame at a tight offset. Two rules a few millimetres apart is the single
-          most characteristic move in the brand's line language. */}
-      <path className={styles.frame} d="M30 22h60v80l-30 24-30-24z" opacity="0.45" />
+      {/* A STELA, not a face.
+        *
+        * Egyptian by proportion rather than by iconography: an upright slab with an arched
+        * head, the doubled rule at a tight offset that runs through the whole brand, and a
+        * rhythm of passage lines across it. There is no pharaoh here and nothing to
+        * mistake for a mascot.
+        *
+        * An earlier attempt used a rectangle with a V-notch cut from the foot. At small
+        * sizes that read as a shield or a badge, which is a different object entirely. */}
+      <path className={styles.frame} d="M24 158 V60 A36 36 0 0 1 96 60 V158 Z" />
+      <path className={styles.frame} d="M34 148 V62 A26 26 0 0 1 86 62 V148 Z" opacity="0.45" />
 
       {/* Passage lines: the horizontal rhythm from the delivered pattern asset. */}
       <g className={styles.rules}>
-        <path d="M30 40h60M30 52h60M30 96h60" />
+        <path d="M34 84h52M34 100h52M34 138h52" />
       </g>
 
-      {/* The aperture. Reads as attention without being an eye. */}
-      <rect className={styles.aperture} x="46" y="58" width="28" height="32" />
+      {/* The aperture: a tall vertical slot. Attention without an eye — and vertical, so
+          the states that narrow it read as concentration rather than as a wink. */}
+      <rect className={styles.aperture} x="52" y="76" width="16" height="46" />
 
       {/* The scan, only while Dido is working. */}
-      {WORKING.has(state) ? <path className={styles.scan} d="M30 40h60" /> : null}
+      {WORKING.has(state) ? <path className={styles.scan} d="M34 84h52" /> : null}
     </svg>
   );
 }

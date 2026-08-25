@@ -76,6 +76,24 @@
   border-color: var(--ds-border);
 }
 
+/* For INVERTED surfaces.
+ *
+ * `secondary` is dark ink inside a dark border, which is correct on the page ground and
+ * effectively invisible on the inverse one — it shipped that way in the for-brands panel
+ * and read as an empty outline. A dark section needs its own variant rather than each
+ * section overriding colours locally. */
+.inverse {
+  background: transparent;
+  color: var(--ds-text-inverse);
+  border-color: color-mix(in srgb, var(--ds-text-inverse) 55%, transparent);
+}
+
+.inverse:hover:not(:disabled) {
+  background: var(--ds-text-inverse);
+  color: var(--ds-text);
+  border-color: var(--ds-text-inverse);
+}
+
 .quiet:hover:not(:disabled) { border-color: var(--ds-border-strong); }
 
 /* A text button that still meets the target floor. Padding does the work, not size. */

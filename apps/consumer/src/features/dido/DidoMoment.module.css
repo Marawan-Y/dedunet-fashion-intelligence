@@ -94,9 +94,16 @@
   align-items: center;
 }
 
-.figureColumn { display: flex; flex-direction: column; align-items: center; gap: var(--ds-space-3); }
+.figureColumn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--ds-space-3);
+  /* This surface is inverted, so the character draws in the inverse ink. */
+  --dido-line: color-mix(in srgb, var(--ds-text-inverse) 82%, transparent);
+}
 
-.figure { width: clamp(96px, 26vw, 168px); }
+.figure { width: clamp(120px, 30vw, 200px); }
 
 /* The state, named. Section 27 forbids status carried by colour or shape alone, and it is
    also simply useful: it says what Dido is doing. */
@@ -138,8 +145,8 @@
   object-fit: cover;
   /* Same crop as the product plates: the delivered artwork carries a baked caption in its
      lower quarter that would be illegible at this size and duplicates the label below. */
-  transform: scale(1.36);
-  transform-origin: 50% 46%;
+  transform: scale(1.65);
+  transform-origin: 50% 42%;
 }
 
 /* A hairline over each plate so they read as a composed set rather than three thumbnails. */
