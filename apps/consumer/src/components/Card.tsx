@@ -1,6 +1,7 @@
 import type { ElementType, ReactNode } from "react";
 import { Link } from "react-router-dom";
-import { Media, type MediaRatio } from "./Media";
+import { mediaUrl } from "../api/client";
+import { ProductFigure } from "./ProductFigure";
 import { cx } from "./primitives";
 import styles from "./Card.module.css";
 
@@ -12,10 +13,15 @@ export interface CardProps {
   meta?: string;
   image?: string | null;
   imageAlt: string;
-  ratio?: MediaRatio;
-  fit?: "cover" | "contain";
+  /** CSS aspect-ratio for the plate. Portrait by default. */
+  ratio?: string;
+  /** Crop overrides, for artwork composed differently from the product plates. */
+  zoom?: number;
+  focus?: string;
   slot: string;
-  note?: string;
+  /** A lookbook annotation over the plate, e.g. "Preview". */
+  mark?: string;
+  priority?: boolean;
   footer?: ReactNode;
   testId?: string;
   /**
@@ -23,8 +29,7 @@ export interface CardProps {
    *
    * Explicit, with a default of 3, because a card's correct level depends on what is above
    * it: under a section h2 it is an h3, but in a grid that follows the page h1 directly it
-   * must be an h2 or the outline jumps h1 -> h3. Hard-coding h3 is what produced exactly
-   * that skip on Shop and Brands, and a screen-reader user loses the page structure to it.
+   * must be an h2 or the outline jumps h1 -> h3.
    */
   headingLevel?: 2 | 3 | 4;
 }
@@ -35,10 +40,6 @@ export interface CardProps {
  * One object used by the product grid, the looks rail and the brand list, because they are
  * the same thing with different labels — and three near-identical cards is how three
  * different hover behaviours end up on one page.
- *
- * The whole card is clickable through a stretched pseudo-element on the link, so the target
- * is the card while the accessible name stays the title. Anything interactive in the footer
- * is lifted above it.
  */
 export function Card({
   to,
@@ -47,10 +48,12 @@ export function Card({
   meta,
   image,
   imageAlt,
-  ratio = "portrait",
-  fit = "contain",
+  ratio,
+  zoom,
+  focus,
   slot,
-  note,
+  mark,
+  priority,
   footer,
   testId,
   headingLevel = 3,
@@ -60,7 +63,16 @@ export function Card({
   return (
     <article className={styles.card} data-testid={testId}>
       <div className={styles.media}>
-        <Media src={image} alt={imageAlt} ratio={ratio} slot={slot} fit={fit} note={note} zoom />
+        <ProductFigure
+          src={image}
+          alt={imageAlt}
+          slot={slot}
+          ratio={ratio ?? "3 / 4"}
+          zoom={zoom}
+          focus={focus}
+          mark={mark}
+          priority={priority}
+        />
       </div>
 
       <div className={styles.body}>
@@ -79,26 +91,47 @@ export function Card({
 }
 
 /**
- * An occasion tile.
+ * An occasion plate.
  *
  * A link rather than a button: it navigates to a styling context, and the browser's own
- * link affordances (open in a new tab, copy the address) are worth keeping.
+ * link affordances are worth keeping. The artwork behind it is real DEDUNET concept media —
+ * an occasion has no photography of its own, so it borrows the lifestyle plate of a piece
+ * that suits it rather than inventing an image for it.
  */
 export function OccasionCard({
   to,
   name,
   hint,
+  image,
+  cue = "Style this",
   className,
 }: {
   to: string;
   name: string;
   hint: string;
+  image?: string | null;
+  cue?: string;
   className?: string;
 }) {
   return (
     <Link to={to} className={cx(styles.occasion, className)} data-testid="occasion-card">
+      {image ? (
+        <img
+          className={styles.occasionMedia}
+          src={mediaUrl(image)}
+          alt=""
+          aria-hidden="true"
+          loading="lazy"
+          decoding="async"
+        />
+      ) : null}
+
       <span className={styles.occasionName}>{name}</span>
       <span className={styles.occasionHint}>{hint}</span>
+      <span className={styles.occasionCue}>
+        <span className={styles.occasionCueRule} aria-hidden="true" />
+        {cue}
+      </span>
     </Link>
   );
 }

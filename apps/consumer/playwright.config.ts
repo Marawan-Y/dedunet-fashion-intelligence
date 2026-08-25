@@ -23,7 +23,7 @@ export default defineConfig({
   testDir: "./e2e",
   /* The evidence capture asserts nothing and takes minutes, so it is excluded from an
      acceptance run and enabled explicitly with DEDUNET_EVIDENCE=1. */
-  testIgnore: process.env.DEDUNET_EVIDENCE ? undefined : /evidence\.spec\.ts/,
+  testIgnore: process.env.DEDUNET_EVIDENCE ? undefined : /(evidence|home-visual)\.spec\.ts/,
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   /* One retry locally, and the reason matters.

@@ -40,8 +40,13 @@
   --ds-info-wash: color-mix(in srgb, var(--ds-info) 10%, transparent);
 
   /* ------------------------------------------------------------- typography roles */
-  --ds-font-display: var(--ddn-type-displayfont), var(--ddn-type-displayfallback);
-  --ds-font-body: var(--ddn-type-bodyfont), var(--ddn-type-bodyfallback);
+  /* The loaded face is named FIRST, then the delivered brand token, then the delivered
+     fallback. @fontsource registers the variable family as "Manrope Variable", which is not
+     the name the brand package uses — so both are listed rather than editing a generated
+     token to match a packaging detail. The delivered values stay authoritative and the
+     fallback chain still ends where Side A said it should. */
+  --ds-font-display: "Bodoni Moda", var(--ddn-type-displayfont), var(--ddn-type-displayfallback);
+  --ds-font-body: "Manrope Variable", var(--ddn-type-bodyfont), var(--ddn-type-bodyfallback);
 
   /* A fashion-editorial scale: a large jump into display sizes over a tight interface
      range. Fluid between a phone and a desktop so nothing steps at a breakpoint. */

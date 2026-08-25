@@ -78,8 +78,7 @@ export default function BrandsPage() {
                         ? "DEDUNET first capsule concept artwork"
                         : `No imagery for ${profile.name}`
                     }
-                    ratio="editorial"
-                    fit="contain"
+                    ratio="3 / 2"
                     slot={`brand-${profile.slug}`}
                     testId="brand-card"
                     headingLevel={2}

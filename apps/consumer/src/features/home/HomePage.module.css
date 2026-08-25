@@ -1,157 +1,571 @@
-/* The hero.
+/* Home.
  *
- * Asymmetric on a desktop, stacked on a phone: the type column is deliberately narrower
- * than the image so the composition has a long edge and a short one rather than reading as
- * two equal halves, which is the difference between an editorial spread and a template. */
+ * The information architecture is unchanged: the sequence was accepted. What changed is
+ * how it is presented. The previous version was heading/grid, heading/grid, heading/grid
+ * down a 10,458px column of pale boxes, which reads as documentation.
+ *
+ * The rhythm here alternates deliberately:
+ *
+ *   full-bleed hero  ->  occasion rail  ->  split feature look  ->  full-bleed Dido
+ *   ->  looks rail   ->  editorial statement  ->  capsule rail  ->  style list
+ *   ->  brands rail  ->  split for-brands
+ *
+ * No two adjacent sections share a shape.
+ */
+
+.bleed { position: relative; width: 100%; }
+
+.inner {
+  width: 100%;
+  max-width: var(--ds-content-max);
+  margin-inline: auto;
+  padding-inline: var(--ds-gutter);
+}
+
+/* ====================================================================== hero */
+
 .hero {
   position: relative;
-  display: grid;
-  gap: var(--ds-space-7);
-  padding-block: var(--ds-space-8) var(--ds-space-9);
-  align-items: center;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  /* Tall enough to be a campaign, short enough that the next section is discoverable.
+     svh rather than vh: on iOS Safari vh is the height WITHOUT the collapsing toolbar, so
+     a 100vh hero is taller than the screen on first paint and its bottom edge, which is
+     where the call to action lives, sits underneath that toolbar. */
+  min-height: 86svh;
+  /* The bottom padding reserves the mobile tab bar.
+   *
+   * `body` carries a tab-bar-height padding so the LAST element clears it, but the hero is
+   * the first: while the page is scrolled to the top the bar sits over the hero's foot,
+   * which is exactly where the primary call to action lives. It was measured clipped. */
+  padding-block: var(--ds-space-8) calc(var(--ds-space-7) + var(--ds-tabbar-height));
+  background: var(--ds-surface-inverse);
+  color: var(--ds-text-inverse);
+  overflow: hidden;
+  isolation: isolate;
 }
 
 @media (min-width: 900px) {
   .hero {
-    grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
-    gap: var(--ds-space-9);
+    min-height: 78svh;
+    justify-content: center;
+    /* No tab bar above 900px, so the reserve comes back as breathing room. */
     padding-block: var(--ds-space-9);
   }
 }
 
+/* The delivered concept plate, cropped and dimmed behind the type. Not a stock photograph
+   and not an invention. */
+.heroMedia {
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  /* Cropped past the artwork's own type at EVERY width, not only on desktop.
+   *
+   * The plate carries "Worth, worn." and a collection line across its left side. Applying
+   * this only above 900px left the ghost of that type sitting under the hero lede at 768
+   * and below — two typographic layers competing in one space, which reads as a rendering
+   * fault rather than as artwork. */
+  object-position: 50% 50%;
+  transform: scale(1.5);
+  /* 60% rather than 44% on a phone.
+   *
+   * The artwork carries a long horizontal rule at 18% of its height. On a wide screen the
+   * whole rule and its resin point are in frame and read as brand geometry; cropped to a
+   * phone only a stub of it survives, which reads as a stray bar. The larger origin pushes
+   * it out of frame entirely at this size. */
+  transform-origin: 72% 60%;
+  opacity: 0.55;
+}
+
+@media (min-width: 900px) {
+  /* Scaled into the artwork's RIGHT half.
+   *
+   * The delivered plate carries its own set type — "Worth, worn." and a collection line —
+   * across its left side. Behind the hero's own copy that ghosted through as grey smudge
+   * under the lede: two typographic layers competing in the same space. Zooming past it
+   * keeps what the composition is actually for, the navy panel and the resin circle, and
+   * leaves the type layer to the page. */
+  .heroMedia { transform: scale(1.55); transform-origin: 78% 46%; opacity: 0.5; }
+}
+
+/* Two scrims rather than one flat overlay: a vertical gradient so type at the foot stays
+   legible, and a horizontal one so the left column darkens while the artwork survives on
+   the right. A single flat overlay would kill the artwork everywhere. */
+.hero::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background:
+    linear-gradient(
+      to top,
+      color-mix(in srgb, var(--ddn-color-primary) 94%, transparent) 0%,
+      color-mix(in srgb, var(--ddn-color-primary) 62%, transparent) 46%,
+      color-mix(in srgb, var(--ddn-color-primary) 30%, transparent) 100%
+    ),
+    linear-gradient(
+      to right,
+      color-mix(in srgb, var(--ddn-color-primary) 78%, transparent) 0%,
+      color-mix(in srgb, var(--ddn-color-primary) 20%, transparent) 62%,
+      transparent 100%
+    );
+}
+
 .heroCopy {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: var(--ds-space-5);
-  /* Sits above the pattern. */
-  position: relative;
-  z-index: 1;
-}
-
-.heroTitle {
-  font-size: var(--ds-display-1);
-  line-height: var(--ds-leading-display);
-  letter-spacing: var(--ds-tracking-display);
-  margin: 0;
-  /* The brand name is one word and must never break.
+  /* An ABSOLUTE measure, not `ch`.
    *
-   * At 1440px the display size resolved to 96px in a 552px column, and "DEDUNET" set at
-   * that size is wider than the column — so it wrapped to "DEDUNE / T". A wordmark broken
-   * across two lines is not a typographic decision, it is a bug that only a person looking
-   * at the page would ever catch. */
-  text-wrap: nowrap;
-  white-space: nowrap;
+   * `ch` resolves against the font-size of the element it is written on — here the copy
+   * column, which inherits body size — not against the display type inside it. A `17ch`
+   * column was therefore about 140px wide while the statement inside it was set at 112px,
+   * and the hero broke into "De / cid / e / wh / at / to" down the left edge at 1440.
+   * It looked like a rendering fault and was a units mistake. */
+  max-width: min(100%, 34rem);
 }
 
-/* The promise, set as a display line rather than as body copy. It is the product
-   positioning and it should read like a masthead, not like a paragraph. */
-.heroPromise {
+@media (min-width: 900px) {
+  .heroCopy { max-width: min(58%, 46rem); gap: var(--ds-space-6); }
+}
+
+.heroEyebrow {
+  display: flex;
+  align-items: center;
+  gap: var(--ds-space-3);
+  font-family: var(--ds-font-body);
+  font-size: 0.6875rem;
+  font-weight: var(--ds-weight-strong);
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--ds-text-inverse) 70%, transparent);
+}
+
+.heroEyebrowRule { width: 28px; height: 1px; background: var(--ds-accent); flex: none; }
+
+.heroTitle { display: flex; flex-direction: column; gap: var(--ds-space-4); margin: 0; }
+
+/* The wordmark, deliberately SUBORDINATE. A homepage whose largest element is the company
+   name is a software landing page. The name is present, tracked and small; the campaign
+   line carries the size. */
+.heroBrand {
+  font-family: var(--ds-font-body);
+  font-size: 0.75rem;
+  font-weight: var(--ds-weight-strong);
+  letter-spacing: 0.42em;
+  text-transform: uppercase;
+  color: var(--ds-text-inverse);
+}
+
+.heroStatement {
   font-family: var(--ds-font-display);
-  font-size: var(--ds-display-3);
+  /* Sized so the statement sets in THREE lines on a 390px screen rather than five.
+     At 8.4vw it measured ~63px, which broke "Decide / what to / wear." across three lines
+     of its own and pushed the call to action off the bottom of the viewport. */
+  font-size: clamp(2.4rem, 1.35rem + 5.6vw, 7rem);
+  font-weight: var(--ds-weight-display);
+  line-height: 0.96;
+  letter-spacing: -0.03em;
+  /* Deliberately NOT text-wrap: balance. Balancing evens the line lengths, which on a
+     phone turned three full lines into five short ones. The statement should fill its
+     measure and break where it runs out. */
+  text-wrap: pretty;
+}
+
+.heroStatement em {
+  display: block;
   font-style: italic;
   font-weight: 500;
-  line-height: 1.2;
-  letter-spacing: var(--ds-tracking-display);
   color: var(--ds-accent);
-  margin: 0;
-  max-width: 18ch;
 }
 
 .heroLede {
-  font-size: var(--ds-text-lg);
-  line-height: 1.55;
-  color: var(--ds-text-muted);
-  max-width: 46ch;
+  font-size: var(--ds-text-base);
+  line-height: 1.5;
+  color: color-mix(in srgb, var(--ds-text-inverse) 78%, transparent);
+  max-width: 34ch;
   margin: 0;
 }
 
-.heroCtas {
+@media (min-width: 900px) {
+  .heroLede { font-size: var(--ds-text-lg); max-width: 40ch; }
+}
+
+.heroActions {
   display: flex;
-  gap: var(--ds-space-3);
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--ds-space-4);
+}
+
+@media (min-width: 600px) {
+  .heroActions { flex-direction: row; align-items: center; gap: var(--ds-space-6); }
+}
+
+/* ONE dominant call to action. The secondary is a text link, not a second button: two
+   buttons of equal weight is how a page ends up with no primary action at all. */
+.heroSecondary {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--ds-target-min);
+  font-size: var(--ds-text-sm);
+  font-weight: var(--ds-weight-medium);
+  letter-spacing: 0.04em;
+  color: var(--ds-text-inverse);
+  text-decoration: none;
+  border-bottom: 1px solid color-mix(in srgb, var(--ds-text-inverse) 40%, transparent);
+  padding-bottom: 2px;
+  transition:
+    color var(--ds-duration-fast) var(--ds-ease-standard),
+    border-color var(--ds-duration-fast) var(--ds-ease-standard);
+}
+
+.heroSecondary:hover { border-bottom-color: var(--ds-accent); color: var(--ds-accent); }
+
+/* The entrance. Staggered, short, and finished: a hero that keeps moving is a hero nobody
+   reads. Durations come from tokens, so reduced motion zeroes all of it. */
+.heroCopy > * { animation: heroIn var(--ds-duration-reveal) var(--ds-ease-entrance) both; }
+
+.heroCopy > *:nth-child(1) { animation-delay: 60ms; }
+.heroCopy > *:nth-child(2) { animation-delay: 140ms; }
+.heroCopy > *:nth-child(3) { animation-delay: 240ms; }
+.heroCopy > *:nth-child(4) { animation-delay: 340ms; }
+
+@keyframes heroIn {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .heroCopy > * { animation: none; }
+}
+
+/* ================================================================ section head */
+
+.head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--ds-space-4);
   flex-wrap: wrap;
-  margin-top: var(--ds-space-3);
+  margin-bottom: var(--ds-space-6);
 }
 
-.heroMedia { position: relative; }
+.headText { display: flex; flex-direction: column; gap: var(--ds-space-2); min-width: 0; }
 
-/* The brand's own line pattern, behind the type at low opacity. The Egyptian reference in
-   section 6 is meant to be structural geometry, not iconography — this is a rhythm of
-   rules, which is what the delivered pattern asset is. */
-.heroPattern {
-  position: absolute;
-  inset-block: 0;
-  inset-inline-start: -10%;
-  width: 55%;
-  opacity: 0.06;
-  pointer-events: none;
-  object-fit: cover;
-  z-index: 0;
+.eyebrow {
+  font-family: var(--ds-font-body);
+  font-size: 0.6875rem;
+  font-weight: var(--ds-weight-strong);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--ds-text-muted);
+  margin: 0;
 }
 
-/* ------------------------------------------------------------------- occasions */
+.title {
+  font-family: var(--ds-font-display);
+  font-size: clamp(1.9rem, 1.4rem + 2.4vw, 3.25rem);
+  font-weight: var(--ds-weight-display);
+  line-height: 1.05;
+  letter-spacing: -0.025em;
+  margin: 0;
+}
 
-.occasionGrid {
+.note {
+  font-size: var(--ds-text-sm);
+  line-height: 1.55;
+  color: var(--ds-text-muted);
+  max-width: 58ch;
+  margin: 0;
+}
+
+.section { padding-block: var(--ds-space-8); }
+
+@media (min-width: 900px) { .section { padding-block: var(--ds-space-9); } }
+
+/* ======================================================================= rails */
+
+/* A horizontal rail that stays a rail at every width.
+ *
+ * The previous build turned rails into grids on desktop, which is why the page became
+ * grid after grid. A rail reads as a curated selection continuing past the edge; a grid
+ * reads as inventory. */
+.rail {
   display: grid;
-  gap: var(--ds-space-3);
-  /* 190px, not 160: the tile carries a display-size word plus 24px of padding either
-     side, and a track narrower than the longest word is what forced the page wide. */
-  grid-template-columns: repeat(auto-fill, minmax(min(210px, 100%), 1fr));
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(58vw, 260px);
+  gap: var(--ds-space-4);
+  overflow-x: auto;
+  scroll-snap-type: x proximity;
+  scroll-padding-inline: var(--ds-gutter);
+  margin-inline: calc(var(--ds-gutter) * -1);
+  padding-inline: var(--ds-gutter);
+  padding-bottom: var(--ds-space-4);
+  overscroll-behavior-x: contain;
+  scrollbar-width: thin;
 }
 
-/* ---------------------------------------------------------------- dido module */
+.rail > * { scroll-snap-align: start; }
 
-.didoModule {
+.rail:focus-visible {
+  outline: var(--ds-focus-width) solid var(--ds-focus-color);
+  outline-offset: calc(var(--ds-focus-offset) * -1);
+}
+
+@media (min-width: 600px) {
+  .rail { grid-auto-columns: minmax(0, 300px); gap: var(--ds-space-5); }
+}
+
+@media (min-width: 1100px) {
+  .rail {
+    /* A fixed card width rather than 1fr.
+     *
+     * With 1fr the card size is a function of how many items happen to be in the rail —
+     * the two-item brands rail rendered two 620px plates while the four-item looks rail
+     * rendered four 300px ones. A rail should look like a rail whatever is in it. */
+    grid-auto-columns: minmax(0, 300px);
+    justify-content: start;
+    overflow-x: auto;
+    margin-inline: 0;
+    padding-inline: 0;
+  }
+}
+
+/* Occasion plates are a set to scan, not to study, so they stay narrower. */
+.occasionRail { grid-auto-columns: minmax(44vw, 200px); }
+
+@media (min-width: 600px) { .occasionRail { grid-auto-columns: minmax(0, 210px); } }
+
+@media (min-width: 1100px) {
+  .occasionRail {
+    grid-auto-flow: row;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    overflow-x: visible;
+    margin-inline: 0;
+    padding-inline: 0;
+  }
+}
+
+/* ============================================================== feature look */
+
+.feature { display: grid; gap: var(--ds-space-6); align-items: center; }
+
+@media (min-width: 900px) {
+  .feature { grid-template-columns: minmax(0, 6fr) minmax(0, 5fr); gap: var(--ds-space-9); }
+}
+
+/* Capped. Unbounded, the plate grew to the full column and swamped the copy beside it;
+   a feature is the largest thing on the page, not the only thing on it. */
+.featureMedia { position: relative; max-width: 34rem; }
+
+.featureCopy { display: flex; flex-direction: column; gap: var(--ds-space-4); }
+
+.featureStory {
+  font-family: var(--ds-font-display);
+  font-size: clamp(1.15rem, 1.02rem + 0.6vw, 1.5rem);
+  font-style: italic;
+  font-weight: 500;
+  line-height: 1.45;
+  margin: 0;
+}
+
+.featurePieces {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.featurePiece {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--ds-space-4);
+  padding-block: var(--ds-space-3);
+  border-top: 1px solid var(--ds-border);
+  font-size: var(--ds-text-sm);
+}
+
+.featurePiece:last-child { border-bottom: 1px solid var(--ds-border); }
+
+.featurePieceName { font-weight: var(--ds-weight-medium); }
+.featurePieceRole { color: var(--ds-text-muted); text-align: right; }
+
+.featureTags { display: flex; gap: var(--ds-space-2); flex-wrap: wrap; }
+
+.featureTag {
+  font-size: 0.625rem;
+  font-weight: var(--ds-weight-strong);
+  letter-spacing: var(--ds-tracking-eyebrow);
+  text-transform: uppercase;
+  color: var(--ds-text-muted);
+  padding: 4px var(--ds-space-3);
+  border: 1px solid var(--ds-border);
+}
+
+/* ================================================== editorial statement moment */
+
+/* A pause in the rhythm. Type only, on the raised ground, at a size that makes a reader
+   stop. Between two rails this is what keeps the page from feeling like a feed. */
+.statement { background: var(--ds-surface-raised); padding-block: var(--ds-space-9); }
+
+/* An absolute measure, for the same reason as the hero: `ch` here resolves against the
+   container's inherited body size, not the display type inside it, so a 26ch column was
+   about 200px wide and broke the statement into "A / wardro / be is a / set of". */
+.statementInner { max-width: min(100%, 30rem); }
+
+@media (min-width: 900px) { .statementInner { max-width: min(100%, 44rem); } }
+
+.statementText {
+  font-family: var(--ds-font-display);
+  font-size: clamp(1.75rem, 1.25rem + 2.6vw, 3.25rem);
+  font-weight: var(--ds-weight-display);
+  line-height: 1.12;
+  letter-spacing: -0.025em;
+  margin: 0;
+}
+
+.statementText em { font-style: italic; font-weight: 500; color: var(--ds-accent); }
+
+.statementNote {
+  margin-top: var(--ds-space-5);
+  font-size: var(--ds-text-sm);
+  line-height: 1.6;
+  color: var(--ds-text-muted);
+  max-width: 46ch;
+}
+
+/* ==================================================================== styles */
+
+/* By style. A dense typographic list, not ten more plates: the page has enough imagery by
+   this point and this is a secondary way in. */
+.styleList {
   display: grid;
-  gap: var(--ds-space-6);
-  padding: var(--ds-space-7) var(--ds-gutter);
+  grid-template-columns: 1fr;
+  border-top: 1px solid var(--ds-border);
+}
+
+@media (min-width: 700px) {
+  .styleList { grid-template-columns: repeat(2, 1fr); column-gap: var(--ds-space-8); }
+}
+
+.styleItem {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--ds-space-4);
+  min-height: var(--ds-target-min);
+  padding-block: var(--ds-space-4);
+  border-bottom: 1px solid var(--ds-border);
+  text-decoration: none;
+  transition: padding-inline-start var(--ds-duration-base) var(--ds-ease-standard);
+}
+
+@media (hover: hover) {
+  .styleItem:hover { padding-inline-start: var(--ds-space-3); }
+  .styleItem:hover .styleName { color: var(--ds-accent); }
+}
+
+.styleItem:active { padding-inline-start: var(--ds-space-3); }
+
+.styleName {
+  font-family: var(--ds-font-display);
+  font-size: clamp(1.25rem, 1.1rem + 0.6vw, 1.6rem);
+  font-weight: var(--ds-weight-display);
+  letter-spacing: -0.02em;
+  transition: color var(--ds-duration-fast) var(--ds-ease-standard);
+}
+
+.styleDesc { font-size: var(--ds-text-sm); color: var(--ds-text-muted); text-align: right; }
+
+/* ================================================================= for brands */
+
+.forBrands {
+  display: grid;
   background: var(--ds-surface-inverse);
   color: var(--ds-text-inverse);
 }
 
 @media (min-width: 900px) {
-  .didoModule {
-    grid-template-columns: minmax(0, 4fr) minmax(0, 7fr);
-    align-items: center;
-    padding: var(--ds-space-9) var(--ds-space-8);
-    gap: var(--ds-space-9);
-  }
+  .forBrands { grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); align-items: stretch; }
 }
 
-.didoCopy { display: flex; flex-direction: column; gap: var(--ds-space-4); }
-
-.didoTitle {
-  font-size: var(--ds-display-3);
-  letter-spacing: var(--ds-tracking-display);
-  margin: 0;
+.forBrandsMedia {
+  position: relative;
+  min-height: 240px;
+  /* The scaled artwork below has to be CLIPPED. Without this it escaped its grid column
+     and ran across the copy panel beside it. */
+  overflow: hidden;
+}
+/* Plain cover, no transform.
+ *
+ * The asset is the 1080x1920 splash plate, whose baked type sits at y 1497..1824 — the
+ * bottom quarter. A wide panel covering a tall source shows only its middle band, so the
+ * geometry fills the frame and the type is outside the crop by construction rather than by
+ * a scale factor that has to be re-tuned whenever the panel changes shape. */
+.forBrandsMedia img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 50% 45%;
 }
 
-.didoBody { color: color-mix(in srgb, var(--ds-text-inverse) 78%, transparent); margin: 0; }
-
-/* ------------------------------------------------------------------- editorial */
-
-/* A wide editorial band: one image, one argument, set against the raised surface so it
-   reads as a change of register rather than another row of cards. */
-.editorialBand {
-  display: grid;
-  gap: var(--ds-space-6);
-  align-items: center;
-  background: var(--ds-surface-raised);
-}
-
-@media (min-width: 900px) {
-  .editorialBand {
-    grid-template-columns: minmax(0, 6fr) minmax(0, 5fr);
-    gap: var(--ds-space-8);
-  }
-}
-
-.editorialCopy {
+.forBrandsCopy {
   display: flex;
   flex-direction: column;
   gap: var(--ds-space-4);
-  padding: var(--ds-space-7) var(--ds-gutter);
+  align-items: flex-start;
+  padding: var(--ds-space-8) var(--ds-gutter);
 }
 
 @media (min-width: 900px) {
-  .editorialCopy { padding: var(--ds-space-8); padding-inline-start: var(--ds-space-9); }
+  .forBrandsCopy { padding: var(--ds-space-9) var(--ds-space-8); justify-content: center; }
+}
+
+.forBrandsTitle {
+  font-family: var(--ds-font-display);
+  font-size: clamp(1.75rem, 1.3rem + 2.2vw, 3rem);
+  font-weight: var(--ds-weight-display);
+  line-height: 1.08;
+  letter-spacing: -0.025em;
+  margin: 0;
+  max-width: 18ch;
+}
+
+.forBrandsBody {
+  color: color-mix(in srgb, var(--ds-text-inverse) 78%, transparent);
+  max-width: 46ch;
+  margin: 0;
+}
+
+.forBrandsNote {
+  font-size: var(--ds-text-sm);
+  color: color-mix(in srgb, var(--ds-text-inverse) 60%, transparent);
+  max-width: 46ch;
+}
+
+/* ==================================================================== reveal */
+
+/* Section reveal, applied by useReveal. It starts revealed under reduced motion, so there
+   is no state change at all rather than a zero-length one. */
+.reveal {
+  opacity: 0;
+  transform: translateY(22px);
+  transition:
+    opacity var(--ds-duration-reveal) var(--ds-ease-entrance),
+    transform var(--ds-duration-reveal) var(--ds-ease-entrance);
+}
+
+.revealed { opacity: 1; transform: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal { opacity: 1; transform: none; transition: none; }
 }

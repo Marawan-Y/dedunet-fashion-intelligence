@@ -27,20 +27,29 @@ export interface Occasion {
   hint: string;
   /** Catalogue categories this occasion draws from. This is what makes it real. */
   categories: string[];
+  /**
+   * Concept artwork for the occasion plate.
+   *
+   * An occasion has no photography of its own and none will be invented for it. Each one
+   * borrows a delivered DEDUNET concept plate — the lifestyle or detail artwork of a piece
+   * that genuinely suits that occasion — so every image on the surface is real brand media
+   * doing honest work. Section 3: no fabricated product photography.
+   */
+  image: string;
 }
 
 /** What are you dressing for. The entry point into styling, and section 12's core module. */
 export const OCCASIONS: Occasion[] = [
-  { slug: "interview", name: "Interview", hint: "Considered, quiet, credible", categories: ["Trousers", "Shirts"] },
-  { slug: "work", name: "Work", hint: "Everyday professional", categories: ["Trousers", "Shirts", "Outerwear"] },
-  { slug: "dinner", name: "Dinner", hint: "Evening, unfussy", categories: ["Shirts", "Trousers"] },
-  { slug: "date", name: "Date", hint: "Personal, not performative", categories: ["Shirts", "Knitwear"] },
-  { slug: "wedding", name: "Wedding", hint: "Formal, with room to sit", categories: ["Shirts", "Trousers"] },
-  { slug: "travel", name: "Travel", hint: "Layers that fold flat", categories: ["Outerwear", "Trousers", "Accessories"] },
-  { slug: "weekend", name: "Weekend", hint: "Off duty", categories: ["T-shirts", "Trousers"] },
-  { slug: "party", name: "Party", hint: "Late, warm rooms", categories: ["Shirts", "Outerwear"] },
-  { slug: "everyday", name: "Everyday", hint: "The default that works", categories: ["T-shirts", "Trousers"] },
-  { slug: "formal", name: "Formal", hint: "When the code is stated", categories: ["Shirts", "Trousers"] },
+  { slug: "interview", name: "Interview", hint: "Considered, quiet, credible", categories: ["Trousers", "Shirts"], image: "assets/brand-prototype/products/ddn-sh01-detail.svg" },
+  { slug: "work", name: "Work", hint: "Everyday professional", categories: ["Trousers", "Shirts", "Outerwear"], image: "assets/brand-prototype/media/ddn-tr01-lifestyle.svg" },
+  { slug: "dinner", name: "Dinner", hint: "Evening, unfussy", categories: ["Shirts", "Trousers"], image: "assets/brand-prototype/products/ddn-tr01-detail.svg" },
+  { slug: "date", name: "Date", hint: "Personal, not performative", categories: ["Shirts", "Knitwear"], image: "assets/brand-prototype/media/ddn-ts01-lifestyle.svg" },
+  { slug: "wedding", name: "Wedding", hint: "Formal, with room to sit", categories: ["Shirts", "Trousers"], image: "assets/brand-prototype/media/collection-cover.svg" },
+  { slug: "travel", name: "Travel", hint: "Layers that fold flat", categories: ["Outerwear", "Trousers", "Accessories"], image: "assets/brand-prototype/media/ddn-os01-lifestyle.svg" },
+  { slug: "weekend", name: "Weekend", hint: "Off duty", categories: ["T-shirts", "Trousers"], image: "assets/brand-prototype/products/ddn-ts01-detail.svg" },
+  { slug: "party", name: "Party", hint: "Late, warm rooms", categories: ["Shirts", "Outerwear"], image: "assets/brand-prototype/products/ddn-os01-detail.svg" },
+  { slug: "everyday", name: "Everyday", hint: "The default that works", categories: ["T-shirts", "Trousers"], image: "assets/brand-prototype/media/about-image.svg" },
+  { slug: "formal", name: "Formal", hint: "When the code is stated", categories: ["Shirts", "Trousers"], image: "assets/brand-prototype/products/ddn-sc01-detail.svg" },
 ];
 
 export interface StyleCategory {

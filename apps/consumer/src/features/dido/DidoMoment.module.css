@@ -1,0 +1,199 @@
+/* The Dido moment.
+ *
+ * Section 5 of the acceptance brief: Dido was one content section among many and has to
+ * become the signature visual moment. Full-bleed, dark, and staged — the character runs
+ * through a styling sequence while real garment plates assemble beside it.
+ *
+ * Everything that moves here animates opacity and transform only, so it stays on the
+ * compositor and costs a phone nothing. No filters, no box-shadow transitions, no layout
+ * animation. That is the whole performance argument for section 28.
+ */
+
+.moment {
+  position: relative;
+  overflow: hidden;
+  background: var(--ds-surface-inverse);
+  color: var(--ds-text-inverse);
+  padding-block: var(--ds-space-9);
+  isolation: isolate;
+}
+
+/* The brand line pattern, very low, as ground texture rather than decoration. */
+.ground {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0.06;
+}
+
+.inner {
+  width: 100%;
+  max-width: var(--ds-content-max);
+  margin-inline: auto;
+  padding-inline: var(--ds-gutter);
+  display: grid;
+  gap: var(--ds-space-7);
+  align-items: center;
+}
+
+@media (min-width: 900px) {
+  .inner { grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); gap: var(--ds-space-9); }
+}
+
+.copy { display: flex; flex-direction: column; gap: var(--ds-space-5); align-items: flex-start; }
+
+.eyebrow {
+  display: flex;
+  align-items: center;
+  gap: var(--ds-space-3);
+  font-family: var(--ds-font-body);
+  font-size: 0.6875rem;
+  font-weight: var(--ds-weight-strong);
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--ds-text-inverse) 68%, transparent);
+}
+
+.eyebrowRule { width: 28px; height: 1px; background: var(--ds-accent); flex: none; }
+
+.title {
+  font-family: var(--ds-font-display);
+  font-size: clamp(2rem, 1.4rem + 2.8vw, 3.5rem);
+  font-weight: var(--ds-weight-display);
+  line-height: 1.04;
+  letter-spacing: -0.028em;
+  margin: 0;
+  max-width: 16ch;
+}
+
+.title em { font-style: italic; font-weight: 500; color: var(--ds-accent); }
+
+.body {
+  color: color-mix(in srgb, var(--ds-text-inverse) 78%, transparent);
+  max-width: 42ch;
+  margin: 0;
+}
+
+.note {
+  font-size: var(--ds-text-sm);
+  line-height: 1.6;
+  color: color-mix(in srgb, var(--ds-text-inverse) 58%, transparent);
+  max-width: 42ch;
+}
+
+/* ------------------------------------------------------------------- the stage */
+
+.stage {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: var(--ds-space-5);
+  align-items: center;
+}
+
+.figureColumn { display: flex; flex-direction: column; align-items: center; gap: var(--ds-space-3); }
+
+.figure { width: clamp(96px, 26vw, 168px); }
+
+/* The state, named. Section 27 forbids status carried by colour or shape alone, and it is
+   also simply useful: it says what Dido is doing. */
+.state {
+  font-family: var(--ds-font-body);
+  font-size: 0.625rem;
+  font-weight: var(--ds-weight-strong);
+  letter-spacing: var(--ds-tracking-eyebrow);
+  text-transform: uppercase;
+  color: var(--ds-accent);
+  text-align: center;
+  min-height: 1.2em;
+}
+
+/* The pieces Dido is assembling. Real catalogue plates, arriving in sequence. */
+.pieces {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--ds-space-3);
+}
+
+.piece {
+  position: relative;
+  aspect-ratio: 3 / 4;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--ddn-color-background) 8%, transparent);
+  opacity: 0;
+  transform: translateY(14px) scale(0.97);
+  transition:
+    opacity var(--ds-duration-reveal) var(--ds-ease-entrance),
+    transform var(--ds-duration-reveal) var(--ds-ease-entrance);
+}
+
+.pieceIn { opacity: 1; transform: none; }
+
+.piece img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  /* Same crop as the product plates: the delivered artwork carries a baked caption in its
+     lower quarter that would be illegible at this size and duplicates the label below. */
+  transform: scale(1.36);
+  transform-origin: 50% 46%;
+}
+
+/* A hairline over each plate so they read as a composed set rather than three thumbnails. */
+.piece::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ddn-color-background) 22%, transparent);
+}
+
+.pieceLabel {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1;
+  padding: var(--ds-space-2);
+  background: linear-gradient(
+    to top,
+    color-mix(in srgb, var(--ddn-color-primary) 88%, transparent),
+    transparent
+  );
+  font-size: 0.5625rem;
+  font-weight: var(--ds-weight-strong);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ds-text-inverse);
+  text-align: center;
+}
+
+/* The connecting rule between Dido and what it is assembling. It draws itself as the
+   sequence advances, which is the one piece of motion that carries meaning here: it is
+   the link between the character and the outcome. */
+.thread {
+  position: absolute;
+  left: calc(clamp(96px, 26vw, 168px) / 2);
+  top: 50%;
+  height: 1px;
+  background: var(--ds-accent);
+  transform-origin: left center;
+  transform: scaleX(0);
+  transition: transform var(--ds-duration-reveal) var(--ds-ease-standard);
+  z-index: -1;
+}
+
+.threadIn { transform: scaleX(1); }
+
+@media (prefers-reduced-motion: reduce) {
+  .piece { opacity: 1; transform: none; transition: none; }
+  .thread { transition: none; }
+}
+
+.actions { display: flex; flex-direction: column; align-items: flex-start; gap: var(--ds-space-4); }
+
+@media (min-width: 600px) {
+  .actions { flex-direction: row; align-items: center; gap: var(--ds-space-6); }
+}

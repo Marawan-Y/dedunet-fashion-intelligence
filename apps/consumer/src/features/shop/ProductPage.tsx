@@ -300,7 +300,7 @@ export default function ProductPage() {
                     meta={`For ${look.occasion} · ${look.items.length} pieces`}
                     image={primaryImage(item)?.url}
                     imageAlt={`Concept artwork for ${look.name}`}
-                    ratio="editorial"
+                    ratio="3 / 2"
                     slot={`product-look-${look.slug}`}
                     testId="look-card"
                   />

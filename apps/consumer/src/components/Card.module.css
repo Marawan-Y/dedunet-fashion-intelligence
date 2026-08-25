@@ -1,32 +1,22 @@
+/* The card.
+ *
+ * A lookbook plate with type beneath it, not a bordered box. The previous version wrapped
+ * every card in a surface and a border, which — repeated across a grid, over a pale
+ * ground, around artwork that was itself pale — is what made the page read as a wall of
+ * empty rectangles. The image is the object; the chrome goes away.
+ */
+
 .card {
   position: relative;
   display: flex;
   flex-direction: column;
-  background: var(--ds-surface);
-  border: var(--ds-border-width) solid var(--ds-border);
-  border-radius: var(--ds-radius);
   height: 100%;
-  transition:
-    border-color var(--ds-duration-base) var(--ds-ease-standard),
-    transform var(--ds-duration-base) var(--ds-ease-standard),
-    box-shadow var(--ds-duration-base) var(--ds-ease-standard);
+  background: transparent;
+  transition: transform var(--ds-duration-base) var(--ds-ease-standard);
 }
 
-/* Hover belongs to the card, not to the image, so the whole object responds as one thing.
-   The lift is small deliberately: this is a fashion grid, and cards that leap read as a
-   toy. Both properties inherit the reduced-motion duration from the token layer. */
-.card:hover {
-  border-color: var(--ds-border-strong);
-  box-shadow: var(--ds-elevation-2);
-}
-
-@media (hover: hover) and (prefers-reduced-motion: no-preference) {
-  .card:hover { transform: translateY(-2px); }
-  .card:hover .media img { transform: scale(1.03); }
-}
-
-/* Focus reaches the card through the link inside it, so the ring must be drawn around the
-   whole card rather than around the invisible stretched anchor. */
+/* Focus reaches the card through the link inside it, so the ring is drawn around the whole
+   card rather than around the invisible stretched anchor. */
 .card:focus-within {
   outline: var(--ds-focus-width) solid var(--ds-focus-color);
   outline-offset: var(--ds-focus-offset);
@@ -34,30 +24,35 @@
 
 .card:focus-within .link:focus-visible { outline: none; }
 
-.media { position: relative; overflow: hidden; }
+/* A press that moves. On touch this is the only feedback there is: no hover to borrow. */
+.card:active { transform: translateY(1px); }
+
+.media { position: relative; }
 
 .body {
   display: flex;
   flex-direction: column;
-  gap: var(--ds-space-2);
-  padding: var(--ds-space-4);
+  gap: 2px;
+  padding-top: var(--ds-space-4);
   flex: 1;
 }
 
 .brandName {
   font-family: var(--ds-font-body);
-  font-size: var(--ds-text-xs);
+  font-size: 0.625rem;
   font-weight: var(--ds-weight-strong);
   letter-spacing: var(--ds-tracking-eyebrow);
   text-transform: uppercase;
   color: var(--ds-text-muted);
 }
 
+/* The title carries the display face. At card size the didone is what separates a fashion
+   grid from a product listing. */
 .title {
   font-family: var(--ds-font-display);
-  font-size: var(--ds-subheading);
+  font-size: clamp(1.0625rem, 1rem + 0.35vw, 1.375rem);
   font-weight: var(--ds-weight-display);
-  line-height: var(--ds-leading-heading);
+  line-height: 1.2;
   letter-spacing: var(--ds-tracking-display);
   margin: 0;
 }
@@ -65,15 +60,12 @@
 .meta {
   font-size: var(--ds-text-sm);
   color: var(--ds-text-muted);
-  margin: 0;
+  margin: 2px 0 0;
 }
 
-/* The stretched link. Covers the card so the whole surface is the target, while the
-   accessible name stays on the real anchor text rather than on a bare region. */
-.link {
-  text-decoration: none;
-  color: inherit;
-}
+/* The stretched link. The whole card is the target while the accessible name stays the
+   title, which is what a screen reader should hear. */
+.link { text-decoration: none; color: inherit; }
 
 .link::after {
   content: "";
@@ -81,13 +73,16 @@
   inset: 0;
 }
 
+@media (hover: hover) {
+  .link:hover { text-decoration: underline; text-underline-offset: 0.18em; }
+}
+
 .foot {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: var(--ds-space-2);
   flex-wrap: wrap;
-  padding: 0 var(--ds-space-4) var(--ds-space-4);
+  padding-top: var(--ds-space-3);
 }
 
 /* Controls inside a card must sit above the stretched link or they cannot be clicked. */
@@ -95,49 +90,99 @@
 
 /* ---------------------------------------------------------------- occasion card */
 
-/* The "what are you dressing for" tiles. A different object from a product card: no
-   image, all type, and the whole tile is the target. */
+/* "What are you dressing for" — a fashion-discovery plate, not a form control.
+ *
+ * The previous version was a stack of white boxes with small labels, which is what a
+ * settings screen looks like. This is an image plate with the occasion set large over it. */
 .occasion {
   position: relative;
   display: flex;
   flex-direction: column;
-  gap: var(--ds-space-1);
-  /* Grid and flex items default to min-width:auto, which refuses to shrink below their
-     content and is the usual cause of a track pushing a layout wide. */
-  min-width: 0;
+  justify-content: flex-end;
   min-height: var(--ds-target-min);
-  padding: var(--ds-space-5);
-  background: var(--ds-surface);
-  border: var(--ds-border-width) solid var(--ds-border);
+  aspect-ratio: 3 / 4;
+  padding: var(--ds-space-4);
+  overflow: hidden;
+  background: var(--ds-surface-inverse);
+  color: var(--ds-text-inverse);
   text-decoration: none;
-  text-align: left;
-  transition:
-    background-color var(--ds-duration-base) var(--ds-ease-standard),
-    color var(--ds-duration-base) var(--ds-ease-standard),
-    border-color var(--ds-duration-base) var(--ds-ease-standard);
+  isolation: isolate;
+  transition: transform var(--ds-duration-base) var(--ds-ease-standard);
 }
 
-.occasion:hover {
-  background: var(--ds-text);
-  border-color: var(--ds-text);
-  color: var(--ds-text-inverse);
+.occasionMedia {
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  /* The same crop as the product plates, and for the same reason: this artwork carries a
+     caption baked into its lower quarter, which showed as stray type behind the occasion
+     name. See ProductFigure.module.css for the arithmetic. */
+  transform: scale(1.65);
+  transform-origin: 50% 42%;
+  transition: transform var(--ds-duration-reveal) var(--ds-ease-standard);
 }
+
+/* A scrim, so the type is legible over whatever the artwork happens to be. Weighted to the
+   foot because that is where the type sits. */
+.occasion::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(
+    to top,
+    color-mix(in srgb, var(--ddn-color-primary) 88%, transparent) 0%,
+    color-mix(in srgb, var(--ddn-color-primary) 55%, transparent) 38%,
+    color-mix(in srgb, var(--ddn-color-primary) 8%, transparent) 100%
+  );
+}
+
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  .occasion:hover .occasionMedia { transform: scale(1.78); }
+}
+
+/* Touch feedback. Section 4 asks for clear press feedback and a phone has no hover. */
+.occasion:active { transform: scale(0.985); }
 
 .occasionName {
   font-family: var(--ds-font-display);
+  font-size: clamp(1.25rem, 1.05rem + 0.9vw, 1.75rem);
   font-weight: var(--ds-weight-display);
   letter-spacing: var(--ds-tracking-display);
-  line-height: var(--ds-leading-heading);
-  /* Sized to the tile rather than to the page.
-   *
-   * At the full heading size these names were wider than the tile and broke mid-word —
-   * "Streetwe / ar", "Contemp / orary". Breaking is still allowed as the last resort that
-   * prevents overflow, but the type now fits, so it never gets there. */
-  font-size: clamp(1.15rem, 1rem + 0.55vw, 1.5rem);
+  line-height: 1.1;
   overflow-wrap: break-word;
 }
 
 .occasionHint {
   font-size: var(--ds-text-sm);
-  opacity: 0.75;
+  line-height: 1.35;
+  opacity: 0.82;
+  margin-top: 2px;
+}
+
+/* The cue that this leads into styling rather than into a filtered list. */
+.occasionCue {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: var(--ds-space-3);
+  font-size: 0.625rem;
+  font-weight: var(--ds-weight-strong);
+  letter-spacing: var(--ds-tracking-eyebrow);
+  text-transform: uppercase;
+  color: var(--ds-accent);
+}
+
+.occasionCueRule {
+  width: 18px;
+  height: 1px;
+  background: currentColor;
+  transition: width var(--ds-duration-base) var(--ds-ease-standard);
+}
+
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  .occasion:hover .occasionCueRule { width: 30px; }
 }

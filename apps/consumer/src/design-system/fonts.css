@@ -1,0 +1,34 @@
+/* The brand typefaces, SELF-HOSTED.
+ *
+ * fonts.json names Bodoni Moda for display and Manrope for body. Until now neither
+ * rendered: no font file shipped and no webfont was linked, so both silently resolved to
+ * their fallbacks and the brand's own display face had never been seen on a screen.
+ *
+ * WHY SELF-HOSTED RATHER THAN A FONT CDN
+ *
+ * Both faces are SIL Open Font License 1.1, which permits redistribution — so serving them
+ * from our own origin is legally clean. Doing so also means:
+ *
+ *   - no external runtime dependency, and no CSP widening to a font host
+ *   - the LAN preview and the physical-iPhone acceptance work with no internet at all,
+ *     which is the topology those acceptances actually run on
+ *   - no third-party request carrying the reader's IP and referrer
+ *   - the fonts are versioned in the lockfile like any other dependency
+ *
+ * The files come from @fontsource, are hashed by the build and served from /assets.
+ *
+ * WHY THESE SUBSETS AND NOT THE FAMILY
+ *
+ * Only what the design system actually uses. Display weight 600 for headings and 500
+ * italic for the hero's promise line; Manrope is a variable font, so one file covers the
+ * whole interface weight range. Latin only. Importing the full families would add
+ * megabytes for glyphs and weights nothing renders.
+ */
+
+/* Display — Bodoni Moda. A didone: high stroke contrast, hairline serifs, drawn tight.
+   This is the face that makes the platform read as fashion rather than as software. */
+@import "@fontsource/bodoni-moda/latin-600.css";
+@import "@fontsource/bodoni-moda/latin-500-italic.css";
+
+/* Interface — Manrope variable, 200..800 in one file. */
+@import "@fontsource-variable/manrope/wght.css";

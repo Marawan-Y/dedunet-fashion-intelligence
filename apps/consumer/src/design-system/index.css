@@ -5,6 +5,7 @@
  * public/, because it is a GENERATED artefact of the brand package and is emitted rather
  * than hand-copied. See scripts/brand/build_brand_package.py, CLIENT_DIRS.
  */
+@import "./fonts.css";
 @import "./reset.css";
 @import "./tokens.css";
 @import "./base.css";

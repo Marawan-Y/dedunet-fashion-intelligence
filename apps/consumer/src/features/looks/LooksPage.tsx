@@ -75,7 +75,7 @@ export default function LooksPage() {
                     meta={`For ${look.occasion} · ${look.items.length} pieces`}
                     image={image?.url}
                     imageAlt={image?.alt_text ?? `Concept artwork for ${look.name}`}
-                    ratio="editorial"
+                    ratio="3 / 2"
                     slot={`look-${look.slug}`}
                     testId="look-card"
                     headingLevel={2}

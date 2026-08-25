@@ -71,3 +71,25 @@ export function sizesOf(product: CatalogProduct): string[] {
 export function coloursOf(product: CatalogProduct): string[] {
   return [...new Set((product.variants ?? []).map((v) => v.color))];
 }
+
+/**
+ * Pick a media role by rotation, so a rail of looks does not show four near-identical
+ * plates.
+ *
+ * The capsule is small and looks deliberately share pieces — that is what a capsule is —
+ * so three of four looks lead with the same garment. Rather than manufacture variety by
+ * choosing a piece that is not the look's lead, each look shows its lead piece from a
+ * DIFFERENT delivered view: front, detail, lifestyle, back. Every plate stays truthful to
+ * the look it belongs to, and the rail stops looking like a printing error.
+ *
+ * Falls back to the primary image when a product has no artwork in the requested role.
+ */
+const VIEW_ROTATION = ["front", "detail", "lifestyle", "back"] as const;
+
+export function mediaByRotation(
+  product: CatalogProduct,
+  index: number,
+): ProductMedia | undefined {
+  const role = VIEW_ROTATION[index % VIEW_ROTATION.length]!;
+  return (product.media ?? []).find((m) => m.role === role) ?? primaryImage(product);
+}
