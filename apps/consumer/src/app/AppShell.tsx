@@ -106,10 +106,44 @@ function SiteHeader() {
   );
 }
 
+/**
+ * The site footer.
+ *
+ * TWO FOOTERS, ONE OF WHICH IS MOUNTED AT A TIME.
+ *
+ * On a phone the persistent five-item tab bar already carries primary navigation, so
+ * repeating the full hierarchy beneath it is ten redundant targets standing between the
+ * reader and the one thing the footer exists for — the prototype disclosure. The compact
+ * version carries identity, the destinations the tab bar does NOT reach, and the
+ * disclosure. Desktop, which has no tab bar, keeps the expanded columns.
+ *
+ * WHAT IS DELIBERATELY ABSENT: About, Privacy and Terms. The acceptance brief names them
+ * as footer essentials and they are correct essentials — but no such route exists, and
+ * linking a customer to a 404 to look complete is the exact failure mode this programme
+ * keeps closing. They are recorded as a public-launch requirement instead.
+ */
 function SiteFooter() {
   return (
     <footer className={styles.footer}>
-      <div style={{ maxWidth: "var(--ds-content-max)", margin: "0 auto", padding: "0 var(--ds-gutter)" }}>
+      <div className={styles.footerInner}>
+        {/* ------------------------------------------------------ phone */}
+        <div className={styles.footerCompact}>
+          <div>
+            <div className={styles.footerBrand}>DEDUNET</div>
+            <div className={styles.footerTagline}>Worth, worn.</div>
+          </div>
+
+          <nav className={styles.footerCompactLinks} aria-label="Footer">
+            <NavLink to="/for-brands" className={() => styles.footerLink!}>
+              For Brands
+            </NavLink>
+            <NavLink to="/brands" className={() => styles.footerLink!}>
+              Brands
+            </NavLink>
+          </nav>
+        </div>
+
+        {/* ---------------------------------------------------- desktop */}
         <div className={styles.footerGrid}>
           <FooterColumn
             heading="Platform"
@@ -136,6 +170,8 @@ function SiteFooter() {
           />
         </div>
 
+        {/* The required prototype disclosure. Carried in full on both, because it is the
+            one thing on this surface that must not be abbreviated for a smaller screen. */}
         <p className={styles.legal}>
           DEDUNET — worth, worn. This is a prototype build. Imagery is concept artwork, not
           product photography. Material, composition and origin are stated intentions pending

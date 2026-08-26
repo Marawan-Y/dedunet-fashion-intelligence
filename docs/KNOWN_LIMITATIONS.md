@@ -18,6 +18,53 @@ not exercised), `BLOCKED`, `EXTERNALLY_PENDING`, `NOT_STARTED`.
 
 ---
 
+## 0a. Consumer foundation accepted on a physical iPhone (2026-08-26)
+
+**`ENTERPRISE_CONSUMER_FOUNDATION = ACCEPTED WITH FOLLOW-UP ITEMS`** — human review on a
+physical iPhone in Safari, against the deployed candidate. Recorded in
+`evidence/team-acceptance/ENTERPRISE_CONSUMER_FOUNDATION_ACCEPTANCE.md`.
+
+**Read the scope, not the headline.** The acceptance covers rendering on the device,
+routing, Home, the Dido **shell**, the Looks and Brands and Saved **foundations**, Shop,
+Account, mobile navigation, responsive presentation and preview safety.
+
+It does **not** cover, and must never be promoted into: Dido AI intelligence, Style DNA, the
+recommendation engine, the outfit engine, **Saved persistence**, real multi-brand
+integrations, merchant SaaS, public commerce, or native iOS. This is **not**
+production-platform acceptance. `PUBLIC_COMMERCIAL_LAUNCH` remains **BLOCKED**.
+
+### Conditions attached to the acceptance
+
+| Item | State |
+|---|---|
+| **Saved persistence** | **Must be implemented before production exposure.** No store, no endpoint, no model exists |
+| **A Look as a real outfit object** | reasoning, pricing and modification actions — future phase |
+| **Multi-brand domain** | not implemented; the second brand entry is still a labelled demonstration |
+| **Dido intelligence** | not built |
+| **About / Privacy / Terms** | **no routes exist.** Named as footer essentials at acceptance and deliberately NOT linked, because linking a customer to a 404 to look complete is the failure this programme keeps closing. Required for public launch |
+| Mobile footer | **closed in this cycle** — compact below 900px, expanded on desktop |
+
+### Two standing rules were added
+
+`docs/architecture/PRODUCTION_DISCLOSURE_RULE.md` — the prototype's truthfulness about
+unbuilt capability is to be **preserved during development**, and before production V1 every
+surface carrying implementation language must either become genuinely functional or be
+removed from the journey. Deleting the disclosure and leaving the dead surface is faking
+completion and is forbidden. It is enforced as a mechanical release gate, not a style guide.
+
+`docs/architecture/MEDIA_DELIVERY_SEPARATION.md` — one Home load costs 22 requests to the
+API origin, 20 of them static media, against a 300-per-minute-per-IP limiter that covers
+them. **The limiter was not changed and must not be raised to hide this.** Static media
+delivery is to be separated from business-API abuse protection as a future platform action.
+
+### Cutover
+
+`docs/operations/STAGING_CUTOVER_PLAN.md` is **prepared and not authorized**. Staging still
+serves `apps/web` on 13080; the candidate remains additive on 13081. `apps/web`, its six
+jsdom harnesses and its eight guard mutations all remain in the tree and keep passing.
+
+---
+
 ## 0. The consumer web client was replaced (2026-08-25)
 
 `ADR-0004` supersedes `ADR-0003`. The consumer web application is now React + TypeScript

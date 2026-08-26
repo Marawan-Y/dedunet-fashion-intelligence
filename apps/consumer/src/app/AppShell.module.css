@@ -175,15 +175,69 @@
   color: var(--ds-text-inverse);
 }
 
-.footerGrid {
-  display: grid;
-  gap: var(--ds-space-7);
-  grid-template-columns: 1fr;
-  margin-bottom: var(--ds-space-8);
+/* The footer measure, previously an inline style on the element. */
+.footerInner {
+  width: 100%;
+  max-width: var(--ds-content-max);
+  margin-inline: auto;
+  padding-inline: var(--ds-gutter);
 }
 
-@media (min-width: 600px) {
-  .footerGrid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+/* THE FULL COLUMNS ARE DESKTOP ONLY.
+ *
+ * On a phone the persistent five-item tab bar already provides primary navigation, so
+ * repeating the whole application hierarchy underneath it is ten redundant targets and a
+ * long scroll to reach the one thing the footer is actually for — the disclosure.
+ *
+ * `display: none` rather than visual hiding, deliberately: it takes the columns out of the
+ * accessibility tree too, so a screen reader on a phone is not read a duplicate of the
+ * navigation it just passed. */
+.footerGrid { display: none; }
+
+@media (min-width: 900px) {
+  .footerGrid {
+    display: grid;
+    gap: var(--ds-space-7);
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    margin-bottom: var(--ds-space-8);
+  }
+}
+
+/* The compact mobile footer: identity, the one destination the tab bar does not carry,
+   and the disclosure. */
+.footerCompact {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ds-space-4);
+  margin-bottom: var(--ds-space-6);
+}
+
+@media (min-width: 900px) {
+  .footerCompact { display: none; }
+}
+
+.footerBrand {
+  font-family: var(--ds-font-display);
+  font-size: var(--ds-heading);
+  font-weight: var(--ds-weight-display);
+  letter-spacing: 0.06em;
+  line-height: 1;
+}
+
+.footerTagline {
+  font-size: var(--ds-text-sm);
+  font-style: italic;
+  font-family: var(--ds-font-display);
+  opacity: 0.7;
+  margin-top: var(--ds-space-1);
+}
+
+.footerCompactLinks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ds-space-5);
+  padding-top: var(--ds-space-3);
+  border-top: 1px solid color-mix(in srgb, var(--ds-text-inverse) 16%, transparent);
 }
 
 .footerHeading {
