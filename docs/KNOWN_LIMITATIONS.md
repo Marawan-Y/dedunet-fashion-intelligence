@@ -59,9 +59,29 @@ delivery is to be separated from business-API abuse protection as a future platf
 
 ### Cutover
 
-`docs/operations/STAGING_CUTOVER_PLAN.md` is **prepared and not authorized**. Staging still
-serves `apps/web` on 13080; the candidate remains additive on 13081. `apps/web`, its six
-jsdom harnesses and its eight guard mutations all remain in the tree and keep passing.
+**Executed 2026-08-27.** Staging now serves the enterprise consumer client (`apps/consumer`)
+on 13080 over a same-origin `/api` proxy. The candidate remains on 13081 as the acceptance
+reference during the soak. `apps/web`, its harnesses and its guard mutations all remain in
+the tree and keep passing — the rollback path was rebuilt from committed source and proven
+to serve, not merely assumed. Record:
+`evidence/staging-cutover/STAGING_CUTOVER_EXECUTION.md`.
+
+**The physical-iPhone smoke on the normal staging URL is still outstanding.** It is a human
+gate and no automated result substitutes for it.
+
+**One new finding, open.** Security headers — `X-Frame-Options`, `X-Content-Type-Options`,
+`X-Robots-Tag`, `Referrer-Policy` — are absent on **every HTML document** the consumer app
+serves. nginx does not inherit `add_header` into a location that declares its own, and both
+`location = /index.html` and `location /assets/` set `Cache-Control`. The classic client did
+serve them, so this is a regression at this URL; it is pre-existing in the accepted candidate
+rather than introduced by the cutover, and was deliberately not fixed inside the cutover so
+the deployed artifact stays byte-identical to what the owner accepted. **Required before
+public launch.**
+
+**A second finding, product rather than platform.** The consumer product page renders
+**"Not priced"** for the Source Tee, not **€72**. The catalogue API carries price on
+variants (`7200` minor units) and leaves the product level null. Nothing is purchasable
+either way — the CTA is disabled and the server refuses a cart add with 409.
 
 ---
 

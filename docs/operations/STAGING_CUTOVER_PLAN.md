@@ -3,13 +3,20 @@
 | Field | Value |
 |---|---|
 | Artifact ID | OPS-CUT-001 · **Version** 1.0 |
-| Status | **PREPARED — NOT AUTHORIZED, NOT PERFORMED** |
+| Status | **EXECUTED 2026-08-27** — option A. Results in `evidence/staging-cutover/STAGING_CUTOVER_EXECUTION.md` |
 | Owner | Side B / platform |
 | Prerequisite met | `ENTERPRISE_CONSUMER_FOUNDATION = ACCEPTED WITH FOLLOW-UP ITEMS` |
-| Authorization required | **explicit owner instruction.** This plan is not self-executing |
+| Authorization | **GRANTED** by explicit owner instruction, 2026-08-27, selecting option **A** |
 
-> **Nothing in this document has been carried out.** Staging still serves the classic client
-> on 13080 and the candidate is still additive on 13081.
+> **This plan has been carried out.** Staging serves the enterprise consumer client on 13080
+> over a same-origin `/api` proxy. The candidate remains on 13081 as the acceptance reference
+> during the soak. One correction was needed during execution and is recorded in §8 below and
+> in the execution evidence: the consumer image renders its nginx config at container start,
+> which the service's read-only root filesystem forbade until a tmpfs was added for
+> `/etc/nginx/conf.d`.
+>
+> The plan text below is preserved **as it was written before execution**. It is the record of
+> what was intended; the execution evidence is the record of what happened.
 
 ---
 
@@ -32,7 +39,7 @@ mode, any security control, or any data.
 | # | Precondition | How it is checked |
 |---|---|---|
 | 1 | Working tree clean, HEAD recorded | `git status --short` empty; `git rev-parse --short HEAD` |
-| 2 | Backend regression green | `pytest -q` → 570 passed, 2 skipped |
+| 2 | Backend regression green | `pytest -q` → **576 passed, 2 skipped** [was written as 570; stale on arrival, see execution evidence F-3] |
 | 3 | Browser suite green on three engines | 130 each on Chromium, WebKit, Mobile Safari viewport |
 | 4 | Suite run against the **deployed candidate**, not a dev server | `DEDUNET_BASE_URL=http://<LAN>:13081` |
 | 5 | Governance validators pass | brand drift `NORMALIZATION_VERIFIED`; Side A `DEDUNET_HANDOFF_INTEGRITY_VERIFIED`; data validators exit 0/0/1 |
@@ -131,3 +138,26 @@ is a commit that is already tagged and whose image has been running for weeks.
   outfit object, the multi-brand domain and Dido intelligence are all still outstanding, and
   the disclosure rule in `PRODUCTION_DISCLOSURE_RULE.md` still applies to every surface that
   names them.
+
+
+---
+
+## 8. Execution — what actually happened
+
+Carried out 2026-08-27 from `e29e019`. Full record:
+`evidence/staging-cutover/STAGING_CUTOVER_EXECUTION.md`.
+
+| | Outcome |
+|---|---|
+| Tracked change | `docker-compose.staging.yml`, `web` service only |
+| Deviation from §4 step 4 | pre-switch verification ran on **13082**, not 13081, so the accepted candidate on 13081 was left running as the reference |
+| Unplanned correction | tmpfs on `/etc/nginx/conf.d` — the consumer image renders its nginx config at start and the read-only root filesystem refused the write, restart-looping the first attempt |
+| Browser suite vs 13080 | 390 passed — 130 each on Chromium, WebKit, Mobile Safari viewport |
+| Backend | 576 passed, 2 skipped |
+| API / DB / worker | untouched, verified by unchanged container ids and start times |
+| Served artifact | byte-identical to the accepted candidate, by SHA-256 on all six served files |
+| New finding | security headers absent on every HTML document — a regression at this URL, pre-existing in the accepted candidate, **not** fixed here (F-1) |
+| Rollback | rebuilt the classic image from committed source and served it, then removed the proof container |
+
+`PUBLIC_COMMERCIAL_LAUNCH` remains **BLOCKED**. The physical-iPhone smoke on the normal
+staging URL is outstanding and is a **human** gate.

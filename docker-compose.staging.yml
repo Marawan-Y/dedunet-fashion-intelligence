@@ -173,12 +173,35 @@ services:
   web:
     build:
       context: .
-      dockerfile: apps/web/Dockerfile
+      # CUTOVER, 2026-08-27, docs/operations/STAGING_CUTOVER_PLAN.md, option A.
+      #
+      # ROLLBACK IS THIS ONE LINE. Restore:
+      #
+      #   dockerfile: apps/web/Dockerfile
+      #   args:
+      #     API_BASE_URL: "http://${STAGING_PUBLIC_HOST}:${API_PORT}"
+      #
+      # and drop the environment block below, then `up -d web`. The classic client, its
+      # six jsdom harnesses and its eight guard mutations all remain in the tree
+      # precisely so that revert has something to land on. Do not delete apps/web.
+      dockerfile: apps/consumer/Dockerfile
       args:
-        # Staging publishes the API on 18080, not the client's default 18000. Without
-        # this the storefront would ask the wrong port and every product, and the brand
-        # mark with them, would fail to load.
-        API_BASE_URL: "http://${STAGING_PUBLIC_HOST}:${API_PORT}"
+        # DELIBERATELY NO API_BASE_URL.
+        #
+        # The consumer client reaches the API at /api on its own origin, proxied by the
+        # nginx in this image (apps/consumer/default.conf.template). An absolute base
+        # here would re-introduce the cross-origin topology this cutover removes, and
+        # would bake a LAN address into a browser bundle.
+        #
+        # The admin portal is a SEPARATE surface that resolves the API itself and cannot
+        # use that proxy, so it keeps its own cross-origin base — the same value the
+        # classic image built it with, which is why CORS_ORIGINS needs no change.
+        ADMIN_API_BASE_URL: "http://${STAGING_PUBLIC_HOST}:${API_PORT}"
+    environment:
+      # Where the API is from INSIDE the container. Equal to the image default, and
+      # stated anyway: this file inherits nothing, and an upstream that is invisible in
+      # the deployed configuration is one nobody checks when /api starts returning 502.
+      DEDUNET_API_UPSTREAM: "api:8000"
     depends_on:
       api:
         condition: service_healthy
@@ -190,6 +213,21 @@ services:
       - /var/cache/nginx:size=16m
       - /var/run:size=1m
       - /tmp:size=16m
+      # AND this one, which the classic image did NOT need and the consumer image does.
+      #
+      # The consumer image ships its nginx configuration as a TEMPLATE and renders it at
+      # container start, because the API upstream must be configurable per deployment
+      # without baking a host address into the image. nginx's entrypoint runs envsubst
+      # over /etc/nginx/templates/*.template and writes the result HERE. With the root
+      # filesystem read-only and no tmpfs on this path, that write fails, nginx never
+      # starts, and the container restart-loops — which is exactly what happened on the
+      # first cutover attempt on 2026-08-27.
+      #
+      # The candidate on 13081 did not catch it because it was run with plain
+      # `docker run`, without read_only. The security posture is UNCHANGED by this line:
+      # the filesystem is ephemeral RAM, re-rendered from the read-only image layer on
+      # every start, and the served html directory remains read-only.
+      - /etc/nginx/conf.d:size=1m
     security_opt:
       - no-new-privileges:true
     restart: unless-stopped
