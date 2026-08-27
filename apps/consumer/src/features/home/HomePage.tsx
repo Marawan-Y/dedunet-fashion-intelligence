@@ -9,7 +9,8 @@ import { ErrorState, SkeletonGrid } from "../../components/States";
 import { brand } from "../../lib/brand";
 import { useReveal } from "../../lib/useReveal";
 import { DidoMoment } from "../dido/DidoMoment";
-import { BRANDS, LOOKS, OCCASIONS, STYLE_CATEGORIES } from "../content";
+import { LOOKS, OCCASIONS, STYLE_CATEGORIES } from "../content";
+import { realBrandsFirst, useBrands } from "../useBrands";
 import { bySlug, mediaByRotation, primaryImage, useCatalog } from "../useCatalog";
 import styles from "./HomePage.module.css";
 
@@ -30,6 +31,7 @@ import styles from "./HomePage.module.css";
  */
 export default function HomePage() {
   const catalog = useCatalog();
+  const brands = useBrands();
 
   useEffect(() => {
     document.title = "DEDUNET — Personal fashion intelligence";
@@ -342,24 +344,31 @@ export default function HomePage() {
             />
 
             <div className={styles.rail} role="group" aria-label="Brands" tabIndex={0}>
-              {BRANDS.map((profile) => {
+              {/* REAL brands. The rail rendered a hardcoded array; it now renders what the
+                  API returns. Same layout, same cards -- only the data source changed. */}
+              {realBrandsFirst(brands.data?.items ?? []).map((profile) => {
                 const lead = profile.slug === "dedunet" ? products[0] : undefined;
-                const image = lead ? primaryImage(lead)?.url : null;
+                const image =
+                  profile.cover_image_url ||
+                  profile.logo_url ||
+                  (lead ? primaryImage(lead)?.url : null);
                 return (
                   <Card
                     key={profile.slug}
                     to={`/brand/${profile.slug}`}
                     title={profile.name}
-                    brand={profile.positioning}
+                    brand={profile.relationship_label}
                     image={image}
                     imageAlt={
-                      profile.slug === "dedunet"
-                        ? "DEDUNET first capsule concept artwork"
+                      image
+                        ? `${profile.name} concept artwork`
                         : `No imagery for ${profile.name}`
                     }
                     slot={`home-brand-${profile.slug}`}
                     testId="brand-card"
-                    mark={profile.demonstration ? "Demonstration" : undefined}
+                    /* A fixture is marked here too. It must be unmistakable on every
+                       surface it appears on, not only on the Brands page. */
+                    mark={profile.is_development_fixture ? "Development fixture" : undefined}
                   />
                 );
               })}

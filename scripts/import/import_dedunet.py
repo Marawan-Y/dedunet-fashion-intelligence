@@ -44,6 +44,7 @@ from typing import Iterator  # noqa: E402
 from sqlalchemy import select  # noqa: E402
 from sqlalchemy.orm import Session  # noqa: E402
 
+from app.commerce.brand_registry import brand_for_product  # noqa: E402
 from app.commerce.db import SessionLocal  # noqa: E402
 from app.commerce.models import InventoryItem, Product, ProductMedia, Variant  # noqa: E402
 
@@ -247,6 +248,17 @@ def run_import(dry_run: bool, only: str | None) -> dict:
             if created:
                 row = Product(external_product_id=p["external_product_id"])
                 session.add(row)
+
+            # The DEDUNET first-party brand. Resolved through brand_registry so the importer,
+            # seed() and the Alembic backfill cannot disagree about which brand this is --
+            # three literals of the same slug is three chances to drift.
+            row.brand_id = brand_for_product(
+                session, external_product_id=p["external_product_id"]
+            ).id
+            # These are prototypes. NON_PURCHASABLE is the route, independently of the fact
+            # that DEDUNET owns the brand -- ownership and routing are orthogonal, and the
+            # commerce mode remains the outer gate over both.
+            row.commerce_route = "NON_PURCHASABLE"
 
             # Mutable fields. `external_product_id` is never reassigned.
             row.slug = p["slug"]

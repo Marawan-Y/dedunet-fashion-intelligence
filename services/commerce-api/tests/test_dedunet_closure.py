@@ -102,8 +102,10 @@ def test_safety_validator_rejects_active_content(tmp_path):
 def dedunet_catalogue(db_session):
     """Five DEDUNET products alongside the legacy MERET seed."""
 
+    brand_id = _fixture_brand_id(db_session)
     for index in range(5):
         product = Product(
+            brand_id=brand_id,
             external_product_id=f"DDN-X{index}",
             slug=f"ddn-product-{index}",
             name=f"DEDUNET Product {index}",
@@ -402,3 +404,17 @@ def test_no_active_customer_facing_legacy_brand():
             offenders.append(f"{path.name}:{number}: {line.strip()[:70]}")
 
     assert offenders == []
+
+
+def _fixture_brand_id(session) -> int:
+    """A brand for a test-constructed product.
+
+    `Product.brand_id` is NOT NULL since the multi-brand phase: a product with no brand has
+    no accountable origin, which is the whole point of the network model. Tests that build a
+    bare Product therefore have to say whose it is, and the canonical DEDUNET brand is the
+    right answer for a DEDUNET prototype fixture.
+    """
+
+    from app.commerce.brand_registry import DEDUNET_BRAND_SLUG, ensure_canonical_brands
+
+    return ensure_canonical_brands(session)[DEDUNET_BRAND_SLUG].id

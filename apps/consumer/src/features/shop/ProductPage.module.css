@@ -153,3 +153,26 @@
 .claim { color: var(--ds-text-muted); font-style: italic; }
 
 .actions { display: flex; gap: var(--ds-space-3); flex-wrap: wrap; }
+
+/* An outbound commerce action. Styled as the primary control so an external purchase does
+   not look like a lesser option than a hosted one -- the route is a platform detail, not a
+   statement about the product. */
+.externalAction {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 44px;
+  padding: var(--ds-space-3) var(--ds-space-4);
+  background: var(--ds-color-ink);
+  color: var(--ds-color-surface);
+  text-decoration: none;
+  font: inherit;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-size: var(--ds-text-sm);
+}
+
+.externalAction:hover {
+  opacity: 0.9;
+}

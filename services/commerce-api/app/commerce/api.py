@@ -14,10 +14,12 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, Header, HTTPException, Request, status
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from . import modes, payments, services
+from . import brand_api, modes, payments, services
+from .brand_registry import DEDUNET_BRAND_SLUG
+from .brands import Brand, BrandOwnershipType, CommerceRoute
 from .db import get_session
 from .models import Customer, Order, Product, ReturnRequest, Variant, as_utc
 from .security import InvalidToken, issue_token, verify_token
@@ -433,6 +435,132 @@ def _product_payload(session: Session, product: Product) -> dict:
             }
             for v in product.variants
         ],
+        # ------------------------------------------------------- fashion network
+        #
+        # ADDITIVE ONLY. Every key above is unchanged and in the same place, so the admin
+        # client, the Android preview and the accepted consumer build all keep working
+        # against this payload without a change. A consumer that ignores everything below
+        # behaves exactly as it did before this phase.
+        "brand": brand_api.brand_summary(product.brand) if product.brand else None,
+        "commerce_route": brand_api._route_of(product).value,
+        # THE COMMERCE CONTRACT. One server-side decision, so no client re-derives a
+        # purchase gate and drifts from the server's answer -- the defect that shipped once
+        # already, when the page offered a purchase the API then refused with a 409.
+        "commerce_action": brand_api.commerce_action(
+            route=brand_api._route_of(product),
+            sellable=product.sellable,
+            brand=product.brand,
+            external_url=product.external_buy_url,
+        ).as_dict(),
+        "availability": brand_api.availability_payload(product),
+    }
+
+
+# ------------------------------------------------------------------------ fashion network
+
+
+@router.get("/brands")
+def list_brands(
+    session: Annotated[Session, Depends(get_session)],
+    q: str = "",
+    country: str = "",
+    sort: str = "name",
+    limit: int = 50,
+    offset: int = 0,
+):
+    """The brand network, as a consumer sees it.
+
+    Pagination is bounded rather than optional. `limit` is clamped to 100: an unbounded
+    `?limit=` on a list endpoint is a cheap way to make the database do arbitrary work from
+    an unauthenticated request, and the media-heavy brand payload makes that worse.
+
+    Development fixtures are included or excluded by `brands_visible`, which keys the
+    decision off the commerce mode rather than a flag -- see the note there.
+    """
+
+    limit = max(1, min(limit, 100))
+    offset = max(0, offset)
+
+    stmt = brand_api.brands_visible(session)
+    if q:
+        stmt = stmt.where(Brand.name.ilike(f"%{q}%"))
+    if country:
+        stmt = stmt.where(Brand.country_code == country.upper()[:2])
+
+    total = session.scalar(
+        select(func.count()).select_from(stmt.subquery())
+    ) or 0
+
+    if sort == "newest":
+        stmt = stmt.order_by(Brand.created_at.desc(), Brand.name)
+    else:
+        # Fixtures last whatever the sort, so a real brand is never displaced by one.
+        stmt = stmt.order_by(Brand.is_development_fixture, Brand.name)
+
+    brands = list(session.scalars(stmt.limit(limit).offset(offset)).all())
+    brand_ids = [b.id for b in brands]
+    counts = brand_api.product_count_map(session, brand_ids)
+    covers = brand_api.cover_image_map(session, brand_ids)
+
+    return {
+        "items": [
+            brand_api.brand_summary(
+                b,
+                product_count=counts.get(b.id, 0),
+                cover_image_url=covers.get(b.id, ""),
+            )
+            for b in brands
+        ],
+        "total": total,
+        "limit": limit,
+        "offset": offset,
+    }
+
+
+@router.get("/brands/{slug}")
+def get_brand(slug: str, session: Annotated[Session, Depends(get_session)]):
+    """One brand and its catalogue.
+
+    404 rather than 403 for a brand the caller may not see. A 403 confirms the row exists,
+    which is the enumeration leak the target architecture calls out for tenant-scoped reads;
+    the same reasoning applies to an unpublished brand.
+    """
+
+    brand = session.scalar(brand_api.brands_visible(session).where(Brand.slug == slug))
+    if brand is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "brand not found")
+
+    stmt = select(Product).where(Product.brand_id == brand.id, Product.is_active.is_(True))
+    # The same preview-mode scoping the catalogue listing applies, so a brand page cannot
+    # become a way around it.
+    if modes.is_preview_mode():
+        stmt = stmt.where(Product.external_product_id.is_not(None))
+    products = sorted(session.scalars(stmt).all(), key=lambda p: p.name)
+
+    return brand_api.brand_detail(session, brand, products=products)
+
+
+@router.get("/admin/brands")
+def admin_list_brands(
+    session: Annotated[Session, Depends(get_session)],
+    admin: Annotated[Customer, Depends(current_admin)],
+):
+    """Internal brand inspection. NOT the merchant portal -- that is Phase 5.
+
+    Shows what a consumer is deliberately not shown: the raw ownership type, the merchant
+    organisation behind a merchant-owned brand, the fixture flag, provenance and the routes
+    actually in use. Read-only: this phase gives operators sight of the new domain, not a
+    way to reassign ownership, which needs the audited write path Phase 5 builds.
+    """
+
+    brands = list(session.scalars(select(Brand).order_by(Brand.name)).all())
+    counts = brand_api.product_count_map(session, [b.id for b in brands])
+    return {
+        "items": [
+            brand_api.brand_admin_row(session, b, product_count=counts.get(b.id, 0))
+            for b in brands
+        ],
+        "total": len(brands),
     }
 
 

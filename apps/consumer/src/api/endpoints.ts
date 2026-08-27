@@ -1,5 +1,7 @@
 import { api, session } from "./client";
 import type {
+  BrandDetail,
+  BrandListing,
   CatalogProduct,
   CommerceModeDisclosure,
   CustomerOrder,
@@ -54,4 +56,16 @@ export function fetchOrders(signal?: AbortSignal): Promise<CustomerOrder[]> {
 
 export function signOut(): void {
   session.clear();
+}
+
+/* ------------------------------------------------------------------ fashion network */
+
+/** The brand network. Real domain data -- not the hardcoded list this page once used. */
+export function fetchBrands(signal?: AbortSignal): Promise<BrandListing> {
+  return api<BrandListing>("/brands?limit=100", { signal });
+}
+
+/** One brand and its catalogue. 404s for a brand the caller may not see. */
+export function fetchBrand(slug: string, signal?: AbortSignal): Promise<BrandDetail> {
+  return api<BrandDetail>(`/brands/${encodeURIComponent(slug)}`, { signal });
 }

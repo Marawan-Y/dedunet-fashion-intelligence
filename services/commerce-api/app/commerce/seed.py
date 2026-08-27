@@ -22,6 +22,7 @@ from __future__ import annotations
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from .brand_registry import LEGACY_FIXTURE_BRAND_SLUG, ensure_canonical_brands
 from .models import Customer, InventoryItem, Product, Promotion, Variant
 from .security import hash_password
 
@@ -154,6 +155,12 @@ def seed(session: Session, *, include_demo_accounts: bool = True) -> dict:
 
     created = {"products": 0, "variants": 0, "promotions": 0, "customers": 0}
 
+    # Every product needs an accountable brand -- `Product.brand_id` is NOT NULL. The MERET
+    # sandbox catalogue below is a demonstration, not a company, so it belongs to the
+    # development-fixture brand rather than to an invented one. See brand_registry.
+    brands = ensure_canonical_brands(session)
+    demo_brand = brands[LEGACY_FIXTURE_BRAND_SLUG]
+
     for spec in PRODUCTS:
         if session.scalar(select(Product).where(Product.slug == spec["slug"])) is not None:
             continue
@@ -172,6 +179,12 @@ def seed(session: Session, *, include_demo_accounts: bool = True) -> dict:
             # existed. It opts in explicitly because the column fails closed.
             sellable=spec["is_active"],
             publication_status="published" if spec["is_active"] else "draft",
+            brand_id=demo_brand.id,
+            # HOSTED, not NON_PURCHASABLE: this catalogue exists to exercise the sandbox
+            # checkout in COMMERCE_TEST_MODE, and its route should say so. It stays
+            # unreachable in BRAND_PREVIEW_MODE like everything else, because the mode is
+            # the outer gate.
+            commerce_route="HOSTED",
         )
         session.add(product)
         session.flush()

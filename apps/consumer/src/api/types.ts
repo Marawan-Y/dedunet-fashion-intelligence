@@ -80,6 +80,13 @@ export interface CatalogProduct {
   media_status: string;
   media: ProductMedia[];
   variants: CatalogVariant[];
+  /* Added by the multi-brand phase. Optional in the type because a cached response from
+     before the phase is still a valid CatalogProduct -- the client degrades rather than
+     crashing on one. */
+  brand?: BrandSummary | null;
+  commerce_route?: CommerceRouteName;
+  commerce_action?: CommerceActionPayload;
+  availability?: BrandProductSummary["availability"];
   /* PRODUCT-LEVEL price. /api/v1/catalog/products does NOT send either of these — the
    * DEDUNET catalogue prices variants, not products. They are retained because the legacy
    * fixture catalogue at /api/v1/products does send them.
@@ -135,4 +142,94 @@ export class NetworkError extends Error {
     super(message);
     this.name = "NetworkError";
   }
+}
+
+/* ------------------------------------------------------------------ fashion network */
+
+/** How a product can be bought. A CAPABILITY -- never a permission. */
+export type CommerceRouteName = "HOSTED" | "EXTERNAL" | "REFERRAL" | "NON_PURCHASABLE";
+
+export type CommerceActionKind =
+  | "NOT_AVAILABLE"
+  | "EXTERNAL_PURCHASE"
+  | "REFERRAL_VIEW"
+  | "HOSTED_PURCHASE";
+
+/**
+ * THE COMMERCE CONTRACT, decided by the server.
+ *
+ * This client does not compute a purchase gate. It renders `label`, honours `enabled`, and
+ * applies `link_rel` and `link_target` verbatim when a `url` is present. Re-deriving any of
+ * it here is how the page came to offer a purchase the API refused with a 409 once already.
+ */
+export interface CommerceActionPayload {
+  kind: CommerceActionKind;
+  label: string;
+  enabled: boolean;
+  reason: string;
+  url: string;
+  link_rel: string;
+  link_target: string;
+  notes: string[];
+}
+
+export interface BrandProvenance {
+  label: string;
+  source_url: string;
+  last_checked_at: string;
+  last_synced_at: string;
+}
+
+/** A brand as the API describes it. No ownership enum is present, by design. */
+export interface BrandSummary {
+  slug: string;
+  name: string;
+  /** Consumer wording for an internal ownership type. Render this, never an enum. */
+  relationship_label: string;
+  publication_status: string;
+  story: string;
+  logo_media_path: string;
+  logo_url: string;
+  /** A representative product image. Empty for a brand with no catalogue. */
+  cover_image_url: string;
+  website_url: string;
+  country_code: string;
+  product_count: number;
+  /** True for a record that exists only to exercise the architecture. */
+  is_development_fixture: boolean;
+  /** Non-empty exactly when the above is true. Must be rendered wherever the brand is. */
+  fixture_notice: string;
+  provenance: BrandProvenance;
+}
+
+export interface BrandProductSummary {
+  slug: string;
+  name: string;
+  category: string;
+  collection: string;
+  currency: string;
+  price_minor_units_min: number | null;
+  price_minor_units_max: number | null;
+  brand: Pick<BrandSummary, "slug" | "name" | "relationship_label" | "is_development_fixture">;
+  commerce_route: CommerceRouteName;
+  commerce_action: CommerceActionPayload;
+  image_url: string;
+  availability: {
+    confidence: string;
+    /** Only ever true for a verified check. Never render a confidence as a fact. */
+    is_fact: boolean;
+    checked_at: string;
+    last_synced_at: string;
+  };
+}
+
+export interface BrandDetail extends BrandSummary {
+  products: BrandProductSummary[];
+}
+
+export interface BrandListing {
+  items: BrandSummary[];
+  total: number;
+  limit: number;
+  offset: number;
 }

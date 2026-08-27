@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import enum
 from datetime import datetime, timezone
+from typing import TYPE_CHECKING
 
 from sqlalchemy import (
     CheckConstraint,
@@ -30,34 +31,18 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from .db import Base
+# Re-exported so the many existing `from .models import utcnow` / `as_utc` call sites keep
+# working. They now LIVE in db.py, alongside Base, so a mapped module can import them
+# without importing this one -- see the note in db.as_utc.
+from .db import Base, as_utc, utcnow  # noqa: F401
+
+if TYPE_CHECKING:  # pragma: no cover - typing only
+    from .brands import Brand
 
 
-def utcnow() -> datetime:
-    return datetime.now(timezone.utc)
 
 
-def as_utc(value: datetime | None) -> datetime | None:
-    """Normalise a timestamp read back from the database to an aware UTC value.
 
-    SQLite has no timestamp type: it ignores ``DateTime(timezone=True)`` and returns a
-    NAIVE datetime. PostgreSQL stores TIMESTAMPTZ and returns an AWARE one. The same
-    row therefore serialises differently depending on the engine, and comparing or
-    subtracting two such values raises ``TypeError: can't subtract offset-naive and
-    offset-aware datetimes`` on one backend while silently working on the other.
-
-    Writes are already safe because ``utcnow()`` produces aware values. This closes the
-    read side so one wire format and one comparison semantics hold on both engines.
-
-    A naive value is ASSUMED to be UTC, which is true here because every write goes
-    through ``utcnow()``. It is not a safe assumption for arbitrary external input.
-    """
-
-    if value is None:
-        return None
-    if value.tzinfo is None:
-        return value.replace(tzinfo=timezone.utc)
-    return value.astimezone(timezone.utc)
 
 
 class OrderStatus(str, enum.Enum):
@@ -176,6 +161,47 @@ class Product(Base):
     origin_claim_status: Mapped[str] = mapped_column(String(30), default="")
     legal_brand_status: Mapped[str] = mapped_column(String(40), default="")
     media_status: Mapped[str] = mapped_column(String(40), default="")
+
+    # --------------------------------------------------------------- fashion network
+    # WHICH BRAND. Not nullable: a product with no brand is a product with no accountable
+    # origin, and the whole network model rests on being able to answer "whose is this".
+    # Added nullable and backfilled first -- see migration f5c2a8d13b70.
+    #
+    # There is deliberately NO `organization_id` here. Catalogue authorization resolves
+    # through Brand ownership, per target architecture §6.1: a tenant column on an existing
+    # table would have to be nullable during backfill, and a nullable tenant column cannot
+    # distinguish "platform-owned" from "nobody set it", which is the cross-tenant read the
+    # architecture calls the programme's worst credible defect.
+    brand_id: Mapped[int] = mapped_column(
+        ForeignKey("brands.id", ondelete="RESTRICT"), index=True
+    )
+
+    # HOW IT CAN BE BOUGHT -- capability, never permission. Orthogonal to ownership and
+    # never inferred from it. The commerce mode remains the outer gate over all four values;
+    # see commerce_action.py, which is the only place allowed to decide what a client offers.
+    commerce_route: Mapped[str] = mapped_column(
+        String(20), default="NON_PURCHASABLE", server_default="NON_PURCHASABLE", index=True
+    )
+
+    # Where an EXTERNAL or REFERRAL product is actually bought. https only, validated at
+    # write time by brands.validate_external_url -- a rejected scheme must never reach a row,
+    # because render-time validation is one forgotten call site away from an exploit.
+    external_buy_url: Mapped[str] = mapped_column(String(500), default="")
+
+    # What we know about availability, and WHEN we knew it. Never a bare boolean: the
+    # platform has no real-time stock for anything it does not fulfil, and a column that can
+    # say "in stock" will eventually be rendered as a fact.
+    availability_confidence: Mapped[str] = mapped_column(
+        String(30), default="UNKNOWN", server_default="UNKNOWN"
+    )
+    availability_checked_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), default=None
+    )
+    source_last_synced_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), default=None
+    )
+
+    brand: Mapped["Brand"] = relationship(back_populates="products", lazy="joined")
 
     variants: Mapped[list["Variant"]] = relationship(
         back_populates="product", cascade="all, delete-orphan"
@@ -524,3 +550,21 @@ class AuditLog(Base):
     detail: Mapped[str] = mapped_column(Text, default="")
     correlation_id: Mapped[str] = mapped_column(String(64), default="")
     at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
+# --------------------------------------------------------------------------- registration
+#
+# Imported for its SIDE EFFECT: mapping a class registers its table on `Base.metadata`, and
+# `Base.metadata.create_all()` -- which the test fixtures and the local bootstrap both use --
+# creates only the tables it knows about. Without this line `products.brand_id` has a foreign
+# key to a table that was never created, and every fixture fails with NoReferencedTableError
+# rather than anything that points at the cause.
+#
+# Safe and not circular: `brands` imports `Base` and `utcnow` from `db`, never from here.
+from .brands import (  # noqa: E402,F401
+    Brand,
+    BrandOwnership,
+    BrandOwnershipType,
+    CommerceRoute,
+    MerchantOrganization,
+)

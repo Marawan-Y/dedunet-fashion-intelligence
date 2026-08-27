@@ -149,85 +149,27 @@ export const LOOKS: Look[] = [
   },
 ];
 
-export type BrandOwnership = "PLATFORM_CURATED" | "MERCHANT_OWNED" | "EXTERNAL_CURATED";
-export type CommerceRoute = "HOSTED" | "EXTERNAL" | "REFERRAL" | "NON_PURCHASABLE";
-
-export interface BrandProfile {
-  slug: string;
-  name: string;
-  /** Consumer-facing description of where the brand sits. Never the enum name. */
-  positioning: string;
-  story: string;
-  origin: string;
-  ownership: BrandOwnership;
-  /** Ownership and commerce route are independent axes. Section 31. */
-  commerceRoute: CommerceRoute;
-  /** Real brands only. A demonstration is marked and says what it is. */
-  demonstration?: boolean;
-}
-
-/**
- * Brands on the platform.
+/* THE HARDCODED BRAND LIST WAS REMOVED IN THE MULTI-BRAND PHASE.
  *
- * DEDUNET is the only real one. The second entry exists so the multi-brand architecture is
- * visible rather than asserted, and it is labelled a demonstration on every surface that
- * renders it. Section 16: never invent partnerships. There are none.
+ * It held two literals -- DEDUNET and an entry called "Partner brand" -- plus
+ * `ownershipLabel` and `commerceRouteLabel`, which translated internal enums into consumer
+ * copy in the BROWSER. Three things were wrong with that once brands became real:
+ *
+ *   1. the list could not know how many products a brand had, and a brand added to the
+ *      database would never have appeared;
+ *   2. translating an ownership enum client-side means the enum has to be shipped to the
+ *      client at all, and every surface is free to coin its own wording for it;
+ *   3. `commerceRouteLabel("REFERRAL")` returned "Available through a partner" -- which
+ *      claimed a partnership that has never existed. Exactly the class of invented
+ *      relationship this programme forbids, sitting in a switch statement nobody read.
+ *
+ * Brands now come from `/api/v1/brands` and carry `relationship_label` decided by the
+ * server, so there is one vocabulary and it is auditable in one place. See
+ * `src/features/useBrands.ts` and `app/commerce/brand_api.py`.
  */
-export const BRANDS: BrandProfile[] = [
-  {
-    slug: "dedunet",
-    name: "DEDUNET",
-    positioning: "Made and curated by DEDUNET",
-    story:
-      "DEDUNET designs in the language of Egyptian construction: a clear vertical line, weight that falls rather than drapes, and detail that rewards a second look instead of asking for the first. The first capsule is a prototype run built to test proportion, material and construction before anything is offered for sale.",
-    origin: "Design in Egypt. Manufacturing partner not yet contracted.",
-    ownership: "PLATFORM_CURATED",
-    commerceRoute: "NON_PURCHASABLE",
-  },
-  {
-    slug: "example-partner",
-    name: "Partner brand",
-    positioning: "Structure demonstration — not a real brand",
-    story:
-      "This entry is not a brand and not a partner. It exists to show that DEDUNET holds brands it does not own, and that where a brand sells is a separate question from who owns it. Nothing here is a commercial relationship: DEDUNET is not accepting brands and has no agreement with any.",
-    origin: "Not applicable",
-    ownership: "EXTERNAL_CURATED",
-    commerceRoute: "EXTERNAL",
-    demonstration: true,
-  },
-];
-
-/** Consumer-facing language for the internal enums. Never show a customer an enum. */
-export function ownershipLabel(ownership: BrandOwnership): string {
-  switch (ownership) {
-    case "PLATFORM_CURATED":
-      return "Made by DEDUNET";
-    case "MERCHANT_OWNED":
-      return "Sold by the brand";
-    case "EXTERNAL_CURATED":
-      return "Curated by DEDUNET";
-  }
-}
-
-export function commerceRouteLabel(route: CommerceRoute): string {
-  switch (route) {
-    case "HOSTED":
-      return "Buy on DEDUNET";
-    case "EXTERNAL":
-      return "Buy on the brand's own site";
-    case "REFERRAL":
-      return "Available through a partner";
-    case "NON_PURCHASABLE":
-      return "Not available to buy";
-  }
-}
 
 export function lookBySlug(slug: string): Look | undefined {
   return LOOKS.find((look) => look.slug === slug);
-}
-
-export function brandBySlug(slug: string): BrandProfile | undefined {
-  return BRANDS.find((b) => b.slug === slug);
 }
 
 export function occasionBySlug(slug: string): Occasion | undefined {

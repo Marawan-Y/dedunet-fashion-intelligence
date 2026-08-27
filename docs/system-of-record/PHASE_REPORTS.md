@@ -582,6 +582,85 @@ intelligence, because none was built.
 
 ---
 
+## PHASE 4 — Multi-brand fashion network
+
+**Decision: `PHASE_4_READY_FOR_HUMAN_ACCEPTANCE`.**
+
+Products belong to brands. `Brand` is first-class with explicit ownership, commerce routing is
+a separate axis, and provenance is modelled rather than assumed.
+
+### 4.1 What was delivered
+
+| | |
+|---|---|
+| Domain | `Brand`, `BrandOwnership`, `MerchantOrganization`; `Product.brand_id` NOT NULL, `commerce_route`, external buy URL, availability confidence and timestamps |
+| Ownership | `PLATFORM_CURATED` / `MERCHANT_OWNED` / `EXTERNAL_CURATED`, enforced as a **biconditional** in both directions |
+| Routing | `HOSTED` / `EXTERNAL` / `REFERRAL` / `NON_PURCHASABLE`, **orthogonal to ownership** |
+| Contract | one server-side `commerce_action` every client renders |
+| Safety | https-only allow-list on external URLs, validated at write time; `noopener noreferrer nofollow` on every outbound link |
+| APIs | `/api/v1/brands`, `/api/v1/brands/{slug}`, `/api/v1/admin/brands`; product payload **purely additive** |
+| Consumer | Brands, Brand detail, Home rail, Shop attribution + brand filter, Product → Brand navigation, all on live data |
+
+### 4.2 Migration integrity
+
+`f5c2a8d13b70`, staged: create → seed brands → nullable column → backfill → **verify** →
+NOT NULL. Applied to staging on PostgreSQL after a database backup.
+
+| | Before | After |
+|---|---|---|
+| products / variants / media / inventory | 6 / 63 / 18 / 63 | **identical** |
+| `md5` over every variant SKU and price | `093e0768…f974e2` | **identical** |
+| Source Tee | €72.00, preview, non-sellable | **unchanged** |
+
+`diff before after` is empty. 5 DEDUNET products → the DEDUNET brand, 0 orphans,
+**0 merchant organisations** — none was invented to own the first-party brand.
+
+### 4.3 Two defects found during the phase, both mine
+
+**A brand logo that 404s.** The DEDUNET brand shipped pointing at
+`assets/brand/dedunet-logo.svg`, a path that was never in the brand package. Nothing caught
+it except a browser test counting painted images, which reported it two steps from the cause
+as *"brands paints at least 2 images"*. Fixed, and a test now asserts every canonical brand's
+logo exists in the package.
+
+> **A path in a data seed is not checked by the type system, the linter or the API tests.**
+> If a column holds a reference to an asset, something has to assert the asset is there.
+
+**A count that disagreed with the page under it.** The brand card advertised "1 piece" for a
+brand whose detail page showed none, because the count ignored the preview-mode scoping the
+listing applies. Fixed, with a test asserting the two agree for every brand.
+
+### 4.4 Verification
+
+| Check | Result |
+|---|---|
+| Browser E2E vs deployed `:13080` | **462 passed** — 154 each on Chromium, WebKit, Mobile Safari viewport |
+| Backend `pytest -q` | **657 passed, 2 skipped** (was 594) |
+| — multi-brand domain / brand API | 43 / 18 |
+| Consumer unit tests | 13 |
+| Governance · brand drift · Side A · packaged assets | PASS · NO_DRIFT · VERIFIED · VERIFIED |
+| Data validators | 0 / 0 / 1 as required |
+| `git diff --check` | clean |
+| Rollback | exercised — downgrade then re-upgrade reconstructs the association exactly |
+
+### 4.5 Remaining issues
+
+| Item | Status |
+|---|---|
+| **A real external brand integration** | **DOES NOT EXIST.** `EXTERNAL`/`REFERRAL` implemented, no data uses them. No partnership, agreement or integration exists |
+| **`HOSTED` checkout** | **DECLARABLE, NOT REACHABLE** — refused until merchant commerce exists |
+| **`MerchantOrganization`** | stub tenant root; billing, plans, entitlements, seats and the portal are Phase 5 |
+| **Brand sync** | **NOT BUILT.** `last_checked_at` / `last_synced_at` are null, not stale |
+| **Admin** | read-only endpoint; the portal UI is not extended |
+| Saved persistence · Style DNA · Dido intelligence · recommendation · outfit engines | **NOT STARTED** |
+| Media delivery separation · trusted proxy · distributed limiter | open, unchanged |
+| Firefox | **BLOCKED** — cannot launch in this environment |
+
+Phase 4 accepts a **domain and its surfaces**. It accepts no commercial relationship, because
+none exists.
+
+---
+
 ## Platform decisions
 
 Re-stated at every phase boundary, deliberately separate.

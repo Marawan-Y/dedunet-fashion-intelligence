@@ -12,21 +12,23 @@ import {
 } from "../../components/primitives";
 import { ErrorState, SkeletonGrid } from "../../components/States";
 import { brand as brandAssets } from "../../lib/brand";
-import { BRANDS, commerceRouteLabel, ownershipLabel } from "../content";
-import { primaryImage, useCatalog } from "../useCatalog";
+import { realBrandsFirst, useBrands } from "../useBrands";
 
 /**
  * Brands.
  *
- * Section 16: never invent partnerships. DEDUNET is the only real brand here. The second
- * entry is a structure demonstration, it is labelled as one on the card and again on its
- * page, and its own copy says it is not a partner.
+ * WIRED TO THE REAL DOMAIN. This page used to render a hardcoded array; it now renders
+ * whatever brands the API returns, with their real product counts. The layout is the
+ * accepted one and is deliberately unchanged -- the foundation is locked, and this phase
+ * changes where the data comes from, not what the page looks like.
  *
- * The consumer-facing language is "Made by DEDUNET" and "Curated by DEDUNET", never
- * PLATFORM_CURATED or EXTERNAL_CURATED. Internal enums are for the data model.
+ * Never invent partnerships. The relationship wording comes from the server as
+ * `relationship_label`, so an internal enum cannot leak into copy and no surface can coin
+ * its own word for a relationship that does not exist. A development fixture carries
+ * `fixture_notice` and is rendered with it, always.
  */
 export default function BrandsPage() {
-  const catalog = useCatalog();
+  const brands = useBrands();
 
   useEffect(() => {
     document.title = "Brands — DEDUNET";
@@ -50,32 +52,42 @@ export default function BrandsPage() {
             One entry below exists to show the shape of a multi-brand catalogue.
           </Subtle>
 
-          {catalog.status === "loading" ? <SkeletonGrid count={2} label="Loading brands" /> : null}
-          {catalog.status === "error" ? (
-            <ErrorState error={catalog.error} onRetry={catalog.retry} />
+          {brands.status === "loading" ? <SkeletonGrid count={2} label="Loading brands" /> : null}
+          {brands.status === "error" ? (
+            <ErrorState error={brands.error} onRetry={brands.retry} />
           ) : null}
 
-          {catalog.status === "success" ? (
+          {brands.status === "success" && (brands.data?.items ?? []).length === 0 ? (
+            <Subtle data-testid="brands-empty">No brands are published yet.</Subtle>
+          ) : null}
+
+          {brands.status === "success" ? (
             <Grid variant="wide">
-              {BRANDS.map((profile) => {
-                /* The DEDUNET card leads with a real product image from the catalogue. The
-                   demonstration entry has no products and therefore no image, so its media
-                   slot renders the labelled placeholder rather than borrowing artwork that
-                   would imply it has a collection. */
-                const lead = profile.slug === "dedunet" ? (catalog.data ?? [])[0] : undefined;
-                const image = lead ? primaryImage(lead) : undefined;
-                const cover = profile.slug === "dedunet" ? brandAssets.assets.collection_cover : "";
+              {realBrandsFirst(brands.data?.items ?? []).map((profile) => {
+                /* Imagery, and why a fixture gets none.
+                   A brand with no products has no artwork of its own, and borrowing another
+                   brand's would imply it has a collection. The first-party brand uses its
+                   own logo asset; anything else uses its logo if the domain gave it one and
+                   the labelled placeholder otherwise. */
+                const cover =
+                  profile.cover_image_url ||
+                  profile.logo_url ||
+                  (profile.slug === "dedunet" ? brandAssets.assets.collection_cover : "");
 
                 return (
                   <Card
                     key={profile.slug}
                     to={`/brand/${profile.slug}`}
                     title={profile.name}
-                    meta={profile.positioning}
-                    image={image?.url || cover}
+                    /* The story's opening clause, not the relationship label -- that is
+                       already on a badge below, and repeating it made the DEDUNET card read
+                       "DEDUNET / DEDUNET / DEDUNET". A card should say something new in
+                       each slot. */
+                    meta={firstClause(profile.story)}
+                    image={cover}
                     imageAlt={
-                      profile.slug === "dedunet"
-                        ? "DEDUNET first capsule concept artwork"
+                      cover
+                        ? `${profile.name} brand artwork`
                         : `No imagery for ${profile.name}`
                     }
                     ratio="3 / 2"
@@ -84,11 +96,18 @@ export default function BrandsPage() {
                     headingLevel={2}
                     footer={
                       <div style={{ display: "flex", gap: "var(--ds-space-2)", flexWrap: "wrap" }}>
-                        <Badge tone="neutral">{ownershipLabel(profile.ownership)}</Badge>
-                        <Badge tone={profile.commerceRoute === "NON_PURCHASABLE" ? "warning" : "info"}>
-                          {commerceRouteLabel(profile.commerceRoute)}
+                        <Badge tone="neutral">{profile.relationship_label}</Badge>
+
+                        <Badge tone="info">
+                          {profile.product_count === 1
+                            ? "1 piece"
+                            : `${profile.product_count} pieces`}
                         </Badge>
-                        {profile.demonstration ? <FixtureBadge>Demonstration</FixtureBadge> : null}
+                        {/* Always rendered when present. A fixture must be impossible to
+                            mistake for a real brand, including in a screenshot. */}
+                        {profile.is_development_fixture ? (
+                          <FixtureBadge>Development fixture</FixtureBadge>
+                        ) : null}
                       </div>
                     }
                   />
@@ -115,4 +134,12 @@ export default function BrandsPage() {
       </Section>
     </Container>
   );
+}
+
+/** The first sentence of a brand story, for a card. Never mid-word, never empty-looking. */
+function firstClause(story: string): string {
+  if (!story) return "";
+  const sentence = story.split(/(?<=\.)\s/)[0] ?? story;
+  if (sentence.length <= 120) return sentence;
+  return `${sentence.slice(0, 117).trimEnd()}…`;
 }

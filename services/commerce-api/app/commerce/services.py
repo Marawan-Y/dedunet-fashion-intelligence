@@ -966,11 +966,33 @@ def create_product(
     collection: str = "",
     image_url: str = "",
     is_active: bool = False,
+    brand_slug: str = "",
+    commerce_route: str = "HOSTED",
 ) -> Product:
     if session.scalar(select(Product).where(Product.slug == slug)) is not None:
         raise DomainError(f"product slug {slug!r} already exists")
     if not variants:
         raise DomainError("a product requires at least one variant")
+
+    # Every product needs an accountable brand. An operator creating a product through the
+    # internal catalogue endpoint is creating a FIRST-PARTY one, so DEDUNET is the default
+    # rather than a guess -- and naming a brand explicitly is supported for when it is not.
+    #
+    # The route defaults to HOSTED because that is what this endpoint always meant: a
+    # product the platform sells itself. It is still gated by the commerce mode and by
+    # `commerce_action`, so defaulting it here cannot make anything purchasable that was not.
+    from .brand_registry import DEDUNET_BRAND_SLUG, ensure_canonical_brands
+    from .brands import Brand, CommerceRoute
+
+    ensure_canonical_brands(session)
+    target_slug = brand_slug or DEDUNET_BRAND_SLUG
+    brand = session.scalar(select(Brand).where(Brand.slug == target_slug))
+    if brand is None:
+        raise DomainError(f"brand {target_slug!r} does not exist")
+    try:
+        route = CommerceRoute(commerce_route)
+    except ValueError:
+        raise DomainError(f"unknown commerce route {commerce_route!r}")
 
     product = Product(
         slug=slug,
@@ -989,6 +1011,8 @@ def create_product(
         # deliberately does NOT opt in.
         sellable=is_active,
         publication_status="published" if is_active else "draft",
+        brand_id=brand.id,
+        commerce_route=route.value,
     )
     session.add(product)
     session.flush()

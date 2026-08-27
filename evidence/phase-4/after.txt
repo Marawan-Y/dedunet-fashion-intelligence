@@ -1,0 +1,12 @@
+TOTALS|6|63|18|63
+|restore-test-item|published|t||1|4200|4200|0
+DDN-TS01|the-source-tee|preview|f|prototype_unavailable|18|7200|7200|4
+DDN-SH01|the-passage-shirt|preview|f|prototype_unavailable|18|12200|12200|3
+DDN-TR01|the-measure-trouser|preview|f|prototype_unavailable|12|14200|14200|4
+DDN-OS01|the-structure-overshirt|preview|f|prototype_unavailable|12|19200|19200|4
+DDN-SC01|the-trace-scarf|preview|f|prototype_unavailable|2|7400|7400|3
+093e07688e9b342aa932c20192f974e2
+dedunet|PLATFORM_CURATED|published|f
+internal-development-fixtures|PLATFORM_CURATED|preview|t
+dedunet|5|NON_PURCHASABLE
+internal-development-fixtures|1|NON_PURCHASABLE

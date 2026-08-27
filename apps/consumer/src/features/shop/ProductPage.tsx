@@ -84,6 +84,25 @@ export default function ProductPage() {
   const colours = coloursOf(item);
 
   const refusal = purchaseRefusal(item.sellable, disclosure);
+
+  /* THE COMMERCE CONTRACT.
+   *
+   * The server decides what this control is: `commerce_action` already accounts for the
+   * commerce mode, the sellable flag and the commerce route, in that order.
+   *
+   * It is combined with the ACCEPTED client-side gate rather than replacing it, and the
+   * combination is deliberately one-directional: the control is disabled if EITHER says so.
+   * That makes this change incapable of being more permissive than the human-verified
+   * behaviour it inherits, whatever a future server payload says. The two agree today --
+   * both refuse every DEDUNET prototype -- so nothing a customer sees changes.
+   */
+  const serverAction = item.commerce_action;
+  const actionDisabled = Boolean(refusal) || serverAction?.enabled === false;
+  const actionLabel = refusal
+    ? "Not available to buy"
+    : (serverAction?.label ?? "Add to cart");
+  const externalHref =
+    !actionDisabled && serverAction?.url ? serverAction.url : "";
   // Product-level price, derived from variant prices. See src/lib/money.ts for the rule.
   const price = productPrice(item.variants, item.currency);
   const reason = refusalText(refusal);
@@ -149,8 +168,16 @@ export default function ProductPage() {
               <Stack gap="loose">
                 <Stack gap="tight">
                   <Eyebrow>
-                    <Link to="/brand/dedunet" className={styles.brandLink}>
-                      DEDUNET
+                    {/* REAL brand attribution and navigation. This was a hardcoded link to
+                        /brand/dedunet, which was true only while one brand existed. It now
+                        follows the product's own brand, so Product -> Brand works for any
+                        brand in the network. */}
+                    <Link
+                      to={`/brand/${item.brand?.slug ?? "dedunet"}`}
+                      className={styles.brandLink}
+                      data-testid="product-brand-link"
+                    >
+                      {item.brand?.name ?? "DEDUNET"}
                     </Link>
                   </Eyebrow>
                   <h1 className={styles.title}>{item.name}</h1>
@@ -184,14 +211,29 @@ export default function ProductPage() {
 
                 {/* ------------------------------------------- THE PURCHASE GATE */}
                 <div className={styles.purchase}>
-                  <Button
-                    variant="primary"
-                    fullWidth
-                    disabled={Boolean(refusal)}
-                    aria-describedby={refusal ? refusalId : undefined}
-                  >
-                    {refusal ? "Not available to buy" : "Add to cart"}
-                  </Button>
+                  {externalHref ? (
+                    /* An outbound commerce link. `rel` and `target` come from the server so
+                       one place decides them; noopener in particular is what stops the
+                       opened page navigating this tab (reverse tabnabbing). */
+                    <a
+                      className={styles.externalAction}
+                      href={externalHref}
+                      target={serverAction?.link_target || "_blank"}
+                      rel={serverAction?.link_rel || "noopener noreferrer nofollow"}
+                      data-testid="commerce-action-link"
+                    >
+                      {actionLabel}
+                    </a>
+                  ) : (
+                    <Button
+                      variant="primary"
+                      fullWidth
+                      disabled={actionDisabled}
+                      aria-describedby={refusal ? refusalId : undefined}
+                    >
+                      {actionLabel}
+                    </Button>
+                  )}
 
                   {refusal ? (
                     <p className={styles.refusal} id={refusalId}>

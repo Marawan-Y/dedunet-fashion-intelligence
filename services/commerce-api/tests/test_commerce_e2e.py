@@ -298,7 +298,13 @@ def test_concurrent_reservation_never_oversells(tmp_path):
     Base.metadata.create_all(engine)
 
     with Session() as session:
-        product = Product(slug="race-product", name="Race", category="tops", is_active=True)
+        product = Product(
+            slug="race-product",
+            name="Race",
+            category="tops",
+            is_active=True,
+            brand_id=_fixture_brand_id(session),
+        )
         session.add(product)
         session.flush()
         variant = Variant(
@@ -656,3 +662,17 @@ def test_admin_route_namespaces_do_not_collide(client, seeded, auth):
         },
     )
     assert denied.status_code == 403
+
+
+def _fixture_brand_id(session) -> int:
+    """A brand for a test-constructed product.
+
+    `Product.brand_id` is NOT NULL since the multi-brand phase: a product with no brand has
+    no accountable origin, which is the whole point of the network model. Tests that build a
+    bare Product therefore have to say whose it is, and the canonical DEDUNET brand is the
+    right answer for a DEDUNET prototype fixture.
+    """
+
+    from app.commerce.brand_registry import DEDUNET_BRAND_SLUG, ensure_canonical_brands
+
+    return ensure_canonical_brands(session)[DEDUNET_BRAND_SLUG].id

@@ -18,6 +18,45 @@ not exercised), `BLOCKED`, `EXTERNALLY_PENDING`, `NOT_STARTED`.
 
 ---
 
+## 0. Multi-brand fashion network implemented (2026-08-27)
+
+Products now belong to **brands**. `Brand` is first-class with an explicit `ownership_type`
+(`PLATFORM_CURATED` / `MERCHANT_OWNED` / `EXTERNAL_CURATED`), commerce routing is a separate
+axis from ownership, and provenance is modelled rather than assumed. Evidence:
+`evidence/phase-4/MULTI_BRAND_NETWORK_EVIDENCE.md`.
+
+**What is real:** the domain, the migration, the brand APIs, the commerce-action contract,
+external-URL safety, and the consumer surfaces wired to live data. The five accepted DEDUNET
+prototypes belong to a `PLATFORM_CURATED` DEDUNET brand and are `NON_PURCHASABLE`, exactly as
+before — verified by a before/after checksum over every variant SKU and price.
+
+**What is NOT real, stated plainly because a marketplace is easy to overclaim:**
+
+| Item | State |
+|---|---|
+| **A real external brand integration** | **DOES NOT EXIST.** `EXTERNAL` and `REFERRAL` are implemented and tested; **no data uses them**. Nothing here is a partnership, integration or agreement |
+| **`HOSTED` checkout** | **DECLARABLE, NOT REACHABLE.** Refused by `commerce_action` until merchant commerce exists. An enum value is not a feature |
+| **`MerchantOrganization`** | a stub tenant root. No billing, plans, entitlements, seats or portal — Phase 5 |
+| **Brand sync** | **NOT BUILT.** `last_checked_at` / `last_synced_at` are modelled and never written. They are null, not stale |
+| **Admin** | read-only inspection endpoint; the portal UI is **not** extended |
+| Availability | a **confidence with a timestamp**, never a fact. There is no `IN_STOCK` |
+
+**A partnership claim was found and removed.** The consumer bundle contained
+`commerceRouteLabel("REFERRAL") -> "Available through a partner"` — a relationship that has
+never existed, in a switch statement in the browser. Relationship wording now comes from the
+server so there is one auditable vocabulary. `LEGAL_CLEARANCE_PENDING` is unchanged.
+
+**Development fixtures cannot be published.** A database check constraint forbids it, and the
+API hides fixtures entirely once public commerce is enabled. The sixth database product — the
+backup-restore runbook's row — belongs to an unmistakable fixture brand rather than to an
+invented company.
+
+**Migration rollback is not free.** `downgrade()` drops `products.brand_id`, destroying the
+product-to-brand association. Products, variants and prices survive; the association is
+reconstructible only while it remains derivable from `external_product_id`.
+
+---
+
 ## 0a. Consumer foundation accepted, then LOCKED at the staging cutover
 
 **`ENTERPRISE_CONSUMER_FOUNDATION = LOCKED`** as of 2026-08-27.

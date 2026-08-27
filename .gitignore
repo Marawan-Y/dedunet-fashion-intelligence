@@ -64,3 +64,9 @@ Thumbs.db
 
 # Backup artifacts contain personal and operational data and must never be committed.
 backups/
+
+# Database dumps must never be committed. A pg_dump of this platform contains customer rows
+# and PBKDF2 password hashes -- credential material, even hashed. The phase-4 pre-migration
+# backup was staged once and caught before the commit; this makes the next one impossible.
+evidence/**/*.sql
+*.dump

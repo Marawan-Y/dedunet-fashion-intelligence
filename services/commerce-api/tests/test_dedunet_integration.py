@@ -484,6 +484,7 @@ def dedunet_product(db_session):
     from app.commerce.models import InventoryItem, Product, ProductMedia, Variant
 
     product = Product(
+        brand_id=_fixture_brand_id(db_session),
         external_product_id="DDN-TS01",
         slug="the-source-tee",
         name="The Source Tee",
@@ -557,7 +558,15 @@ def test_external_product_id_is_unique(db_session, dedunet_product):
 
     from app.commerce.models import Product
 
-    db_session.add(Product(external_product_id="DDN-TS01", slug="a-clone", name="Clone", category="x"))
+    db_session.add(
+        Product(
+            brand_id=_fixture_brand_id(db_session),
+            external_product_id="DDN-TS01",
+            slug="a-clone",
+            name="Clone",
+            category="x",
+        )
+    )
     with pytest.raises(IntegrityError):
         db_session.flush()
 
@@ -681,3 +690,17 @@ def test_api_exposes_the_typed_states_and_media(client, db_session, dedunet_prod
 def test_api_never_emits_a_made_in_claim(client, db_session, dedunet_product):
     body = client.get("/api/v1/catalog/products/the-source-tee").text.lower()
     assert "made in" not in body
+
+
+def _fixture_brand_id(session) -> int:
+    """A brand for a test-constructed product.
+
+    `Product.brand_id` is NOT NULL since the multi-brand phase: a product with no brand has
+    no accountable origin, which is the whole point of the network model. Tests that build a
+    bare Product therefore have to say whose it is, and the canonical DEDUNET brand is the
+    right answer for a DEDUNET prototype fixture.
+    """
+
+    from app.commerce.brand_registry import DEDUNET_BRAND_SLUG, ensure_canonical_brands
+
+    return ensure_canonical_brands(session)[DEDUNET_BRAND_SLUG].id
