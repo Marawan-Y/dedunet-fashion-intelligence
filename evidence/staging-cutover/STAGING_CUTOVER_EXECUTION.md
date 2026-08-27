@@ -2,13 +2,25 @@
 
 | Field | Value |
 |---|---|
-| Artifact ID | EV-CUT-001 · **Version** 1.0 |
+| Artifact ID | EV-CUT-001 · **Version** 2.0 |
 | Status | **`AUTOMATED-TESTED`** — awaiting the human iPhone smoke |
+| History | v1.0 deployed the cutover and **wrongly declared it ready for the human smoke** while two required conditions were failing. The owner rejected that conclusion. v2.0 records the repair |
 | Plan | `docs/operations/STAGING_CUTOVER_PLAN.md` (OPS-CUT-001), option **A**, same-origin proxy |
 | Authorization | Explicit owner instruction, in session, 2026-08-27 |
 | Date | 2026-08-27 |
 | Owner | Side B / platform |
 
+> **CORRECTION, 2026-08-27.** Version 1.0 of this document ended in
+> `STAGING_CUTOVER_COMPLETE_READY_FOR_HUMAN_SMOKE`. **That conclusion was wrong and was
+> rejected by the owner.** Two required cutover conditions were failing at the time it was
+> written — the security headers (F-1) and the product price (F-2) — and both were recorded
+> in §8 of that same document as known and unfixed. Recording a defect does not satisfy the
+> gate that the defect fails. The deployment succeeded; the gate did not.
+>
+> The state between the cutover and this repair was
+> `STAGING_CUTOVER_DEPLOYED` + `STAGING_CUTOVER_BLOCKED_PENDING_REPAIR`.
+> Both defects are now repaired and verified on the deployed application; see §11.
+>
 > **What this is.** The `web` service on normal staging now serves the enterprise consumer
 > application instead of the classic client. Nothing else changed. `PUBLIC_COMMERCIAL_LAUNCH`
 > remains **BLOCKED**, the commerce mode is untouched, and no data, schema or volume was
@@ -123,9 +135,15 @@ a physical iPhone. Verified by SHA-256 of each served file, 13080 against 13081:
 | `/tokens.generated.css` | MATCH |
 | `/brand.generated.js` | MATCH |
 
-This is what allows the human smoke on 13080 to be **short** rather than a repeat of the
-full foundation acceptance: the application is the same bytes, reached over a different
-route to the same API.
+This was true **at the cutover**. It is **no longer true after the repair in §11**, and the
+difference is deliberate: fixing F-2 changed the application. The served JS bundle is now
+`index-CogdTLIy.js` where the accepted candidate serves `index-B-2mQdH-.js`. The stylesheet
+and router chunks are unchanged, because the repair touched no styling and no routing.
+
+The consequence, stated rather than glossed: **the human smoke can no longer lean on
+byte-equivalence.** It must actually look at the product page, which is the surface that
+changed. `13081` remains the *historical* foundation-acceptance artifact and is deliberately
+not rebuilt — it is evidence of what was accepted, not a copy of what is deployed.
 
 Also verified on the built image before it took traffic: 9 self-hosted font files present
 and served (`HTTP 200`), **zero** references to any external font CDN, **zero** occurrences
@@ -213,9 +231,14 @@ accessibility tree rather than being merely invisible.
 > Prior visual captures remain in `evidence/phase-3/`, and the served artifact is
 > byte-identical to what they were taken from.
 
-## 8. Findings — open, and NOT fixed in this change
+## 8. Findings at the cutover — F-1 and F-2 since REPAIRED (§11)
 
-### F-1 · Security headers are absent on every HTML document (new, and a regression at this URL)
+> This section is kept **as it was written at the cutover**, so the record shows what was
+> known and when. Its conclusion — that F-1 and F-2 could stand open while the gate passed —
+> was wrong, and §11 is the repair. The carried-forward items at the end of the section are
+> still accurate and still open.
+
+### F-1 · Security headers absent on every HTML document — **REPAIRED, see §11**
 
 `X-Frame-Options`, `X-Content-Type-Options`, `X-Robots-Tag` and `Referrer-Policy` are
 declared at server level in `apps/consumer/default.conf.template`, but nginx does **not**
@@ -231,13 +254,15 @@ inferred: the classic image was rebuilt from committed source and served
 It is **pre-existing in the accepted candidate** — 13081 behaves identically — so the
 cutover promoted it rather than introduced it.
 
-**Deliberately not fixed here.** Editing the nginx template would break the byte-equivalence
-in §6, which is the entire basis for a short human smoke instead of a repeated full
-acceptance. It is a small, contained follow-up: add the four headers into the two locations
-that override them. **Required before public launch** — the missing `X-Frame-Options`
-leaves the app framable.
+**Was deliberately not fixed in the cutover**, on the reasoning that editing the nginx
+template would break the byte-equivalence in §6 and so the basis for a short human smoke.
 
-### F-2 · The product page shows "Not priced", not €72
+**That trade was not mine to make.** Byte-equivalence is a convenience for the review
+process; shipping every document without `X-Frame-Options` is a security regression against
+a client that did serve it. The convenience was allowed to outrank the defect, and the gate
+was declared passed anyway. Repaired in §11.
+
+### F-2 · The product page shows "Not priced", not €72 — **REPAIRED, see §11**
 
 The brief expected the Source Tee to read **€72**. The deployed consumer client renders
 **"Not priced"** with a dedicated `priceAbsent` style.
@@ -248,9 +273,13 @@ leaves the product-level price null; the consumer PDP reads the product level. T
 expectation traces to the *classic* storefront, which displayed it.
 
 No safety consequence: the CTA is disabled and reads `NOT AVAILABLE TO BUY`, and the server
-refuses a cart add with 409. Recorded because the owner asked for €72 and would otherwise
-see something different on the device. Whether "Not priced" or "€72" is the correct product
-behaviour is a **product decision, not a cutover decision**.
+refuses a cart add with 409.
+
+**The "product decision, not a cutover decision" framing in v1.0 was wrong.** It was not a
+decision at all — it was a defect. The root cause (§11) is that the client never read the
+variant price it was sent, on the strength of a comment asserting the catalogue had none.
+Nothing had decided to hide a price; a wrong premise had been written down and then
+believed. Repaired in §11.
 
 ### F-3 · The documented test count was stale on arrival
 
@@ -294,9 +323,224 @@ The `/etc/nginx/conf.d` tmpfs is harmless to leave in place.
 
 ```
 ENTERPRISE_CONSUMER_FOUNDATION   = ACCEPTED WITH FOLLOW-UP ITEMS   (unchanged)
-STAGING_CUTOVER                  = EXECUTED, PENDING HUMAN SMOKE
+STAGING_CUTOVER                  = DEPLOYED, REPAIRED, PENDING HUMAN SMOKE
 PUBLIC_COMMERCIAL_LAUNCH         = BLOCKED                          (unchanged)
+```
+
+Sequence, so the history is not flattened into a success:
+
+```
+1. cutover deployed            -> first switch restart-looped (§3), corrected, served
+2. post-cutover verification   -> found F-1 and F-2
+3. v1.0 of this document       -> WRONGLY declared ready for the human smoke
+4. owner rejected it           -> STAGING_CUTOVER_BLOCKED_PENDING_REPAIR
+5. F-1 and F-2 repaired        -> §11
+6. full regression re-run      -> 429 browser, 594 backend
+7. awaiting the human smoke    -> still a human gate, still not claimed here
 ```
 
 Normal staging: **`http://10.0.0.2:13080/`**
 Acceptance reference, retained for the soak: `http://10.0.0.2:13081/`
+
+---
+
+## 11. The repair — F-1 and F-2
+
+The owner rejected v1.0's conclusion. Both defects were repaired in one focused change; no
+other work was mixed in. No later product phase was started.
+
+### F-1 · Security headers — root cause and repair
+
+**Root cause.** nginx does not inherit `add_header` into a location that declares an
+`add_header` of its own. The consumer template declared the four security headers once at
+server level, which looks correct and is not: `location = /index.html` and
+`location /assets/` each set `Cache-Control`, so each discarded all four. Every route in the
+SPA is served from `index.html` through the history fallback, so **every document on the
+site** carried none of them. `/admin`, which declares no header, kept all four — which is
+why the config read as working.
+
+**Repair.** One definition, included where it must apply, rather than four values repeated
+in five places:
+
+- `apps/consumer/security-headers.conf` — new. The four headers, each `always`.
+- `apps/consumer/default.conf.template` — server-level `include`, plus an `include` in each
+  location that declares its own `add_header`.
+- `apps/consumer/Dockerfile` — `COPY` to `/etc/nginx/`, **not** into `conf.d`, which is a
+  tmpfs at runtime and would be empty at start.
+
+The values are not new policy. `X-Robots-Tag`, `X-Content-Type-Options` and
+`X-Frame-Options` are exactly what `apps/web/nginx.conf` served; `Referrer-Policy` was
+already declared at server level in the consumer template before the repair.
+
+**One thing the repair got wrong first, and corrected.** The include was initially added to
+`location /api/` as well. Measured on a real response, that emitted `Referrer-Policy`
+twice — the API sets its own `no-referrer`, which is **stricter** than the document policy —
+and the Referrer Policy spec takes the last valid value. The proxy was silently downgrading
+the API. `/api/` is now the one **named exemption**, and two tests hold that line: one
+asserting the include is absent there, one asserting the API still sets its own baseline
+headers, since the exemption is only safe while it does.
+
+**Verified on real HTTP responses from deployed staging**, not asserted from source:
+
+| Response | Headers |
+|---|---|
+| `/` | all four · `Cache-Control: no-store, must-revalidate` |
+| `/shop` (history fallback) | all four · `no-store, must-revalidate` |
+| `/product/the-source-tee` | all four · `no-store, must-revalidate` |
+| `/index.html` direct | all four · `no-store, must-revalidate` |
+| `/admin/` | all four |
+| `/assets/index-*.js` | all four · `Cache-Control: public, immutable` **preserved** |
+| `/tokens.generated.css` | nosniff, DENY · `no-cache` **preserved** |
+| `/api/v1/commerce/mode` | upstream's own nosniff, DENY, **`no-referrer` intact** · `no-store` |
+
+Same-origin `/api` still proxies correctly; `BRAND_PREVIEW_MODE`, `purchasable: false`.
+Cache-Control behaviour, the read-only runtime posture and `no-new-privileges` are all
+unchanged. Nothing was weakened.
+
+**The regression guard (requirement A.10).**
+`services/commerce-api/tests/test_consumer_security_headers.py`, 14 tests, pins the
+invariant a future edit would break silently:
+
+> every `location` that declares its own `add_header` must also include the contract —
+> except the one named, justified exemption.
+
+**The guard was verified to fail.** F-1 was reintroduced by deleting the include from the
+`index.html` location alone; two tests failed with the correct diagnosis, and the template
+was restored. A guard whose removal nobody notices is not a guard.
+
+`apps/consumer/e2e/security-headers.spec.ts` is the other half — 8 tests asserting the
+headers on **real responses from the deployed container**, because correct configuration
+does not prove a correct deployment, and that gap is exactly what let F-1 be reported as
+"declared at server level" while no document carried them.
+
+### F-2 · Product price — root cause and repair
+
+**Root cause, and it is not a product decision.** `src/api/types.ts` asserted in a comment
+that "The five DEDUNET products carry NO price", and `CatalogVariant` was modelled without a
+price field to match. The product page therefore read a **product-level** `price_display`
+that `/api/v1/catalog/products` has never sent, and every product rendered "Not priced".
+
+The premise was false. The catalogue carries an authoritative price on each **variant** —
+all 18 Source Tee variants are `7200` EUR minor units — and the API's own `list_products`
+already sorts by `min(v.price_minor_units)`. The price was in the payload the whole time.
+Nothing read it.
+
+**The authoritative rule, taken from the domain rather than invented.**
+`docs/side-b/SIDE_B_MONEY_CONTRACT.md` rule 6: display values are derived, never
+authoritative, and clients format integer minor units "with pure integer/string arithmetic —
+no division, so no binary float ever touches an amount". `apps/consumer/src/lib/money.ts`
+ports `apps/web/ds.js:money()` verbatim in behaviour, including its degradation path, and
+derives the product figure the way the classic client already did — cheapest across
+variants:
+
+| Variant prices | Renders |
+|---|---|
+| one price, or all variants equal | the exact price — `€72.00` |
+| several distinct prices | `From €72.00`, built from the lowest |
+| none priced, 0, negative or non-integer | the unpriced state — **only** then |
+
+Nothing is hard-coded. `€72` is what the data produces.
+
+**Formatting.** `€72.00`, matching the accepted presentation recorded in
+`evidence/branded-vertical-slice/` as `"€72.00"`. An early cut of the repair rendered
+`€72.00 EUR`; the symbol already carries the currency, so the redundant code was removed and
+the test now asserts the exact string rather than a substring.
+
+**Price is not an offer.** The purchase gate is untouched. On the deployed page:
+
+| Check | Result |
+|---|---|
+| Source Tee price | **`€72.00`** |
+| "Not priced" present | **no** |
+| Purchase control | **`NOT AVAILABLE TO BUY`, disabled** |
+| Preview banner | present |
+| Server cart add | **409** — brand preview |
+| `COMMERCE_MODE` | `BRAND_PREVIEW_MODE`, `purchasable: false` |
+| Measure Trouser (not special-cased) | `€142.00` |
+
+**Regression tests.** `src/lib/money.test.ts`, 13 tests, covering every case the repair was
+specified against — single variant price, same price across variants, multiple prices,
+missing price, and a preview non-purchasable product that is priced and still refused —
+plus the formatter's padding, sign and degradation paths. `e2e/price.spec.ts`, 5 tests,
+covering what a person actually sees, including that no product in the catalogue renders
+unpriced.
+
+The "from" and "absent" branches cannot be produced by the current catalogue, which is
+uniformly priced. They are covered by the unit tests precisely because the data cannot
+exercise them.
+
+### Files changed in the repair
+
+| File | Change |
+|---|---|
+| `apps/consumer/security-headers.conf` | **new** — the four headers, one definition |
+| `apps/consumer/default.conf.template` | server + 3 location includes; `/api/` exempt, with the reason |
+| `apps/consumer/Dockerfile` | COPY the contract to `/etc/nginx/` |
+| `apps/consumer/src/lib/money.ts` | **new** — formatter and the price rule |
+| `apps/consumer/src/lib/money.test.ts` | **new** — 13 unit tests |
+| `apps/consumer/src/api/types.ts` | variant price modelled; the false comment corrected |
+| `apps/consumer/src/features/shop/ProductPage.tsx` | price derived from variants |
+| `apps/consumer/vite.config.ts` | vitest scoped to `src/`, node environment |
+| `apps/consumer/e2e/security-headers.spec.ts` | **new** — 8 deployed-response tests |
+| `apps/consumer/e2e/price.spec.ts` | **new** — 5 tests |
+| `services/commerce-api/tests/test_consumer_security_headers.py` | **new** — 14 tests |
+
+No backend application source was changed. No compose change was needed for the repair.
+
+### Regression after the repair
+
+| Check | Result |
+|---|---|
+| Browser E2E vs deployed `:13080` | **429 passed, 0 failed, 0 flaky, 16.9m** |
+| — Chromium | **143 passed** |
+| — WebKit | **143 passed** |
+| — Mobile Safari viewport | **143 passed** |
+| — Firefox | **NOT RUN** — cannot launch in this environment. Not claimed |
+| Backend `pytest -q` | **594 passed, 2 skipped** |
+| Consumer unit tests | **13 passed** |
+| `validate_product_data.py` | exit 0 |
+| `validate_candidate_data.py` | exit 0 |
+| `--assess-sellable` | exit **1**, required non-zero |
+| `verify_side_a_package.py` | `DEDUNET_HANDOFF_INTEGRITY_VERIFIED` |
+| `verify_packaged_assets.py` | `PACKAGED_BRAND_ASSETS_VERIFIED` |
+| `build_brand_package.py --verify-no-drift` | `BRAND_PACKAGE_NO_DRIFT` |
+| `controller_validate.py` | **PASS**, 0 errors, 3 pre-existing warnings |
+| `git diff --check` | clean |
+| Secret scan, 519 tracked files | 0 hits |
+| New bundle: LAN address or secret | 0 occurrences |
+| Mutation testing | **not required** — no registered target changed; every target is under `services/commerce-api/app/` and the diff touches only `apps/consumer/` and one test file |
+
+Backend went 576 to 594. Accounted for exactly: 14 new header-contract tests, plus 4 from
+the existing XSS-sink and javascript-URL scans automatically picking up the two new consumer
+source files — the frontend security guard extending itself over new code, as designed.
+
+Browser went 130 to 143 per engine: 8 header tests and 5 price tests.
+
+### Deployed surfaces, re-inspected
+
+| Surface | Result |
+|---|---|
+| Home | h1 correct, 28 images, **0 broken**, no overflow, fonts loaded |
+| Dido | h1 "Style with Dido", 0 broken, no overflow |
+| Shop | h1 "Shop", 6 images, 0 broken, no overflow |
+| Source Tee | **`€72.00`**, `NOT AVAILABLE TO BUY` disabled, preview banner |
+| Account | 6 inputs, **all 6 labelled**, 0 broken |
+| Orders | signed out, redirects to sign in — accepted behaviour |
+| Console errors | **none** |
+| API / DB / worker | start times **unchanged** through cutover and repair |
+
+### Services
+
+`web` rebuilt and recreated. `api`, `db` and `notification-worker` untouched — start times
+still 2026-08-24, across both the cutover and the repair. No migration, no schema change, no
+volume touched.
+
+### Still open, and unchanged by this repair
+
+Media delivery separation · trusted proxy / client identity · distributed rate limiting ·
+Saved persistence · Looks as a real outfit object · the multi-brand domain · Dido
+intelligence · the absent About / Privacy / Terms routes.
+
+**The physical-iPhone smoke on `http://10.0.0.2:13080/` remains outstanding.** It is a human
+gate. No automated result in this document substitutes for it, and the product page is a
+surface the owner has not yet seen in its repaired form.

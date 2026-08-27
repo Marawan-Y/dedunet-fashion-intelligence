@@ -56,6 +56,13 @@ COPY apps/admin /usr/share/nginx/html/admin
 COPY apps/consumer/default.conf.template /etc/nginx/templates/default.conf.template
 ENV NGINX_ENVSUBST_FILTER="DEDUNET_"
 
+# The document security header contract, included by the template at server level AND by
+# every location that declares an add_header of its own — because nginx discards inherited
+# add_header directives in any scope that adds one. Copied to /etc/nginx rather than into
+# conf.d: conf.d is a tmpfs at runtime (the entrypoint renders the template into it), and
+# this file must come from the read-only image layer.
+COPY apps/consumer/security-headers.conf /etc/nginx/security-headers.conf
+
 # Where the commerce API is, from INSIDE the container.
 #
 # A service name on a shared Docker network by default, never a host address: the image

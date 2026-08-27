@@ -1,3 +1,4 @@
+/// <reference types="vitest/config" />
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import { fileURLToPath, URL } from "node:url";
@@ -14,6 +15,22 @@ export default defineConfig({
   resolve: {
     alias: { "@": fileURLToPath(new URL("./src", import.meta.url)) },
   },
+  /* Unit tests, scoped to src/ ON PURPOSE.
+   *
+   * Vitest's default include pattern reaches every directory, so it would sweep up the
+   * Playwright specs under `e2e/` — they import @playwright/test and cannot run under
+   * Vitest, so the suite would fail for reasons that have nothing to do with the
+   * application.
+   *
+   * `node` environment, not jsdom. ADR-0004 is explicit that jsdom did not catch the
+   * defects that mattered and that browser-level acceptance is what evidences rendering.
+   * What lives here is pure domain logic — the money rule — where a unit test is the right
+   * instrument and a browser is not. Rendering stays in the Playwright suite. */
+  test: {
+    include: ["src/**/*.test.ts"],
+    environment: "node",
+  },
+
   build: {
     outDir: "dist",
     sourcemap: true,

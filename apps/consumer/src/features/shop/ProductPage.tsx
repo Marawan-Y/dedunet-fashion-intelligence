@@ -18,6 +18,7 @@ import { ApiError } from "../../api/types";
 import { NotFound } from "../../app/RouteError";
 import { purchaseRefusal, refusalText, useCommerceMode } from "../../app/CommerceMode";
 import { LOOKS } from "../content";
+import { productPrice } from "../../lib/money";
 import { coloursOf, orderedMedia, primaryImage, sizesOf, useCatalog, useProduct } from "../useCatalog";
 import styles from "./ProductPage.module.css";
 
@@ -83,6 +84,8 @@ export default function ProductPage() {
   const colours = coloursOf(item);
 
   const refusal = purchaseRefusal(item.sellable, disclosure);
+  // Product-level price, derived from variant prices. See src/lib/money.ts for the rule.
+  const price = productPrice(item.variants, item.currency);
   const reason = refusalText(refusal);
 
   const relatedLooks = LOOKS.filter((look) =>
@@ -154,14 +157,28 @@ export default function ProductPage() {
                   <p className={styles.collection}>{item.collection}</p>
                 </Stack>
 
-                {/* Price. Absent, and the absence is explained rather than hidden. */}
+                {/* PRICE.
+                  *
+                  * Derived from the VARIANTS, which is where this catalogue's authoritative
+                  * price lives. Reading the product-level `price_display` here is what made
+                  * every product read "Not priced" after the cutover — /catalog/products
+                  * does not send that field at all (F-2).
+                  *
+                  * A price is a statement of what something COSTS, not an offer to sell it.
+                  * The purchase gate immediately below is unchanged and still refuses:
+                  * every DEDUNET prototype is priced and none is purchasable. */}
                 <div className={styles.price}>
-                  {item.price_display ? (
-                    <span className={styles.priceValue}>
-                      {item.price_display} {item.currency}
-                    </span>
-                  ) : (
+                  {price.kind === "absent" ? (
                     <span className={styles.priceAbsent}>Not priced</span>
+                  ) : (
+                    <span className={styles.priceValue} data-testid="product-price">
+                      {/* The label already carries the currency: "€72.00" when the symbol
+                          is known, and "7200 XYZ" when it is not. Appending
+                          `price.currency` here rendered "€72.00 EUR", which the classic
+                          client never did — evidence records the accepted presentation as
+                          "€72.00". */}
+                      {price.label}
+                    </span>
                   )}
                 </div>
 

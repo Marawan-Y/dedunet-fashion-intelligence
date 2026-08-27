@@ -156,8 +156,14 @@ Carried out 2026-08-27 from `e29e019`. Full record:
 | Backend | 576 passed, 2 skipped |
 | API / DB / worker | untouched, verified by unchanged container ids and start times |
 | Served artifact | byte-identical to the accepted candidate, by SHA-256 on all six served files |
-| New finding | security headers absent on every HTML document — a regression at this URL, pre-existing in the accepted candidate, **not** fixed here (F-1) |
+| New findings | F-1 security headers absent on every HTML document; F-2 every product rendering "Not priced". Both left open at the cutover, which was **wrongly** reported as ready for the human smoke. Owner rejected it; both **repaired and verified** — evidence §11. Post-repair: 429 browser, 594 backend |
 | Rollback | rebuilt the classic image from committed source and served it, then removed the proof container |
 
 `PUBLIC_COMMERCIAL_LAUNCH` remains **BLOCKED**. The physical-iPhone smoke on the normal
 staging URL is outstanding and is a **human** gate.
+
+**A note worth keeping.** This plan's §5 listed the post-cutover checks, and the security
+headers were not among them — the plan checked that the app rendered, that routing survived
+a refresh and that nothing was purchasable, but not that the response headers the previous
+client served were still being served. A cutover that swaps the thing serving every response
+should check the responses, not only the pages. F-1 reached staging through that gap.

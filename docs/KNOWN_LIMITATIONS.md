@@ -69,19 +69,28 @@ to serve, not merely assumed. Record:
 **The physical-iPhone smoke on the normal staging URL is still outstanding.** It is a human
 gate and no automated result substitutes for it.
 
-**One new finding, open.** Security headers — `X-Frame-Options`, `X-Content-Type-Options`,
-`X-Robots-Tag`, `Referrer-Policy` — are absent on **every HTML document** the consumer app
-serves. nginx does not inherit `add_header` into a location that declares its own, and both
-`location = /index.html` and `location /assets/` set `Cache-Control`. The classic client did
-serve them, so this is a regression at this URL; it is pre-existing in the accepted candidate
-rather than introduced by the cutover, and was deliberately not fixed inside the cutover so
-the deployed artifact stays byte-identical to what the owner accepted. **Required before
-public launch.**
+**Two defects were found after the cutover and are now REPAIRED.** The cutover was first
+reported as ready for the human smoke while both were open; the owner rejected that, and the
+repair is recorded in `evidence/staging-cutover/STAGING_CUTOVER_EXECUTION.md` §11.
 
-**A second finding, product rather than platform.** The consumer product page renders
-**"Not priced"** for the Source Tee, not **€72**. The catalogue API carries price on
-variants (`7200` minor units) and leaves the product level null. Nothing is purchasable
-either way — the CTA is disabled and the server refuses a cart add with 409.
+**F-1, security headers.** `X-Frame-Options`, `X-Content-Type-Options`, `X-Robots-Tag` and
+`Referrer-Policy` were absent on **every HTML document**, because nginx does not inherit
+`add_header` into a location that declares its own and both `location = /index.html` and
+`location /assets/` set `Cache-Control`. The classic client served three of them, so it was
+a regression at this URL. **Fixed** with a single included contract file, verified on real
+HTTP responses, and guarded by `test_consumer_security_headers.py` — which was itself
+verified to fail when the defect is reintroduced. `/api/` is a named exemption: the API sets
+its own stricter `no-referrer`, and including the document contract there downgraded it.
+
+**F-2, product price.** The product page rendered **"Not priced"** for every product. The
+client read a product-level `price_display` the catalogue endpoint never sends, on the
+strength of a comment asserting the catalogue had no prices; the authoritative price is on
+each **variant** (`7200` minor units for the Source Tee). **Fixed** by deriving the product
+price from variants through `src/lib/money.ts` — exact price when variants agree, `From
+<lowest>` when they differ, unpriced only when none is priced. The Source Tee now reads
+**€72.00**. Nothing about purchasability changed: the CTA is still disabled and reads NOT
+AVAILABLE TO BUY, and the server still refuses a cart add with 409. A price is a statement
+about cost, not an offer.
 
 ---
 

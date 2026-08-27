@@ -34,6 +34,9 @@ server {
     location /assets/ {
         expires 1y;
         add_header Cache-Control "public, immutable" always;
+        # Declaring add_header above discards the server-level security headers for this
+        # location. Re-stated here; see the file for why this is not optional.
+        include /etc/nginx/security-headers.conf;
         try_files $uri =404;
     }
 
@@ -43,12 +46,16 @@ server {
     # afternoon before anyone suspects the cache.
     location = /index.html {
         add_header Cache-Control "no-store, must-revalidate" always;
+        # EVERY route in this SPA is served from this file via the history fallback, so a
+        # dropped header here is a dropped header on every document the site serves.
+        include /etc/nginx/security-headers.conf;
     }
 
     # Generated brand artefacts. Emitted by scripts/brand/build_brand_package.py and copied
     # verbatim; not hashed, so they revalidate rather than being held.
     location ~ ^/(tokens\.generated\.css|brand\.generated\.js)$ {
         add_header Cache-Control "no-cache" always;
+        include /etc/nginx/security-headers.conf;
     }
 
     # SAME-ORIGIN API.
@@ -81,6 +88,21 @@ server {
         # Never cache an API response at the edge; the client decides what is fresh.
         proxy_buffering off;
         add_header Cache-Control "no-store" always;
+
+        # DELIBERATELY NOT including security-headers.conf here, and this is the one
+        # location where that is correct.
+        #
+        # The API sets its OWN baseline security headers (app/main.py): nosniff,
+        # X-Frame-Options DENY, and `Referrer-Policy: no-referrer` — which is STRICTER than
+        # the document policy. nginx add_header appends rather than replaces, so including
+        # the contract here emitted Referrer-Policy twice, and the Referrer Policy spec
+        # takes the last valid value: the proxy would have quietly downgraded the API's
+        # deliberate no-referrer to strict-origin-when-cross-origin.
+        #
+        # Measured, not assumed — it is what this location did before this comment replaced
+        # the include. The upstream's headers pass through untouched; the exemption is
+        # asserted in test_consumer_security_headers.py so it stays a decision rather than
+        # an oversight.
     }
 
     # The administration portal keeps its own path on this origin, unchanged. It is a
@@ -89,11 +111,13 @@ server {
         try_files $uri $uri/ /admin/index.html;
     }
 
-    # This is a non-public demonstration build and must never be indexed.
-    add_header X-Robots-Tag "noindex, nofollow" always;
-    add_header X-Content-Type-Options "nosniff" always;
-    add_header X-Frame-Options "DENY" always;
-    add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+    # The document security header contract. ONE definition, included rather than repeated,
+    # so the four values cannot drift apart between the five places they must appear.
+    #
+    # This server-level include covers `location /` and `location /admin`, which declare no
+    # add_header of their own. Every location that DOES declare one includes the file
+    # again, because nginx would otherwise discard these silently.
+    include /etc/nginx/security-headers.conf;
 
     gzip on;
     gzip_types text/css application/javascript image/svg+xml application/json;
