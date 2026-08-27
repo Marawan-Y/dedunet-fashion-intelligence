@@ -18,11 +18,22 @@ not exercised), `BLOCKED`, `EXTERNALLY_PENDING`, `NOT_STARTED`.
 
 ---
 
-## 0a. Consumer foundation accepted on a physical iPhone (2026-08-26)
+## 0a. Consumer foundation accepted, then LOCKED at the staging cutover
 
-**`ENTERPRISE_CONSUMER_FOUNDATION = ACCEPTED WITH FOLLOW-UP ITEMS`** — human review on a
-physical iPhone in Safari, against the deployed candidate. Recorded in
-`evidence/team-acceptance/ENTERPRISE_CONSUMER_FOUNDATION_ACCEPTANCE.md`.
+**`ENTERPRISE_CONSUMER_FOUNDATION = LOCKED`** as of 2026-08-27.
+
+Two human reviews, both on a physical iPhone in Safari, and they are different events:
+
+| Date | Target | Result |
+|---|---|---|
+| 2026-08-26 | the additive **candidate** on 13081 | `ACCEPTED WITH FOLLOW-UP ITEMS` — `evidence/team-acceptance/ENTERPRISE_CONSUMER_FOUNDATION_ACCEPTANCE.md` |
+| 2026-08-27 | **normal staging** on 13080, at `be1d1e2` | `PHYSICAL_IPHONE_STAGING_SMOKE_PASSED` · `STAGING_CUTOVER_ACCEPTED` — `evidence/team-acceptance/STAGING_CUTOVER_IPHONE_ACCEPTANCE.md` |
+
+The second was required because the F-2 repair changed the application, so the deployed
+bundle is deliberately no longer byte-identical to the accepted candidate.
+
+**A web application in Safari on an iPhone is not native iOS.** `NATIVE_IOS` remains **NOT
+BUILT, NOT TESTED** — a separate state, never implied by either record.
 
 **Read the scope, not the headline.** The acceptance covers rendering on the device,
 routing, Home, the Dido **shell**, the Looks and Brands and Saved **foundations**, Shop,
@@ -59,15 +70,17 @@ delivery is to be separated from business-API abuse protection as a future platf
 
 ### Cutover
 
-**Executed 2026-08-27.** Staging now serves the enterprise consumer client (`apps/consumer`)
-on 13080 over a same-origin `/api` proxy. The candidate remains on 13081 as the acceptance
+**Executed and ACCEPTED 2026-08-27.** Staging serves the enterprise consumer client
+(`apps/consumer`) on 13080 over a same-origin `/api` proxy, and the human iPhone smoke on
+that deployment has passed. The candidate remains on 13081 as the acceptance
 reference during the soak. `apps/web`, its harnesses and its guard mutations all remain in
 the tree and keep passing — the rollback path was rebuilt from committed source and proven
 to serve, not merely assumed. Record:
 `evidence/staging-cutover/STAGING_CUTOVER_EXECUTION.md`.
 
-**The physical-iPhone smoke on the normal staging URL is still outstanding.** It is a human
-gate and no automated result substitutes for it.
+**The physical-iPhone smoke on the normal staging URL PASSED** on 2026-08-27 at `be1d1e2`,
+after the repairs below: Home, Dido, Shop, the Source Tee at €72.00 and NOT AVAILABLE TO
+BUY, Account, mobile navigation and preview safety.
 
 **Two defects were found after the cutover and are now REPAIRED.** The cutover was first
 reported as ready for the human smoke while both were open; the owner rejected that, and the

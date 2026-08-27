@@ -1,10 +1,41 @@
 # DEDUNET — Team acceptance readiness decision
 
-**Artifact ID:** SOR-TAR-001 · **Version:** 1.1 · **Owner:** Orchestrator (controller)
-**Original decision:** 2026-08-07 at `fc7bdeb` · **Status updated:** 2026-08-12
+**Artifact ID:** SOR-TAR-001 · **Version:** 1.2 · **Owner:** Orchestrator (controller)
+**Original decision:** 2026-08-07 at `fc7bdeb` · **Status updated:** 2026-08-27
 **Evidence:** [`evidence/release/TEAM_ACCEPTANCE_READINESS_EVIDENCE.md`](../../evidence/release/TEAM_ACCEPTANCE_READINESS_EVIDENCE.md)
 · [`TEAM_ACCEPTANCE_READINESS_MATRIX.json`](../../evidence/release/TEAM_ACCEPTANCE_READINESS_MATRIX.json)
 · [`evidence/team-acceptance/LOCAL_TEAM_ACCEPTANCE_CLOSEOUT.md`](../../evidence/team-acceptance/LOCAL_TEAM_ACCEPTANCE_CLOSEOUT.md)
+
+---
+
+## 0a. Consumer frontend cutover accepted (2026-08-27) — later than §0, narrower than it
+
+# `STAGING_CUTOVER_ACCEPTED` · `ENTERPRISE_CONSUMER_FOUNDATION_LOCKED`
+
+**Date:** 2026-08-27 at `be1d1e2` · **Decided by:** repository owner, on a physical iPhone
+
+The enterprise consumer application is the normal staging web application, and a human
+confirmed it in Safari on real hardware against the deployed staging URL: Home, Dido, Shop,
+the Source Tee at **€72.00** and **NOT AVAILABLE TO BUY**, Account, mobile navigation and
+preview safety — all PASS. Recorded in
+[`evidence/team-acceptance/STAGING_CUTOVER_IPHONE_ACCEPTANCE.md`](../../evidence/team-acceptance/STAGING_CUTOVER_IPHONE_ACCEPTANCE.md).
+
+**This is narrower than §0 below, not a replacement for it.** §0 records a full commerce
+journey through a sandbox adapter. This records a **presentation layer and its deployment**
+being accepted on a device. It adds no commerce capability whatsoever.
+
+### What this status does NOT mean
+
+- **Not `NATIVE_IOS_ACCEPTANCE`.** A web application in Safari on an iPhone is not a native
+  iOS application. `NATIVE_IOS` is **NOT BUILT, NOT TESTED** and remains a separate state.
+- **Not `PUBLIC_COMMERCIAL_LAUNCH_READY`.** `PUBLIC_COMMERCIAL_LAUNCH_BLOCKED` is unchanged
+  and fully in force. The deployment tested was in `BRAND_PREVIEW_MODE` with
+  `purchasable: false`, and the server refused a cart add with 409 during verification.
+- **No product intelligence is accepted.** Dido remains a shell; Style DNA, the
+  recommendation and outfit engines, Saved persistence, the multi-brand domain and merchant
+  SaaS are all unbuilt.
+
+Every blocker in §11 remains open. None was attempted.
 
 ---
 

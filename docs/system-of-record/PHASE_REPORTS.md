@@ -475,6 +475,111 @@ claims are not.
 Implementation, tests, security, regression and documentation all pass. What is missing is
 a human with a device, which no amount of engineering here can supply.
 
+> **Closed 2026-08-27.** The §37 mobile acceptance criterion was met in Phase 3: a physical
+> iPhone Safari smoke passed against the deployed staging application. Kept as written so the
+> blocked state and its reason remain visible rather than edited away.
+>
+> This closed the **mobile web** criterion. It did not close anything about native iOS,
+> which was never in Phase 2's scope and remains unbuilt.
+
+---
+
+## PHASE 3 — Enterprise consumer frontend, staging cutover and acceptance
+
+**Decision: `PHASE_3_ACCEPTED`.**
+
+The enterprise consumer application (`apps/consumer`, React + TypeScript, ADR-0004) replaced
+the classic client as the normal staging web application, and a person confirmed it on a
+physical iPhone.
+
+### 3.1 What was delivered
+
+| | |
+|---|---|
+| Consumer application | new Home, Dido shell, Looks/Brands/Saved foundations, Shop, product detail, Account, Orders, mobile navigation, design system, self-hosted typography |
+| Staging cutover | `web` service repointed from `apps/web` to `apps/consumer`; browser reaches the API **same-origin** at `/api`, proxied by nginx |
+| Rollback | `apps/web` retained in full with its tests and guard mutations; the classic image was rebuilt from committed source and proven to serve |
+
+### 3.2 Human acceptance
+
+| Date | Target | Result |
+|---|---|---|
+| 2026-08-26 | candidate on 13081 | `ENTERPRISE_CONSUMER_FOUNDATION = ACCEPTED WITH FOLLOW-UP ITEMS` |
+| 2026-08-27 | **normal staging** on 13080, at `be1d1e2` | `PHYSICAL_IPHONE_STAGING_SMOKE_PASSED` · `STAGING_CUTOVER_ACCEPTED` |
+
+Home, Dido, Shop, the Source Tee at **€72.00** and **NOT AVAILABLE TO BUY**, Account, mobile
+navigation and preview safety — all PASS.
+
+`ENTERPRISE_CONSUMER_FOUNDATION = LOCKED`.
+
+### 3.3 It did not go cleanly, and the record says so
+
+Three failures reached staging or the report, and each is kept rather than smoothed over,
+because the lesson in each is worth more than a tidy history.
+
+**The first switch restart-looped.** The consumer image renders its nginx configuration at
+container start; the service runs `read_only` with tmpfs on three paths, none of them
+`/etc/nginx/conf.d`. The candidate had never caught it because it was run with plain
+`docker run`, without `read_only`.
+
+> **An additive candidate on a spare port evidences the artifact, not the posture it will
+> run under.** A candidate that does not run with the target service's `read_only`, tmpfs and
+> security options has not tested the thing that will actually serve.
+
+**Two defects survived into the deployment.** F-1: nginx does not inherit `add_header` into a
+location declaring its own, so the two locations setting `Cache-Control` discarded all four
+security headers — and since every SPA route is served from `index.html`, that was every
+document on the site, shipped framable. F-2: every product read "Not priced" because the
+client looked for a product-level price the catalogue endpoint never sends, on the strength
+of a comment asserting the catalogue had no prices. The price was on each variant all along.
+
+> **A wrong premise written into a comment is more durable than a bug.** Nothing had decided
+> to hide the price; the type said there was none, so nothing looked.
+
+**The cutover was then reported as ready for human acceptance while both defects were open**,
+with both recorded as open in the same report. The owner rejected it.
+
+> **Recording a defect does not satisfy the gate the defect fails.** Convenience — here,
+> byte-equivalence with the accepted candidate, which made the human review shorter — was
+> allowed to outrank a security regression. That trade was not the agent's to make.
+
+Both were repaired, each with a guard: the header contract's config invariant was itself
+verified to fail when the defect is reintroduced, and the price rule is covered for the
+range and unpriced branches the current uniformly-priced catalogue cannot exercise.
+
+### 3.4 Verification at acceptance
+
+| Check | Result |
+|---|---|
+| Browser E2E vs deployed `:13080` | **429 passed** — Chromium 143, WebKit 143, Mobile Safari viewport 143 |
+| Backend | **594 passed, 2 skipped** |
+| Consumer unit tests | **13 passed** |
+| Governance validator | PASS, 0 errors |
+| Brand drift · Side A · packaged assets | `BRAND_PACKAGE_NO_DRIFT` · `DEDUNET_HANDOFF_INTEGRITY_VERIFIED` · `PACKAGED_BRAND_ASSETS_VERIFIED` |
+| Data validators | 0 / 0 / 1 as required |
+| Secret scan · `git diff --check` | 0 hits · clean |
+| Firefox | **NOT RUN** — cannot launch in this environment; not claimed |
+| API / database / worker | untouched throughout — start times unchanged since 2026-08-24 |
+
+### 3.5 Remaining issues
+
+| Item | Status |
+|---|---|
+| **Native iOS** | **NOT BUILT, NOT TESTED** — a web app in Safari on an iPhone is not native iOS |
+| Saved persistence | **NOT STARTED** — required before production exposure |
+| Looks as a real outfit object | **NOT STARTED** |
+| Multi-brand domain | **NOT STARTED** — the next authorized phase |
+| Dido intelligence, Style DNA, recommendation and outfit engines | **NOT STARTED** |
+| Merchant SaaS | **NOT STARTED** |
+| About / Privacy / Terms routes | **DO NOT EXIST** — required for public launch |
+| Media delivery separation | open platform action |
+| Trusted proxy / client identity | open; not acceptable as final hosted production |
+| Distributed rate limiting | open; single replica only |
+| Physical Android hardware · Firefox · LCP/INP/CLS on device | **NOT TESTED / NOT MEASURED** |
+
+Phase 3 accepts a **presentation layer and its deployment**. It accepts no product
+intelligence, because none was built.
+
 ---
 
 ## Platform decisions

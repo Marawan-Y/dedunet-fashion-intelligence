@@ -3,7 +3,7 @@
 | Field | Value |
 |---|---|
 | Artifact ID | OPS-CUT-001 · **Version** 1.0 |
-| Status | **EXECUTED 2026-08-27** — option A. Results in `evidence/staging-cutover/STAGING_CUTOVER_EXECUTION.md` |
+| Status | **EXECUTED AND ACCEPTED 2026-08-27** — option A, human iPhone smoke PASSED. Results in `evidence/staging-cutover/STAGING_CUTOVER_EXECUTION.md`; acceptance in `evidence/team-acceptance/STAGING_CUTOVER_IPHONE_ACCEPTANCE.md` |
 | Owner | Side B / platform |
 | Prerequisite met | `ENTERPRISE_CONSUMER_FOUNDATION = ACCEPTED WITH FOLLOW-UP ITEMS` |
 | Authorization | **GRANTED** by explicit owner instruction, 2026-08-27, selecting option **A** |
@@ -159,8 +159,11 @@ Carried out 2026-08-27 from `e29e019`. Full record:
 | New findings | F-1 security headers absent on every HTML document; F-2 every product rendering "Not priced". Both left open at the cutover, which was **wrongly** reported as ready for the human smoke. Owner rejected it; both **repaired and verified** — evidence §11. Post-repair: 429 browser, 594 backend |
 | Rollback | rebuilt the classic image from committed source and served it, then removed the proof container |
 
-`PUBLIC_COMMERCIAL_LAUNCH` remains **BLOCKED**. The physical-iPhone smoke on the normal
-staging URL is outstanding and is a **human** gate.
+**The physical-iPhone smoke PASSED on 2026-08-27** at `be1d1e2`, after the F-1 and F-2
+repairs. `STAGING_CUTOVER = ACCEPTED`, `ENTERPRISE_CONSUMER_FOUNDATION = LOCKED`.
+
+`PUBLIC_COMMERCIAL_LAUNCH` remains **BLOCKED**, and a web application accepted in Safari on
+an iPhone is **not** native iOS acceptance.
 
 **A note worth keeping.** This plan's §5 listed the post-cutover checks, and the security
 headers were not among them — the plan checked that the app rendered, that routing survived

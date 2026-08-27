@@ -2,8 +2,8 @@
 
 | Field | Value |
 |---|---|
-| Artifact ID | EV-CUT-001 · **Version** 2.0 |
-| Status | **`AUTOMATED-TESTED`** — awaiting the human iPhone smoke |
+| Artifact ID | EV-CUT-001 · **Version** 3.0 |
+| Status | **`HUMAN-VERIFIED`** — physical iPhone smoke PASSED 2026-08-27 at `be1d1e2`. `evidence/team-acceptance/STAGING_CUTOVER_IPHONE_ACCEPTANCE.md` |
 | History | v1.0 deployed the cutover and **wrongly declared it ready for the human smoke** while two required conditions were failing. The owner rejected that conclusion. v2.0 records the repair |
 | Plan | `docs/operations/STAGING_CUTOVER_PLAN.md` (OPS-CUT-001), option **A**, same-origin proxy |
 | Authorization | Explicit owner instruction, in session, 2026-08-27 |
@@ -322,9 +322,11 @@ The `/etc/nginx/conf.d` tmpfs is harmless to leave in place.
 ## 10. State
 
 ```
-ENTERPRISE_CONSUMER_FOUNDATION   = ACCEPTED WITH FOLLOW-UP ITEMS   (unchanged)
-STAGING_CUTOVER                  = DEPLOYED, REPAIRED, PENDING HUMAN SMOKE
-PUBLIC_COMMERCIAL_LAUNCH         = BLOCKED                          (unchanged)
+ENTERPRISE_CONSUMER_FOUNDATION   = LOCKED
+STAGING_CUTOVER                  = ACCEPTED
+PHYSICAL_IPHONE_STAGING_SMOKE    = PASSED          (2026-08-27, at be1d1e2)
+NATIVE_IOS                       = NOT BUILT, NOT TESTED   -- a separate state
+PUBLIC_COMMERCIAL_LAUNCH         = BLOCKED                 (unchanged)
 ```
 
 Sequence, so the history is not flattened into a success:
@@ -336,7 +338,8 @@ Sequence, so the history is not flattened into a success:
 4. owner rejected it           -> STAGING_CUTOVER_BLOCKED_PENDING_REPAIR
 5. F-1 and F-2 repaired        -> §11
 6. full regression re-run      -> 429 browser, 594 backend
-7. awaiting the human smoke    -> still a human gate, still not claimed here
+7. human iPhone smoke           -> PASSED on normal staging, 2026-08-27
+8. cutover accepted             -> foundation LOCKED; public launch still BLOCKED
 ```
 
 Normal staging: **`http://10.0.0.2:13080/`**
@@ -541,6 +544,13 @@ Media delivery separation · trusted proxy / client identity · distributed rate
 Saved persistence · Looks as a real outfit object · the multi-brand domain · Dido
 intelligence · the absent About / Privacy / Terms routes.
 
-**The physical-iPhone smoke on `http://10.0.0.2:13080/` remains outstanding.** It is a human
-gate. No automated result in this document substitutes for it, and the product page is a
-surface the owner has not yet seen in its repaired form.
+**The physical-iPhone smoke on `http://10.0.0.2:13080/` PASSED on 2026-08-27**, at
+`be1d1e2`, on the repaired application — Home, Dido, Shop, the Source Tee at **€72.00** and
+`NOT AVAILABLE TO BUY`, Account, mobile navigation and preview safety, all PASS. Recorded in
+`evidence/team-acceptance/STAGING_CUTOVER_IPHONE_ACCEPTANCE.md`.
+
+`STAGING_CUTOVER = ACCEPTED`. `ENTERPRISE_CONSUMER_FOUNDATION = LOCKED`.
+
+It was a **web** application in Safari on an iPhone. That is **not** native iOS acceptance,
+and it is **not** public-launch readiness. Native iOS remains a separate untested state and
+`PUBLIC_COMMERCIAL_LAUNCH` remains **BLOCKED**.
