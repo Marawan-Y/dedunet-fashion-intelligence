@@ -1,0 +1,44 @@
+Copyright (c) 2026 Marawan Younis. All rights reserved.
+
+SOURCE-AVAILABLE — NOT AN OPEN-SOURCE LICENCE
+
+This repository is published so that the engineering can be read, reviewed and assessed.
+It does not grant a licence to use, copy, modify, merge, publish, distribute, sublicense or
+sell this software or any part of it.
+
+You MAY:
+
+  - read, clone and run this code locally for the purpose of evaluating it;
+  - quote short excerpts with attribution, for review, teaching or commentary.
+
+You MAY NOT, without prior written permission from the copyright holder:
+
+  - use this software or any substantial part of it in another project, product or service,
+    whether commercial or not;
+  - redistribute it, in original or modified form;
+  - use the DEDUNET name, wordmark, logo, typography, colour system or any brand asset in
+    this repository for any purpose.
+
+BRAND AND TRADE MARK RESERVATION
+
+"DEDUNET" and the brand assets under packages/brand/ and apps/consumer/public/ are reserved
+in full and are NOT covered by any permission above. The brand carries the internal status
+LEGAL_CLEARANCE_PENDING: it has not been cleared for trade mark use in any jurisdiction, and
+nothing in this repository should be read as a claim that it has been.
+
+NO WARRANTY
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR
+PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE COPYRIGHT HOLDER BE LIABLE FOR ANY CLAIM,
+DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+NOT FIT FOR COMMERCIAL USE
+
+This build is not approved for public deployment and cannot transact. Every product, price,
+customer and order in it is fabricated, and payments run against a sandbox adapter. See
+docs/KNOWN_LIMITATIONS.md.
+
+Permission requests: open an issue.

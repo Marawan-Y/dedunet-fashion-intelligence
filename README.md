@@ -1,27 +1,96 @@
-# DEDUNET — personal fashion intelligence platform
+<h1 align="center">DEDUNET</h1>
 
-A working, locally runnable platform for **DEDUNET**. The consumer surface is a personal
-fashion intelligence platform — *"DEDUNET helps you decide what to wear, then helps you find
-it"* — built on a verified commerce core.
+<p align="center">
+  <strong>Personal fashion intelligence — a working commerce platform built honestly.</strong><br>
+  <em>“DEDUNET helps you decide what to wear, then helps you find it.”</em>
+</p>
 
-**The styling experience is the product; the catalogue supports it.** That is a Phase 2
-repositioning (`ADR-0002`, approved as revised), and it is a claim about the *interface*.
-The engines behind it — the stylist, the recommendation engine, the outfit engine, the
-merchant platform — **do not exist yet**, and every surface that needs one says so on
-screen. See [`docs/KNOWN_LIMITATIONS.md`](docs/KNOWN_LIMITATIONS.md) §4.1.
+<p align="center">
+  <a href="../../actions/workflows/ci.yml"><img alt="CI" src="../../actions/workflows/ci.yml/badge.svg"></a>
+  <img alt="Backend tests" src="https://img.shields.io/badge/backend%20tests-657%20passing-2ea44f">
+  <img alt="Browser tests" src="https://img.shields.io/badge/browser%20tests-462%20across%203%20engines-2ea44f">
+  <img alt="Python" src="https://img.shields.io/badge/python-3.12%20|%203.13%20|%203.14-3776ab">
+  <img alt="Stack" src="https://img.shields.io/badge/stack-FastAPI%20·%20React%20·%20PostgreSQL-111111">
+  <img alt="Status" src="https://img.shields.io/badge/public%20commerce-BLOCKED-b3261e">
+</p>
 
-> **Nothing here is a commercial offering.** No company, factory, supplier, product,
-> certification or customer exists. Every product, material, origin, price, customer, order
-> and support case is fabricated. Payments run against a sandbox adapter; no card is charged
-> and nothing is fulfilled in the physical world. The brand is
-> **`LEGAL_CLEARANCE_PENDING`**. This build is **not** approved for public deployment —
-> see [`docs/KNOWN_LIMITATIONS.md`](docs/KNOWN_LIMITATIONS.md).
+---
 
-> **Rewritten 2026-08-24 at `41cee4c`.** The previous README described a pre-workstream,
-> MERET-era platform: it claimed 81 tests against an actual 415, omitted PostgreSQL, rate
-> limiting, notification dispatch, staging, backup and commerce modes entirely, and three of
-> its documentation links were dead. Recorded as **DISC-02** in the successor takeover
-> report. Closes the README half of CONFLICT-009.
+## What this is
+
+A full-stack fashion commerce platform that runs locally today: a FastAPI service over
+PostgreSQL, a React + TypeScript consumer application, an administration portal, a
+multi-brand catalogue domain, atomic inventory reservation, a sandbox payment adapter, an
+out-of-process notification worker, rate limiting, and a production-shaped staging stack in
+Docker.
+
+It is also, deliberately, **an exercise in not overclaiming**. Every surface that depends on
+a capability which does not exist says so on screen, in the API payload, and in the
+documentation. The interesting part of this repository is not that the commerce works — it is
+the discipline around what the software is allowed to assert.
+
+> ### Nothing here is a commercial offering
+>
+> No company, factory, supplier, product, certification or customer exists. Every product,
+> material, origin, price, customer, order and support case is **fabricated**. Payments run
+> against a sandbox adapter: no card is charged and nothing is fulfilled in the physical
+> world. The brand is **`LEGAL_CLEARANCE_PENDING`** and this build is **not** approved for
+> public deployment. The honest inventory of what does not work is
+> [`docs/KNOWN_LIMITATIONS.md`](docs/KNOWN_LIMITATIONS.md) — read it before demonstrating
+> this to anyone.
+
+## What it looks like
+
+<p align="center">
+  <img src="evidence/phase-3/home-visual/1280-fold.png" alt="DEDUNET home, desktop" width="82%">
+</p>
+
+<p align="center">
+  <img src="evidence/phase-3/screens/desktop/shop.png" alt="Shop" width="40%">
+  <img src="evidence/phase-3/screens/desktop/product.png" alt="Product detail" width="40%">
+</p>
+
+<p align="center">
+  <em>Accepted on a physical iPhone in Safari. Every product reads
+  <strong>“Not available to buy”</strong> because the deployment is in brand-preview mode —
+  that is the software working, not failing.</em>
+</p>
+
+## The five-minute tour
+
+If you only read four things, read these in order:
+
+| # | Document | Why |
+|---|---|---|
+| 1 | [`docs/KNOWN_LIMITATIONS.md`](docs/KNOWN_LIMITATIONS.md) | What does **not** work. The designated honesty inventory, and the most useful file here |
+| 2 | [Commerce modes](#commerce-modes--read-this-first) (below) | Why nothing can be bought, and why that is enforced in three places rather than one |
+| 3 | [`docs/architecture/decisions/`](docs/architecture/decisions/) | Four ADRs, including one that supersedes another after its central premise turned out to be wrong |
+| 4 | [`evidence/`](evidence/) | Test output, migration integrity proofs, and human acceptance records — including the failures |
+
+## Three things worth a look
+
+**The purchase gate is refused in three independent places.** The commerce mode, the
+product's own flag, and the commerce route — checked in that order, server-side, with a test
+that pins the *ordering* because reversing two of them would let a prototype look
+purchasable. `PUBLIC_COMMERCE_MODE` cannot be switched on by environment variable; it raises.
+
+**Ownership and purchasability are separate axes.** A brand can be platform-curated,
+merchant-owned or externally curated; a product can be hosted, external, referral or
+non-purchasable. Neither is inferred from the other, and a test asserts that in both
+directions — because “merchant-owned means we host the sale” is wrong the first time a
+merchant keeps their own checkout, and wrong silently.
+
+**Money is integer minor units everywhere.** €72.00 is `7200`. Binary floats are rejected at
+every boundary rather than rounded, and clients format with integer and string arithmetic so
+no float ever touches an amount.
+
+## Evidence, including the failures
+
+`evidence/` records what happened, not a highlight reel. It contains a staging cutover that
+**restart-looped on its first attempt**, two defects that reached the deployment and were
+repaired, and a gate that was **wrongly reported as passed** and rejected by the owner. Those
+are kept because the lesson in each is worth more than a clean narrative — see
+[`evidence/staging-cutover/STAGING_CUTOVER_EXECUTION.md`](evidence/staging-cutover/STAGING_CUTOVER_EXECUTION.md).
 
 ---
 

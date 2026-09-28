@@ -168,6 +168,10 @@ jobs:
               "customers", "inventory_items", "notifications", "order_lines", "orders",
               "payments", "products", "promotions", "reservations", "return_requests",
               "shipments", "variants",
+              # Multi-brand fashion network. Listed so the PostgreSQL parity job actually
+              # covers the brand domain -- the check compares `expected - tables`, so a
+              # table left out of this set is a table nobody notices is missing.
+              "brands", "brand_ownership", "merchant_organizations",
           }
           missing = expected - tables
           assert not missing, f"missing tables on PostgreSQL: {sorted(missing)}"

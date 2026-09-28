@@ -405,7 +405,7 @@ performed or is claimed — the agent has no access to Expo, Apple, Google or a 
 | Item | Stated value | Corroboration in repository |
 |---|---|---|
 | Brand | DEDUNET | **Corroborated** — Side A package, staging config, branch name |
-| Domain | dedunet.com | **Partially** — redacted ownership evidence at `evidence/governance/domain/` |
+| Domain | dedunet.com | **Verified, evidence held privately** — registrar letter confirmed by the owner and deliberately kept out of this repository; see `evidence/governance/domain/README.md` |
 | Expo organization | Dedunet | **None** — no reference in any tracked file |
 | EAS project ID | `72b0a18d-36dd-406f-a54b-ab481a95db88` | **None — absent from all 273 tracked files** (DISC-07) |
 | Expo status | CREATED — LOCAL APPLICATION LINK PENDING | **Consistent** — `apps/mobile/app.json` has no `owner` and no `extra.eas.projectId` |

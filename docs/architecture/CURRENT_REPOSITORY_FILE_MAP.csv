@@ -82,7 +82,6 @@ docs/system-of-record/RISK_OWNER_REGISTER.md,markdown,governance,build-time,sour
 docs/system-of-record/controller_validate.py,python,governance,build-time,source,docs/system-of-record/controller_validate.py,none,unchanged
 docs/system-of-record/handoff_envelope_check.py,python,governance,build-time,source,docs/system-of-record/handoff_envelope_check.py,none,unchanged
 evidence/governance/domain/README.md,markdown,governance,build-time,source,evidence/governance/domain/README.md,none,unchanged
-evidence/governance/domain/dedunet.com_ownership_letter_redacted.pdf,pdf,governance,build-time,source,evidence/governance/domain/dedunet.com_ownership_letter_redacted.pdf,none,unchanged
 evidence/restructuring/BASELINE_BEFORE_RESTRUCTURE.md,markdown,governance,build-time,source,evidence/restructuring/BASELINE_BEFORE_RESTRUCTURE.md,none,unchanged
 evidence/side-a/bootstrap/SIDE_A_G0_CONSISTENCY_REVIEW.md,markdown,governance,build-time,source,evidence/side-a/bootstrap/SIDE_A_G0_CONSISTENCY_REVIEW.md,none,unchanged
 evidence/side-a/bootstrap/SIDE_A_REPOSITORY_INVENTORY.txt,text,governance,build-time,source,evidence/side-a/bootstrap/SIDE_A_REPOSITORY_INVENTORY.txt,none,unchanged
@@ -240,4 +239,3 @@ prompts/01_CONTINUE_GATE_EXECUTION.md,markdown,root,build-time,source,prompts/01
 prompts/02_GATE_REVIEW_AND_RELEASE_DECISION.md,markdown,root,build-time,source,prompts/02_GATE_REVIEW_AND_RELEASE_DECISION.md,none,unchanged
 prompts/03_MANUAL_SIDE_A_START.md,markdown,root,build-time,source,prompts/03_MANUAL_SIDE_A_START.md,none,unchanged
 prompts/04_MANUAL_SIDE_B_START.md,markdown,root,build-time,source,prompts/04_MANUAL_SIDE_B_START.md,none,unchanged
-scripts/validation/make_redacted_domain_evidence.py,python,root,build-time,source,scripts/validation/make_redacted_domain_evidence.py,none,unchanged

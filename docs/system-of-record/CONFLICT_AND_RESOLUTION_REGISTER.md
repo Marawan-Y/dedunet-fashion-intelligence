@@ -73,7 +73,7 @@ carries nothing unique.
 
 ## CONFLICT-003 — Domain ownership evidence contains personal data
 
-**Files:** `evidence/governance/domain/dedunet.com_ownership_letter.pdf`
+**Files:** the registrar certification letter is **held privately by the owner and is not in this repository** — removed from the tree and from all history before first publication, because it names a real registrant against a real registration. See `evidence/governance/domain/README.md`.
 
 **Conflicting values:** §18 requires the file to be copied into the repository and checked for
 "password, API token, recovery code or payment secret" — it contains none, and that check passes.

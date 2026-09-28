@@ -1486,6 +1486,48 @@
   },
   "openapi": "3.1.0",
   "paths": {
+    "/api/v1/admin/brands": {
+      "get": {
+        "description": "Internal brand inspection. NOT the merchant portal -- that is Phase 5.\n\nShows what a consumer is deliberately not shown: the raw ownership type, the merchant\norganisation behind a merchant-owned brand, the fixture flag, provenance and the routes\nactually in use. Read-only: this phase gives operators sight of the new domain, not a\nway to reassign ownership, which needs the audited write path Phase 5 builds.",
+        "operationId": "admin_list_brands_api_v1_admin_brands_get",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "default": "",
+              "title": "Authorization",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Admin List Brands",
+        "tags": [
+          "commerce"
+        ]
+      }
+    },
     "/api/v1/admin/catalog/products": {
       "post": {
         "operationId": "admin_create_product_api_v1_admin_catalog_products_post",
@@ -1925,6 +1967,129 @@
           }
         },
         "summary": "Register",
+        "tags": [
+          "commerce"
+        ]
+      }
+    },
+    "/api/v1/brands": {
+      "get": {
+        "description": "The brand network, as a consumer sees it.\n\nPagination is bounded rather than optional. `limit` is clamped to 100: an unbounded\n`?limit=` on a list endpoint is a cheap way to make the database do arbitrary work from\nan unauthenticated request, and the media-heavy brand payload makes that worse.\n\nDevelopment fixtures are included or excluded by `brands_visible`, which keys the\ndecision off the commerce mode rather than a flag -- see the note there.",
+        "operationId": "list_brands_api_v1_brands_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "default": "",
+              "title": "Q",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "country",
+            "required": false,
+            "schema": {
+              "default": "",
+              "title": "Country",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "sort",
+            "required": false,
+            "schema": {
+              "default": "name",
+              "title": "Sort",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Brands",
+        "tags": [
+          "commerce"
+        ]
+      }
+    },
+    "/api/v1/brands/{slug}": {
+      "get": {
+        "description": "One brand and its catalogue.\n\n404 rather than 403 for a brand the caller may not see. A 403 confirms the row exists,\nwhich is the enumeration leak the target architecture calls out for tenant-scoped reads;\nthe same reasoning applies to an unpublished brand.",
+        "operationId": "get_brand_api_v1_brands__slug__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "slug",
+            "required": true,
+            "schema": {
+              "title": "Slug",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Brand",
         "tags": [
           "commerce"
         ]
