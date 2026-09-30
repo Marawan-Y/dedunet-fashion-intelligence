@@ -17,10 +17,12 @@ from pydantic import BaseModel, Field
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from . import brand_api, modes, payments, services
+from . import brand_api, modes, payments, saved_service, services
 from .brand_registry import DEDUNET_BRAND_SLUG
 from .brands import Brand, BrandOwnershipType, CommerceRoute
 from .db import get_session
+from .looks import Look
+from .saved import FavoriteBrand, FavoriteProduct, SavedLook
 from .models import Customer, Order, Product, ReturnRequest, Variant, as_utc
 from .security import InvalidToken, issue_token, verify_token
 
@@ -784,6 +786,341 @@ def erase_me(
 ):
     services.erase_customer(session, customer, actor=f"customer:{customer.id}")
     return {"erased": True, "note": "order history retained for financial reconciliation"}
+
+
+# ------------------------------------------------------------------------ saved items
+#
+# CURRENT-USER SEMANTICS ONLY. Not one endpoint here takes a customer id, in a path, a query
+# or a body. The customer comes from `current_customer`, which resolves the bearer token and
+# already rejects a soft-deleted account with 401. An endpoint that accepted an id it did not
+# verify would be an IDOR, and saved items are exactly the resource where that gets
+# overlooked, because it feels harmless right up to the point where it enumerates somebody's
+# taste.
+#
+# Targets are addressed by SLUG rather than numeric id. Two reasons, and the second is the
+# real one: the client already routes by slug, and a sequential integer in a mutation path is
+# an invitation to walk it. A slug for unpublished content still answers 404.
+
+
+@router.get("/me/saved")
+def saved_overview(
+    session: Annotated[Session, Depends(get_session)],
+    customer: Annotated[Customer, Depends(current_customer)],
+):
+    """Counts plus the full saved-state sets, in one request.
+
+    This is what a freshly loaded client asks for: enough to render every save control on
+    every surface without a request per card. See `saved_service.saved_state`.
+    """
+
+    return {
+        "counts": saved_service.saved_counts(session, customer=customer),
+        "state": saved_service.saved_state(session, customer=customer),
+    }
+
+
+@router.get("/me/saved/state")
+def saved_state(
+    session: Annotated[Session, Depends(get_session)],
+    customer: Annotated[Customer, Depends(current_customer)],
+):
+    """Just the saved-state sets.
+
+    The endpoint that stops Home from issuing twenty save-status requests. Slug sets are
+    small and cacheable in the client for the session, and a mutation patches them locally
+    rather than refetching.
+    """
+
+    return saved_service.saved_state(session, customer=customer)
+
+
+def _paginate(limit: int, offset: int) -> tuple[int, int]:
+    """Bounded, like every other list endpoint here. An unbounded limit is free work."""
+
+    return max(1, min(limit, 100)), max(0, offset)
+
+
+@router.get("/me/saved/products")
+def list_saved_products(
+    session: Annotated[Session, Depends(get_session)],
+    customer: Annotated[Customer, Depends(current_customer)],
+    limit: int = 50,
+    offset: int = 0,
+):
+    """Saved products, most recently saved first.
+
+    Deterministic order: `created_at DESC, id DESC`. The timestamp alone is not a total
+    order -- two saves in the same transaction share it -- and a list whose order wobbles
+    between requests makes pagination skip and repeat rows.
+    """
+
+    limit, offset = _paginate(limit, offset)
+    total = session.scalar(
+        select(func.count())
+        .select_from(FavoriteProduct)
+        .where(FavoriteProduct.customer_id == customer.id)
+    ) or 0
+
+    rows = session.execute(
+        select(FavoriteProduct, Product)
+        .join(Product, Product.id == FavoriteProduct.product_id)
+        .where(FavoriteProduct.customer_id == customer.id)
+        .order_by(FavoriteProduct.created_at.desc(), FavoriteProduct.id.desc())
+        .limit(limit)
+        .offset(offset)
+    ).all()
+
+    # One query for the visibility of exactly the rows on this page, rather than a check
+    # per row or a full catalogue scan.
+    page_ids = [fav.product_id for fav, _ in rows]
+    visible = (
+        {
+            slug
+            for slug in session.scalars(
+                saved_service.visible_products(session)
+                .with_only_columns(Product.slug)
+                .where(Product.id.in_(page_ids))
+            ).all()
+        }
+        if page_ids
+        else set()
+    )
+
+    return {
+        "items": [
+            saved_service.saved_product_entry(
+                session, favorite=fav, product=product, available=product.slug in visible
+            )
+            for fav, product in rows
+        ],
+        "total": total,
+        "limit": limit,
+        "offset": offset,
+    }
+
+
+@router.post("/me/saved/products/{slug}", status_code=200)
+def save_product(
+    slug: str,
+    session: Annotated[Session, Depends(get_session)],
+    customer: Annotated[Customer, Depends(current_customer)],
+):
+    """Save a product. Idempotent: saving an already-saved product succeeds, creating nothing.
+
+    200 rather than 201 on both paths, deliberately. The client cares about the resulting
+    STATE, not about which request happened to create the row, and making it distinguish
+    201 from 200 would push it into treating a double tap as an error.
+    """
+
+    try:
+        product = saved_service.resolve_product(session, slug=slug)
+    except services.NotFound as exc:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, str(exc))
+
+    outcome = saved_service.save(
+        session, customer=customer, kind="products", target_id=product.id, target_slug=product.slug
+    )
+    return {"saved": True, "created": outcome.created, "slug": product.slug}
+
+
+@router.delete("/me/saved/products/{slug}", status_code=200)
+def unsave_product(
+    slug: str,
+    session: Annotated[Session, Depends(get_session)],
+    customer: Annotated[Customer, Depends(current_customer)],
+):
+    """Unsave a product. Idempotent: unsaving something not saved succeeds.
+
+    The target is resolved WITHOUT the visibility filter. A product the customer saved and
+    which has since been unpublished must still be removable -- refusing to let someone
+    un-save something is a worse failure than briefly confirming a row exists that they
+    already knew about.
+    """
+
+    product = session.scalar(select(Product).where(Product.slug == slug))
+    if product is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "product not found")
+    removed = saved_service.unsave(
+        session, customer=customer, kind="products", target_id=product.id, target_slug=product.slug
+    )
+    return {"saved": False, "removed": removed, "slug": product.slug}
+
+
+@router.get("/me/saved/brands")
+def list_saved_brands(
+    session: Annotated[Session, Depends(get_session)],
+    customer: Annotated[Customer, Depends(current_customer)],
+    limit: int = 50,
+    offset: int = 0,
+):
+    limit, offset = _paginate(limit, offset)
+    total = session.scalar(
+        select(func.count())
+        .select_from(FavoriteBrand)
+        .where(FavoriteBrand.customer_id == customer.id)
+    ) or 0
+
+    rows = session.execute(
+        select(FavoriteBrand, Brand)
+        .join(Brand, Brand.id == FavoriteBrand.brand_id)
+        .where(FavoriteBrand.customer_id == customer.id)
+        .order_by(FavoriteBrand.created_at.desc(), FavoriteBrand.id.desc())
+        .limit(limit)
+        .offset(offset)
+    ).all()
+
+    visible = {
+        b.slug for b in session.scalars(saved_service.visible_brands(session)).all()
+    }
+
+    return {
+        "items": [
+            saved_service.saved_brand_entry(
+                session, favorite=fav, brand=brand, available=brand.slug in visible
+            )
+            for fav, brand in rows
+        ],
+        "total": total,
+        "limit": limit,
+        "offset": offset,
+    }
+
+
+@router.post("/me/saved/brands/{slug}", status_code=200)
+def save_brand(
+    slug: str,
+    session: Annotated[Session, Depends(get_session)],
+    customer: Annotated[Customer, Depends(current_customer)],
+):
+    """Save a brand.
+
+    A development fixture brand is saveable while it is visible, and stops being either the
+    moment public commerce is enabled -- both go through the same `brands_visible` gate, so
+    saving cannot promote fixture content to production validity. The saved entry carries the
+    fixture flag and notice like every other brand payload.
+    """
+
+    try:
+        brand = saved_service.resolve_brand(session, slug=slug)
+    except services.NotFound as exc:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, str(exc))
+
+    outcome = saved_service.save(
+        session, customer=customer, kind="brands", target_id=brand.id, target_slug=brand.slug
+    )
+    return {"saved": True, "created": outcome.created, "slug": brand.slug}
+
+
+@router.delete("/me/saved/brands/{slug}", status_code=200)
+def unsave_brand(
+    slug: str,
+    session: Annotated[Session, Depends(get_session)],
+    customer: Annotated[Customer, Depends(current_customer)],
+):
+    brand = session.scalar(select(Brand).where(Brand.slug == slug))
+    if brand is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "brand not found")
+    removed = saved_service.unsave(
+        session, customer=customer, kind="brands", target_id=brand.id, target_slug=brand.slug
+    )
+    return {"saved": False, "removed": removed, "slug": brand.slug}
+
+
+@router.get("/me/saved/looks")
+def list_saved_looks(
+    session: Annotated[Session, Depends(get_session)],
+    customer: Annotated[Customer, Depends(current_customer)],
+    limit: int = 50,
+    offset: int = 0,
+):
+    limit, offset = _paginate(limit, offset)
+    total = session.scalar(
+        select(func.count())
+        .select_from(SavedLook)
+        .where(SavedLook.customer_id == customer.id)
+    ) or 0
+
+    rows = session.execute(
+        select(SavedLook, Look)
+        .join(Look, Look.id == SavedLook.look_id)
+        .where(SavedLook.customer_id == customer.id)
+        .order_by(SavedLook.created_at.desc(), SavedLook.id.desc())
+        .limit(limit)
+        .offset(offset)
+    ).all()
+
+    return {
+        "items": [
+            saved_service.saved_look_entry(
+                session,
+                saved=saved_row,
+                look=look,
+                available=look.publication_status == "published",
+            )
+            for saved_row, look in rows
+        ],
+        "total": total,
+        "limit": limit,
+        "offset": offset,
+    }
+
+
+@router.post("/me/saved/looks/{slug}", status_code=200)
+def save_look(
+    slug: str,
+    session: Annotated[Session, Depends(get_session)],
+    customer: Annotated[Customer, Depends(current_customer)],
+):
+    try:
+        look = saved_service.resolve_look(session, slug=slug)
+    except services.NotFound as exc:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, str(exc))
+
+    outcome = saved_service.save(
+        session, customer=customer, kind="looks", target_id=look.id, target_slug=look.slug
+    )
+    return {"saved": True, "created": outcome.created, "slug": look.slug}
+
+
+@router.delete("/me/saved/looks/{slug}", status_code=200)
+def unsave_look(
+    slug: str,
+    session: Annotated[Session, Depends(get_session)],
+    customer: Annotated[Customer, Depends(current_customer)],
+):
+    look = session.scalar(select(Look).where(Look.slug == slug))
+    if look is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "look not found")
+    removed = saved_service.unsave(
+        session, customer=customer, kind="looks", target_id=look.id, target_slug=look.slug
+    )
+    return {"saved": False, "removed": removed, "slug": look.slug}
+
+
+# ------------------------------------------------------------------------ looks (public)
+
+
+@router.get("/looks")
+def list_looks(session: Annotated[Session, Depends(get_session)]):
+    """The curated looks. Public, unauthenticated, read-only.
+
+    Editorial content composed of real catalogue products -- not an engine output. There is
+    no total price and no field for one: every DEDUNET product is a prototype, so a look
+    total would be a number this platform invented.
+    """
+
+    looks = session.scalars(
+        saved_service.visible_looks(session).order_by(Look.name)
+    ).all()
+    return [saved_service.look_payload(session, look) for look in looks]
+
+
+@router.get("/looks/{slug}")
+def get_look(slug: str, session: Annotated[Session, Depends(get_session)]):
+    look = session.scalar(saved_service.visible_looks(session).where(Look.slug == slug))
+    if look is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "look not found")
+    return saved_service.look_payload(session, look)
 
 
 # ------------------------------------------------------------------------------ admin

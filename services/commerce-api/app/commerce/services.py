@@ -936,13 +936,27 @@ def erase_customer(session: Session, customer: Customer, *, actor: str) -> Custo
     for address in customer.addresses:
         session.delete(address)
 
+    # Saved looks, products and brands are personal preference data with no accounting
+    # value, so they are deleted outright -- exactly as addresses are.
+    #
+    # THIS IS NOT REDUNDANT with the ondelete=CASCADE foreign keys on those tables. This
+    # function PSEUDONYMIZES: the customer row survives so order history stays
+    # reconcilable, which means the cascade never fires. Without this loop an erased
+    # customer's taste would remain in the database indefinitely.
+    from .saved_service import delete_all_for_customer
+
+    removed_saved = delete_all_for_customer(session, customer=customer)
+
     record_audit(
         session,
         actor=actor,
         action="customer.erase",
         entity="customer",
         entity_id=str(customer.id),
-        detail="identifiers removed; order history retained for reconciliation",
+        detail=(
+            "identifiers removed; order history retained for reconciliation; "
+            f"saved items deleted: {removed_saved}"
+        ),
     )
     session.commit()
     return customer

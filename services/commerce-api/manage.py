@@ -260,6 +260,61 @@ def cmd_clear_test_inventory(args) -> int:
     return _test_inventory(args, clear=True)
 
 
+def cmd_create_test_customer(_args: argparse.Namespace) -> int:
+    """Create (or reset) a durable customer for the browser suite. Idempotent.
+
+    WHY THIS EXISTS RATHER THAN THE SUITE REGISTERING ONE.
+
+    Registration is limited to 5 per HOUR per client ("account farming; an hour window
+    because legitimate humans register once"). A browser suite that registers a customer per
+    test exhausts that in one run -- which is the limiter working correctly, not a defect.
+    Loosening it so the tests are convenient would trade a real abuse control for test
+    ergonomics, so the accounts are created out of band instead, exactly as the
+    administrator is by `create-admin`.
+
+    Credentials come from the environment and are NEVER defaulted. A password baked into
+    this repository would be a weak credential in tracked source, and the browser suite
+    skips itself when the variables are absent rather than falling back to one.
+
+        DEDUNET_E2E_EMAIL=... DEDUNET_E2E_PASSWORD=... python manage.py create-test-customer
+    """
+
+    email = os.getenv("DEDUNET_E2E_EMAIL", "").strip()
+    password = os.getenv("DEDUNET_E2E_PASSWORD", "")
+    if not email or not password:
+        print(
+            "DEDUNET_E2E_EMAIL and DEDUNET_E2E_PASSWORD must both be set; "
+            "no default is provided on purpose",
+            file=sys.stderr,
+        )
+        return 2
+    if len(password) < 12:
+        print("refusing a password shorter than 12 characters", file=sys.stderr)
+        return 2
+
+    from app.commerce.db import SessionLocal
+    from app.commerce.models import Customer
+    from app.commerce.security import hash_password
+    from sqlalchemy import select
+
+    with SessionLocal() as session:
+        customer = session.scalar(select(Customer).where(Customer.email == email))
+        if customer is None:
+            customer = Customer(email=email, full_name="Browser suite customer")
+            session.add(customer)
+            created = True
+        else:
+            created = False
+        customer.password_hash = hash_password(password)
+        customer.role = "customer"
+        # A previously erased or soft-deleted account must come back usable.
+        customer.deleted_at = None
+        session.commit()
+        # The email is printed; the password never is.
+        print(f"{'created' if created else 'reset'} test customer {email}")
+    return 0
+
+
 COMMANDS = {
     "migrate": cmd_migrate,
     "seed": cmd_seed,
@@ -267,6 +322,7 @@ COMMANDS = {
     "export-openapi": cmd_export_openapi,
     "check": cmd_check,
     "create-admin": cmd_create_admin,
+    "create-test-customer": cmd_create_test_customer,
     "check-config": cmd_check_config,
     "dispatch-notifications": cmd_dispatch_notifications,
     "load-test-inventory": cmd_load_test_inventory,

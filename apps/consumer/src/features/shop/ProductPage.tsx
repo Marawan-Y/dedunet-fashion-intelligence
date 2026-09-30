@@ -3,6 +3,7 @@ import { Link, useParams } from "react-router-dom";
 import { Badge } from "../../components/Badge";
 import { Button, ButtonLink } from "../../components/Button";
 import { Card } from "../../components/Card";
+import { SaveButton } from "../../components/SaveButton";
 import { Media } from "../../components/Media";
 import {
   Container,
@@ -326,16 +327,28 @@ export default function ProductPage() {
                 </section>
 
                 <div className={styles.actions}>
-                  <Button variant="secondary" disabled aria-describedby={`${refusalId}-save`}>
-                    Save
-                  </Button>
+                  {/* THE REAL SAVE CONTROL.
+                    *
+                    * This was a DISABLED button beside the disclosure "Saving is not built.
+                    * There is nowhere to store it yet." Both are gone, because the thing
+                    * they disclosed now exists: saving is persisted to the account.
+                    *
+                    * The production disclosure rule cuts both ways. An unbuilt feature must
+                    * say so; a built one must stop saying so. Leaving that sentence up would
+                    * be the same defect pointing the other way -- and leaving the disabled
+                    * button beside a working one would give the page two save controls,
+                    * one of which never works. */}
+                  <SaveButton
+                    kind="products"
+                    slug={item.slug}
+                    name={item.name}
+                    variant="inline"
+                    testId="save-product-detail"
+                  />
                   <ButtonLink to="/dido" variant="accent">
                     Style this with Dido
                   </ButtonLink>
                 </div>
-                <Subtle id={`${refusalId}-save`}>
-                  Saving is not built. There is nowhere to store it yet.
-                </Subtle>
               </Stack>
             </div>
           </div>

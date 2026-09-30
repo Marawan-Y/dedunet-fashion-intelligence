@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { Badge, FixtureBadge } from "../../components/Badge";
 import { Card } from "../../components/Card";
+import { SaveButton } from "../../components/SaveButton";
 import {
   Container,
   Eyebrow,
@@ -94,6 +95,14 @@ export default function BrandsPage() {
                     slot={`brand-${profile.slug}`}
                     testId="brand-card"
                     headingLevel={2}
+                    saveControl={
+                      <SaveButton
+                        kind="brands"
+                        slug={profile.slug}
+                        name={profile.name}
+                        testId={`save-brand-${profile.slug}`}
+                      />
+                    }
                     footer={
                       <div style={{ display: "flex", gap: "var(--ds-space-2)", flexWrap: "wrap" }}>
                         <Badge tone="neutral">{profile.relationship_label}</Badge>

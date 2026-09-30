@@ -3,6 +3,7 @@ import { useSearchParams } from "react-router-dom";
 import { Badge } from "../../components/Badge";
 import { ButtonLink } from "../../components/Button";
 import { Card } from "../../components/Card";
+import { SaveButton } from "../../components/SaveButton";
 import { SelectField, TextField } from "../../components/Field";
 import {
   Container,
@@ -180,6 +181,14 @@ export default function ShopPage() {
                           slot={`shop-${product.slug}`}
                           testId="product-card"
                           headingLevel={2}
+                          saveControl={
+                            <SaveButton
+                              kind="products"
+                              slug={product.slug}
+                              name={product.name}
+                              testId={`save-product-${product.slug}`}
+                            />
+                          }
                           footer={
                             /* The server's label, not this component's guess. Falls back to
                                the accepted copy if an older payload carries no action. */

@@ -23,6 +23,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from .brand_registry import LEGACY_FIXTURE_BRAND_SLUG, ensure_canonical_brands
+from .look_registry import ensure_curated_looks
 from .models import Customer, InventoryItem, Product, Promotion, Variant
 from .security import hash_password
 
@@ -160,6 +161,10 @@ def seed(session: Session, *, include_demo_accounts: bool = True) -> dict:
     # development-fixture brand rather than to an invented one. See brand_registry.
     brands = ensure_canonical_brands(session)
     demo_brand = brands[LEGACY_FIXTURE_BRAND_SLUG]
+    # Curated looks are composed of DEDUNET products, so this is a no-op on a database that
+    # has only the MERET demo catalogue. It is called here anyway so any database reaching a
+    # seeded state has its looks, rather than depending on import order.
+    ensure_curated_looks(session)
 
     for spec in PRODUCTS:
         if session.scalar(select(Product).where(Product.slug == spec["slug"])) is not None:

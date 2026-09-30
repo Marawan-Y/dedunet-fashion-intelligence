@@ -23,6 +23,13 @@ export interface CardProps {
   mark?: string;
   priority?: boolean;
   footer?: ReactNode;
+  /**
+   * A save control, rendered over the plate's top-right corner.
+   *
+   * A slot rather than a `savable` boolean: the card should not know what a saved item is,
+   * and the caller already knows the slug, the kind and the name the accessible label needs.
+   */
+  saveControl?: ReactNode;
   testId?: string;
   /**
    * The heading level for the card title.
@@ -55,6 +62,7 @@ export function Card({
   mark,
   priority,
   footer,
+  saveControl,
   testId,
   headingLevel = 3,
 }: CardProps) {
@@ -73,6 +81,9 @@ export function Card({
           mark={mark}
           priority={priority}
         />
+        {/* Over the plate, not inside the link: a save control nested in the card's anchor
+            would navigate on every tap. It is a sibling for that reason. */}
+        {saveControl}
       </div>
 
       <div className={styles.body}>

@@ -18,7 +18,48 @@ not exercised), `BLOCKED`, `EXTERNALLY_PENDING`, `NOT_STARTED`.
 
 ---
 
-## 0. Multi-brand fashion network ACCEPTED (2026-09-30)
+## 0. Saved persistence is real (2026-10-01)
+
+Saving looks, products and brands is **implemented and attached to the account**, not to the
+browser. Evidence: `evidence/phase-5/SAVED_PERSISTENCE_EVIDENCE.md`.
+
+**The Saved page no longer says "Saving is not built yet", because it is.** Two stale
+disclosures were removed with it: a disabled "Save" button on the product page beside
+*"Saving is not built. There is nowhere to store it yet."*, and the look detail page's
+equivalent. The production disclosure rule cuts both ways — an unbuilt feature must say so,
+and a built one must stop saying so.
+
+**A Look is now a real row**, so saves have something with identity to point at. It is still
+**curated editorial content composed by a person** — not an outfit engine output, no
+reasoning, no scoring, and **no total price or column for one**, because summing prototype
+prices would invent a figure. The outfit engine, recommendation engine and Style DNA remain
+**NOT STARTED**.
+
+| Item | State |
+|---|---|
+| **Look copy is duplicated** | the consumer renders look prose from `content.ts` while the database is authoritative for identity. `test_look_slug_parity.py` asserts they agree; converging them is follow-up work |
+| **Resume-after-login** | **NOT IMPLEMENTED.** A signed-out save sends the visitor to sign in with a return path; it does not replay the save afterwards |
+| **Saved-state fetch is whole-set** | one request returns every saved slug. Far cheaper than a request per card; a customer with thousands of saves would want a windowed contract |
+| **No reordering or collections** | a flat list per kind |
+| **No admin view of saved items** | deliberate. Saved items are personal data and browsing them is not an operational need |
+
+**Privacy.** Saved rows are deleted with the customer by **two** mechanisms, both needed:
+`ondelete=CASCADE` for a hard delete, and an explicit deletion in `erase_customer`, which
+pseudonymizes rather than deleting so the cascade would never fire. Saved events carry a slug
+and **no customer identifier** — a popularity signal, not a behavioural profile.
+
+**Rollback is not free.** The migration's `downgrade()` destroys customers' saved items. They
+are real user data, not derivable from anything, and re-running `upgrade()` does not bring
+them back.
+
+**Registration stayed strict.** The browser suite originally registered a customer per test
+and failed, because registration is limited to five per hour by design. The limiter was
+**not** loosened; test accounts are created out of band with
+`manage.py create-test-customer`, credentials from the environment and never defaulted.
+
+---
+
+## 0a. Multi-brand fashion network ACCEPTED (2026-09-30)
 
 **`MULTI_BRAND_FASHION_NETWORK_ACCEPTED`** — human review on a physical iPhone in Safari
 against deployed staging at `a1abed3`. Recorded in

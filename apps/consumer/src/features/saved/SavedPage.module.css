@@ -47,3 +47,26 @@
 }
 
 .purpose { color: var(--ds-text-muted); margin: 0; }
+
+/* A saved target that has since been unpublished. Rendered, deliberately not linked:
+   it was the customer's, so it does not silently vanish, but it is no longer active
+   production content and must not be a destination. */
+.unavailable {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ds-space-2);
+  padding: var(--ds-space-4);
+  border: 1px dashed var(--ds-color-rule);
+  background: var(--ds-color-surface);
+}
+
+.unavailableTitle {
+  font-size: var(--ds-text-base);
+  margin: 0;
+}
+
+.unavailableBody {
+  margin: 0;
+  color: var(--ds-color-subtle);
+  font-size: var(--ds-text-sm);
+}

@@ -45,10 +45,13 @@ export function Chip({
   selected = false,
   onClick,
   children,
+  testId,
 }: {
   selected?: boolean;
   onClick: () => void;
   children: ReactNode;
+  /** An explicit prop rather than a spread: a chip should not accept arbitrary attributes. */
+  testId?: string;
 }) {
   return (
     <button
@@ -56,6 +59,7 @@ export function Chip({
       className={cx(styles.chip, selected && styles.chipSelected)}
       aria-pressed={selected}
       onClick={onClick}
+      data-testid={testId}
     >
       {children}
     </button>

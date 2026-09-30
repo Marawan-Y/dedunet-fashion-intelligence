@@ -2,6 +2,7 @@ import { lazy, Suspense } from "react";
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import { AppShell, RouteAnnouncer } from "./AppShell";
 import { CommerceModeProvider } from "./CommerceMode";
+import { SavedProvider } from "../features/saved/SavedContext";
 import { RouteError, NotFound } from "./RouteError";
 import { RouteFallback } from "./RouteFallback";
 
@@ -75,7 +76,12 @@ const router = createBrowserRouter([
 export function App() {
   return (
     <CommerceModeProvider>
-      <RouterProvider router={router} />
+      {/* Outside the router on purpose: the saved set is a property of the session, not of
+          the route, so it is fetched once and survives navigation instead of refetching on
+          every page change. */}
+      <SavedProvider>
+        <RouterProvider router={router} />
+      </SavedProvider>
     </CommerceModeProvider>
   );
 }
