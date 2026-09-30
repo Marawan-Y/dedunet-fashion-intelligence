@@ -18,7 +18,16 @@ not exercised), `BLOCKED`, `EXTERNALLY_PENDING`, `NOT_STARTED`.
 
 ---
 
-## 0. Multi-brand fashion network implemented (2026-08-27)
+## 0. Multi-brand fashion network ACCEPTED (2026-09-30)
+
+**`MULTI_BRAND_FASHION_NETWORK_ACCEPTED`** — human review on a physical iPhone in Safari
+against deployed staging at `a1abed3`. Recorded in
+`evidence/team-acceptance/MULTI_BRAND_NETWORK_ACCEPTANCE.md`.
+
+The acceptance covers the **domain and its surfaces**. It accepts no commercial
+relationship, because none exists, and it is not native iOS acceptance.
+
+## 0b. Multi-brand fashion network implemented (2026-08-27)
 
 Products now belong to **brands**. `Brand` is first-class with an explicit `ownership_type`
 (`PLATFORM_CURATED` / `MERCHANT_OWNED` / `EXTERNAL_CURATED`), commerce routing is a separate
