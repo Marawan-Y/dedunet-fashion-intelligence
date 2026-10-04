@@ -26,6 +26,7 @@ Exit codes
 from __future__ import annotations
 
 import argparse
+import re
 import shutil
 import subprocess
 import sys
@@ -1240,8 +1241,34 @@ def _apply(mutation: Mutation) -> None:
     )
 
 
-def run_mutation(mutation: Mutation) -> tuple[bool, str]:
-    """Return (detected, transcript). `detected` means the guarding test failed."""
+_RAN_SOMETHING = re.compile(r"\b\d+\s+(?:passed|failed|error|errors)\b")
+
+
+def _test_actually_ran(stdout: str) -> bool:
+    """Did the guarding test EXECUTE, as opposed to being collected and skipped?
+
+    Not pedantry -- it is the difference between a verdict and a guess.
+
+    pytest exits 0 when every selected test is skipped, so a harness reading only the
+    exit code concludes "the guarding test did not fail" and reports the guard as
+    SURVIVED, accusing a perfectly good guard of guarding nothing. That happened here:
+    the jsdom harnesses self-skip without node, CI had no node, and nine accepted
+    behaviours were reported as unguarded when the truth was that they had never run.
+
+    A run that executed anything prints a count of passed, failed or errored tests; a
+    skip-only run prints only "N skipped".
+    """
+
+    return bool(_RAN_SOMETHING.search(stdout or ""))
+
+
+def run_mutation(mutation: Mutation) -> tuple[bool | None, str]:
+    """Return (verdict, transcript).
+
+    True  -- detected: the guarding test failed when the guard was removed.
+    False -- survived: it passed anyway, so it does not guard what it claims to.
+    None  -- inconclusive: the guarding test never ran, so nothing was learned.
+    """
 
     with tempfile.TemporaryDirectory() as tmp:
         backup = Path(tmp) / mutation.target.name
@@ -1252,7 +1279,17 @@ def run_mutation(mutation: Mutation) -> tuple[bool, str]:
         finally:
             shutil.copy2(backup, mutation.target)
 
-    detected = result.returncode != 0
+    if not _test_actually_ran(result.stdout):
+        detected: bool | None = None
+    else:
+        detected = result.returncode != 0
+    verdict = (
+        "DETECTED"
+        if detected is True
+        else "SURVIVED — TEST DOES NOT GUARD"
+        if detected is False
+        else "INCONCLUSIVE — THE GUARDING TEST DID NOT RUN"
+    )
     transcript = (
         f"MUTATION: {mutation.mutation_id}\n"
         f"GUARD: {mutation.guard}\n"
@@ -1261,7 +1298,7 @@ def run_mutation(mutation: Mutation) -> tuple[bool, str]:
         f"COMMAND: python -m pytest -q {' '.join(mutation.tests)}\n"
         f"EXIT_CODE: {result.returncode}\n"
         f"EXPECTED: non-zero (guarding test must fail when the guard is removed)\n"
-        f"RESULT: {'DETECTED' if detected else 'SURVIVED — TEST DOES NOT GUARD'}\n"
+        f"RESULT: {verdict}\n"
         f"--- stdout ---\n{result.stdout.strip()}\n"
     )
     if result.stderr.strip():
@@ -1295,11 +1332,17 @@ def main() -> int:
         return 2
 
     survived: list[str] = []
+    inconclusive: list[str] = []
     for mutation in selected:
         detected, transcript = run_mutation(mutation)
         print("=" * 78)
         print(transcript)
-        if not detected:
+        # Three outcomes, kept apart on purpose. Folding 'the test never ran' into
+        # 'the guard does not work' reports a false defect and sends whoever reads it
+        # to rewrite a guard that was fine, instead of to the missing dependency.
+        if detected is None:
+            inconclusive.append(mutation.mutation_id)
+        elif detected is False:
             survived.append(mutation.mutation_id)
 
     restored = _run_pytest(())
@@ -1314,12 +1357,29 @@ def main() -> int:
 
     print("=" * 78)
     print(f"MUTATIONS RUN: {len(selected)}")
-    print(f"DETECTED:      {len(selected) - len(survived)}")
+    # Detected is what is LEFT once survivors and inconclusives are removed. Deriving
+    # it as "everything that did not survive" counted an inconclusive mutation as a
+    # detection, which is the same false reassurance in a different column.
+    print(f"DETECTED:      {len(selected) - len(survived) - len(inconclusive)}")
     print(f"SURVIVED:      {len(survived)}")
+    print(f"INCONCLUSIVE:  {len(inconclusive)}")
     if survived:
         print("SURVIVING MUTATIONS (these guards are not actually tested):")
         for mutation_id in survived:
             print(f"  - {mutation_id}")
+        return 1
+    if inconclusive:
+        print(
+            "INCONCLUSIVE MUTATIONS (their guarding tests never ran, so these guards\n"
+            "were NOT verified -- this is a missing dependency or a skip condition,\n"
+            "not evidence that the guard is broken):"
+        )
+        for mutation_id in inconclusive:
+            print(f"  - {mutation_id}")
+        print(
+            "A skipped guard is not a passing guard. Install what the guarding test\n"
+            "needs (the browser-client harnesses require node plus jsdom) and re-run."
+        )
         return 1
     print("RESULT: every guard removal was detected by its guarding test.")
     return 0

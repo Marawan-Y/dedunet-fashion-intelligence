@@ -371,6 +371,55 @@ So the rule moved into `app/commerce/catalog_scope.py`, once, with three entry p
 
 Two gaps in the PostgreSQL parity job's expected-table set were closed while here: the five new saved/look tables, and `product_media`, which had existed since the DEDUNET media phase and was never checked. That check compares `expected - actual`, so a table missing from the list is a table nobody notices is missing. All 26 tables are now covered, with no phantom entries.
 
+## 10d. CI was skipping 157 tests, and the harness was mislabelling it
+
+The second CI run got past the anchor problem and then reported **9 mutations SURVIVED**
+while the same 77 ran clean locally. The nine were all jsdom guards — the gallery, admin
+test-order labelling, stale-session clearing on 401, the preview purchase refusal and the
+refusal reaching its control.
+
+The cause was not nine broken guards. It was that **CI had no Node**:
+
+```python
+pytestmark = pytest.mark.skipif(
+    shutil.which("node") is None or not (NODE_PATHS / "jsdom").is_dir(),
+    reason="node with jsdom is required",
+)
+```
+
+The `backend` job installs Python and nothing else, so those modules skipped. **pytest exits
+0 when every selected test is skipped**, and the harness read the exit code alone:
+
+```python
+detected = result.returncode != 0      # 0 -> "not detected" -> SURVIVED
+```
+
+So a guard whose test never ran was reported as a guard that does not guard. That is a false
+accusation in the most expensive direction: it sends whoever reads it to rewrite a guard that
+was fine, instead of to the missing dependency.
+
+Measuring it made the scale clear: **without jsdom, 157 of 703 tests skip.** CI had been
+running 546 and reporting green.
+
+Three fixes, none of which weakens anything:
+
+1. **CI installs Node and jsdom**, so the nine guards actually run. Only jsdom, not the React
+   Native tree — `apps/mobile` is merely where these harnesses look for it via `NODE_PATH`.
+2. **A step that fails if those harnesses skip**, so a future CI image without Node cannot
+   quietly return the suite to 546 tests and call it green.
+3. **The harness now has three verdicts, not two** — `DETECTED`, `SURVIVED`, and
+   `INCONCLUSIVE — THE GUARDING TEST DID NOT RUN`. Inconclusive fails the run with its own
+   explanation and is excluded from the detected count, because counting it as a detection
+   is the same false reassurance in a different column.
+
+> **A skipped guard is not a passing guard, and it is not a failing one either.** Collapsing
+> "we did not test this" into either column is how a suite comes to describe work it never
+> did.
+
+Verified both directions rather than inferred: with jsdom the jsdom guard reports `DETECTED`;
+with jsdom removed the identical mutation reports `INCONCLUSIVE` and the harness exits 1. The
+ran-detection helper is checked against nine real pytest summary strings.
+
 ## 11. Sensitive backup status — §26
 
 The Phase 4 pre-migration PostgreSQL dump contained customer rows including **PBKDF2 password
