@@ -440,3 +440,123 @@ no credential material on inspection. It was left in place rather than deleted, 
 not this phase's artifact to remove.
 
 **No database dump is included in this evidence.**
+
+## 12. Live GitHub CI state — run #7
+
+The first green run on the real runner. Recorded from the GitHub API and the downloaded job
+logs, not from a badge and not from a local run.
+
+| | |
+|---|---|
+| Repository | `Marawan-Y/dedunet-fashion-intelligence` |
+| Pull request | #1, `feat/saved-persistence` → `main`, open, not draft |
+| Run | **#7**, event `pull_request`, head `26c3120` |
+| Conclusion | **success** |
+| Jobs | `backend (3.12)` ✅ · **`backend (3.13)` ✅** · **`backend (3.14)` ✅** · `postgres` ✅ · `compose` ✅ |
+| Checks on the PR | **10 passing, 0 failing, 0 pending** |
+| Merge state | `MERGEABLE` / `CLEAN` |
+
+Run **#6** is the same commit under the `push` event and is also **success**, with the same
+five jobs — see the follow-up in §12c.
+
+### 12a. Mutation results, exactly as the runner reported them
+
+The harness ran on all three backend legs. Identical output on each:
+
+```
+MUTATIONS RUN: 77
+DETECTED:      77
+SURVIVED:      0
+INCONCLUSIVE:  0
+RESULT: every guard removal was detected by its guarding test.
+```
+
+| Leg | Mutations | Detected | Survived | Inconclusive | Step duration |
+|---|---|---|---|---|---|
+| `backend (3.12)` | 77 | 77 | 0 | 0 | 213s |
+| `backend (3.13)` | 77 | 77 | 0 | 0 | 246s |
+| `backend (3.14)` | 77 | 77 | 0 | 0 | 277s |
+
+`INCONCLUSIVE: 0` is the line worth reading. On the previous run the same harness would have
+reported nine survivors; it now reports zero of both, which is the difference between a guard
+suite that ran and one that was merely collected. The `INCONCLUSIVE` row existing and reading
+zero is a stronger statement than its absence was.
+
+### 12b. No single job runs the whole suite, and that is deliberate
+
+The suite is 703 tests. Nothing in CI runs all 703 in one job, and the green badge does not
+say otherwise:
+
+| Job | Ran | Skipped | What it skips |
+|---|---|---|---|
+| `backend (3.12 / 3.13 / 3.14)` | **701** | 2 | the two row-locking tests — `FOR UPDATE SKIP LOCKED` and the concurrent-winner count are PostgreSQL guarantees SQLite does not have |
+| `postgres` | **548** | 155 | the jsdom browser-client harnesses — no Node on that job |
+
+The two sets are complementary and their union is 703: the `postgres` job runs exactly the two
+tests the SQLite legs cannot, and the SQLite legs run exactly the 155 the `postgres` job
+cannot. Every test in the suite executes somewhere in run #7.
+
+**This is stated rather than fixed.** Adding Node to the `postgres` job would buy a fourth
+execution of browser-client tests that have no database in them, against the job whose only
+reason to exist is real PostgreSQL semantics. The cost is real CI minutes; the coverage gain
+is zero. What the previous failure taught is not "install everything everywhere" — it is that
+a skip must be *visible and accounted for*, which is what this table is.
+
+The honest residual: the skip-detection step guards the `backend` job only. If the runner
+image ever loses Node, the `backend` legs fail loudly, by design — the `postgres` job's 155
+would go unremarked, but those 155 are already covered three times over by the legs that do
+fail. The guard is on the path where the loss would actually cost coverage.
+
+### 12c. CI-performance follow-up — duplicated execution
+
+**Recorded, not fixed in this PR.** Measured, so the follow-up is a number rather than an
+impression.
+
+`on: [push, pull_request]` means every push to a branch with an open PR triggers **two
+complete runs of the same commit**. For `26c3120` those are runs #6 and #7: ten jobs, six
+backend legs, and the mutation harness executed **six times — 462 mutations** for 77 distinct
+guards.
+
+- Mutation execution, one run across three legs: **736s ≈ 12.3 min**
+- Same commit, both runs: **1472s ≈ 24.5 min**, of which **half is pure duplication**
+
+The result is not wrong, just paid for twice. It is deliberately left alone here: this PR's
+job was to stop CI reporting green over tests it never ran, and changing the trigger
+configuration in the same change would mean the run that proved the fix is not the
+configuration that ships. Tracked as **R-018**.
+
+Candidate approaches, for whoever picks it up:
+
+1. Restrict `push` to `main` and let `pull_request` cover branches — smallest change, removes
+   the duplication entirely, keeps post-merge verification on the default branch.
+2. A concurrency group keyed on the ref with `cancel-in-progress` — cheaper but racier; it
+   can cancel a run somebody is reading.
+3. Run the mutation harness on one leg rather than three. **Weigh this one carefully**: the
+   harness is cross-version evidence, and three legs reporting 77/77 independently is part of
+   what makes it evidence.
+
+Option 1 is the recommendation. Options 1 and 2 cost no coverage; option 3 does.
+
+### 12d. State
+
+```
+CI_GREEN_READY_FOR_PHYSICAL_SAVED_ACCEPTANCE
+```
+
+What this state does **and does not** assert:
+
+- **Does:** run #7 is green on the real runner; `backend (3.13)` and `backend (3.14)` both
+  pass; 77/77 mutations detected on three Python versions with zero survivors and zero
+  inconclusive; every one of the 703 tests executed somewhere in the run; the PR is
+  `MERGEABLE` / `CLEAN`.
+- **Does not:** assert the Saved feature is accepted. **PR #1 is NOT merged and must not be**
+  until the physical-iPhone Saved acceptance is performed by a human. Automated green is the
+  precondition for that check, never a substitute for it — the WebKit staleness bug in §10b
+  is the standing proof that a fully green Chromium run described behaviour the device did
+  not have.
+- **Does not:** start Style DNA, Dido intelligence, recommendation scoring, the outfit engine
+  or merchant SaaS. None is begun.
+
+Outstanding human gate, unchanged from §9: sign in on a physical iPhone, save the Source Tee,
+save the DEDUNET brand, check counts and tabs, restart Safari to confirm the list survives,
+unsave, and check cross-page consistency.

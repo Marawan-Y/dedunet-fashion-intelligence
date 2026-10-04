@@ -463,3 +463,26 @@ check.
 **iOS native is `NOT TESTED`** — never built. No signing, no TestFlight, no App Store, Apple
 Developer Program `DEFERRED — FUNDING`. Do not infer it from the Android result, and do not
 infer it from the iPhone *mobile-web* result either: Safari is not the native application.
+
+**CI had been green over 546 of 703 tests.** The jsdom browser-client harnesses self-skip when
+Node is absent, the backend job installed Python only, and **pytest exits 0 when every selected
+test is skipped** — so 157 tests skipped, the run passed, and the mutation harness read the
+exit code alone and reported nine perfectly good guards as `SURVIVED`. Among the tests not
+running were the preview purchase refusal and stale-session clearing on 401, two behaviours
+this programme treats as accepted. Fixed on `26c3120`: Node and jsdom are installed, a step
+fails if those harnesses skip, and the harness has a third `INCONCLUSIVE` verdict that fails
+the run instead of being folded into either column.
+
+**No single CI job runs the whole suite, and the green badge does not say otherwise.** On run
+#7 the three `backend` legs run 701 of 703 — skipping the two row-locking tests that need real
+PostgreSQL — and the `postgres` job runs 548, skipping the 155 jsdom harnesses because it has
+no Node. The two sets are complementary and their union is the full 703, so every test executes
+somewhere in the run, but **no individual job is evidence for the whole suite**. Deliberate:
+putting Node on the `postgres` job would buy a fourth run of tests with no database in them.
+Cite CI by run id and by job, never by badge.
+
+**The matrix runs twice per push.** `on: [push, pull_request]` triggers two complete runs of
+the same commit when a PR is open — for `26c3120`, runs #6 and #7, six backend legs, and the
+77-mutation harness executed six times. Costs ~12 minutes of duplicated mutation execution per
+push and buys nothing. Tracked as `R-018`; recorded rather than fixed so that the run which
+proved the CI fix is the configuration that ships.
