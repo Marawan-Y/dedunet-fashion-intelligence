@@ -168,10 +168,16 @@ jobs:
               "customers", "inventory_items", "notifications", "order_lines", "orders",
               "payments", "products", "promotions", "reservations", "return_requests",
               "shipments", "variants",
+              # Pre-existing gap, closed here: product_media has existed since the DEDUNET
+              # media phase and was never in this set, so the parity job never checked it.
+              "product_media",
               # Multi-brand fashion network. Listed so the PostgreSQL parity job actually
               # covers the brand domain -- the check compares `expected - tables`, so a
               # table left out of this set is a table nobody notices is missing.
               "brands", "brand_ownership", "merchant_organizations",
+              # Saved persistence: the curated look domain and the three personal relations.
+              "looks", "look_items",
+              "saved_looks", "favorite_products", "favorite_brands",
           }
           missing = expected - tables
           assert not missing, f"missing tables on PostgreSQL: {sorted(missing)}"

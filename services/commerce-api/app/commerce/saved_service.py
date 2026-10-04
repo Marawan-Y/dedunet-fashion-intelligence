@@ -25,7 +25,7 @@ from sqlalchemy import Select, delete, func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from . import modes
+from . import catalog_scope, modes
 from .brands import Brand
 from .looks import Look
 from .models import Customer, Product
@@ -45,12 +45,13 @@ class SaveOutcome:
 
 
 def visible_products(session: Session) -> Select:
-    stmt = select(Product).where(Product.is_active.is_(True))
-    # The same scoping `list_products` applies, so a saved endpoint cannot become a way
-    # around the preview-mode catalogue filter.
-    if modes.is_preview_mode():
-        stmt = stmt.where(Product.external_product_id.is_not(None))
-    return stmt
+    """Delegates. This used to carry its own copy of the preview-mode rule.
+
+    Three copies of a visibility rule means the fourth surface carries a fourth, and the
+    first one anybody forgets shows a customer the legacy catalogue. See catalog_scope.
+    """
+
+    return catalog_scope.visible_products()
 
 
 def visible_brands(session: Session) -> Select:

@@ -257,7 +257,8 @@ changed, and `M52_cart_enforces_purchasability` guards the purchase gate a save 
 affect. Both removals were still detected by their guarding tests.
 
 > A first attempt appeared to run and did not: the mutation ids had been written to a file
-> with Windows line endings, so every `--only` argument carried a trailing `` and the
+> with Windows line endings, so every `--only` argument carried a trailing `
+` and the
 > harness answered "No mutation matches" eighteen times. Each returned exit 2, which the
 > loop recorded — so the run reported itself as having done nothing rather than quietly
 > reporting success. A second gap followed: `while read` dropped the final id because the
@@ -330,6 +331,45 @@ general 300-per-minute API limiter, and one page load costs roughly twenty media
 > on every test purely to confirm a token, and the per-test reset was clearing both accounts
 > when one was in use. Reducing request rate rather than relaxing the check is the same
 > decision the repository already made when it dropped the browser suite to one worker.
+
+## 10c. A broken build inherited from Phase 4, and what it was really about
+
+The first CI run on the published repository failed the `backend` job on all three Python
+versions. Not flakiness, and **not this phase**:
+
+```
+HARNESS ERROR: anchor for M60_legacy_hidden_in_preview matched 2 times
+in app/commerce/api.py (expected exactly 1)
+```
+
+`M60` anchors a mutation on the single line implementing "preview mode hides the legacy
+catalogue" and requires it to appear exactly once in its target file. **Phase 4 added a second
+copy** in the brand detail endpoint (`b8079bc`), making the anchor ambiguous, and the harness
+refused to run rather than mutate a line it had guessed at.
+
+> **That is the guard registry working.** A mutation that cannot identify the line it is meant
+> to remove proves nothing, so stopping is the correct behaviour. The build did not fail
+> because a test broke; it failed because a *guard could no longer be trusted*, which is the
+> more useful signal of the two.
+
+**Why nobody saw it for a phase.** The repository was created after Phase 4, so CI had never
+run on that commit. The first run happened on the publication commit, and that run's outcome
+was not checked — the decision at the time was "I'm not going to poll it for an hour", which
+left a known-unverified build behind. The breakage then sat through an accepted phase.
+
+**The underlying defect was duplication, not the anchor.** By the time CI caught it, the rule
+existed in **four** places: the catalogue listing, the brand detail endpoint, `brand_api`'s
+count and cover maps, and the saved-items service. Every copy was correct. The problem is what
+four copies of a *visibility* rule mean — the fifth surface carries a fifth, and the first one
+anybody forgets shows a customer the legacy catalogue.
+
+So the rule moved into `app/commerce/catalog_scope.py`, once, with three entry points
+(`visible_products`, `apply_preview_scope`, `is_visible`) for the three shapes callers need.
+`M60` was retargeted to that module: the guard is unchanged, only its address is.
+
+**Full harness after the fix: 77 mutations run, 77 detected, 0 survived, 0 harness errors**, with the post-restore suite green at 701. This is the whole registry, not the 18 `services.py` mutations run earlier in the phase.
+
+Two gaps in the PostgreSQL parity job's expected-table set were closed while here: the five new saved/look tables, and `product_media`, which had existed since the DEDUNET media phase and was never checked. That check compares `expected - actual`, so a table missing from the list is a table nobody notices is missing. All 26 tables are now covered, with no phantom entries.
 
 ## 11. Sensitive backup status — §26
 

@@ -17,7 +17,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from . import brand_api, modes, payments, saved_service, services
+from . import brand_api, catalog_scope, modes, payments, saved_service, services
 from .brand_registry import DEDUNET_BRAND_SLUG
 from .brands import Brand, BrandOwnershipType, CommerceRoute
 from .db import get_session
@@ -345,8 +345,10 @@ def list_products(
     # Scoped by MODE rather than by a new setting, because a second switch could disagree
     # with the first and there is then no single answer to "what is a customer looking at".
     # COMMERCE_TEST_MODE keeps showing everything, which is what the sandbox demo needs.
-    if modes.is_preview_mode():
-        stmt = stmt.where(Product.external_product_id.is_not(None))
+    #
+    # The rule itself lives in catalog_scope, once. It used to be written out here and again
+    # in get_brand, and a third time in the saved-items service.
+    stmt = catalog_scope.apply_preview_scope(stmt)
 
     if category:
         stmt = stmt.where(Product.category == category)
@@ -371,7 +373,7 @@ def get_product(slug: str, session: Annotated[Session, Depends(get_session)]):
         raise HTTPException(status.HTTP_404_NOT_FOUND, "product not found")
     # Same scope as the listing. Filtering only the list would leave every legacy product
     # reachable by direct URL, which is a filter a deep link simply walks around.
-    if modes.is_preview_mode() and product.external_product_id is None:
+    if not catalog_scope.is_visible(product):
         raise HTTPException(status.HTTP_404_NOT_FOUND, "product not found")
     return _product_payload(session, product)
 
@@ -533,10 +535,9 @@ def get_brand(slug: str, session: Annotated[Session, Depends(get_session)]):
         raise HTTPException(status.HTTP_404_NOT_FOUND, "brand not found")
 
     stmt = select(Product).where(Product.brand_id == brand.id, Product.is_active.is_(True))
-    # The same preview-mode scoping the catalogue listing applies, so a brand page cannot
-    # become a way around it.
-    if modes.is_preview_mode():
-        stmt = stmt.where(Product.external_product_id.is_not(None))
+    # The same scope the catalogue listing applies -- literally the same function, so a brand
+    # page cannot drift into becoming a way around it.
+    stmt = catalog_scope.apply_preview_scope(stmt)
     products = sorted(session.scalars(stmt).all(), key=lambda p: p.name)
 
     return brand_api.brand_detail(session, brand, products=products)

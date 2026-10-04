@@ -58,6 +58,11 @@ MONEY = BACKEND / "app" / "money.py"
 RATE_LIMIT = BACKEND / "app" / "rate_limit.py"
 SERVER = BACKEND / "app" / "server.py"
 MAIN = BACKEND / "app" / "main.py"
+# The preview-mode catalogue scope moved out of api.py into one module, because the rule
+# had been written out four times and the duplication made THIS harness ambiguous: the
+# M60 anchor matched twice and the run refused to proceed. The guard is unchanged; only
+# its address is.
+CATALOG_SCOPE = BACKEND / "app" / "commerce" / "catalog_scope.py"
 NOTIFICATIONS = BACKEND / "app" / "commerce" / "notifications.py"
 SERVICES = BACKEND / "app" / "commerce" / "services.py"
 WORKER = BACKEND / "notification_worker.py"
@@ -800,7 +805,7 @@ MUTATIONS: tuple[Mutation, ...] = (
     Mutation(
         mutation_id="M60_legacy_hidden_in_preview",
         guard="preview catalogue excludes the legacy fixture",
-        target=API,
+        target=CATALOG_SCOPE,
         original="        stmt = stmt.where(Product.external_product_id.is_not(None))",
         mutated="        pass  # MUTATED: legacy leaks into the DEDUNET catalogue",
         tests=(f"{TEST_CLOSURE}::test_preview_mode_shows_only_dedunet_products",),
