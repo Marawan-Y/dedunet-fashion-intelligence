@@ -3,6 +3,7 @@ import { Link, useParams } from "react-router-dom";
 import { Badge, FixtureBadge } from "../../components/Badge";
 import { ButtonLink } from "../../components/Button";
 import { Card } from "../../components/Card";
+import { SaveButton } from "../../components/SaveButton";
 import { Media } from "../../components/Media";
 import {
   Container,
@@ -94,6 +95,16 @@ export default function BrandDetailPage() {
                 {profile.is_development_fixture ? (
                   <FixtureBadge>Development fixture</FixtureBadge>
                 ) : null}
+              </div>
+
+              <div className={styles.saveRow}>
+                <SaveButton
+                  kind="brands"
+                  slug={profile.slug}
+                  name={profile.name}
+                  variant="inline"
+                  testId="save-brand-detail"
+                />
               </div>
 
               {/* The fixture notice is prose, not only a badge. A badge can be cropped out

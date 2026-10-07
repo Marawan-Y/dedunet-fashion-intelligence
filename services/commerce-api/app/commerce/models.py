@@ -568,3 +568,5 @@ from .brands import (  # noqa: E402,F401
     CommerceRoute,
     MerchantOrganization,
 )
+from .looks import Look, LookItem  # noqa: E402,F401
+from .saved import FavoriteBrand, FavoriteProduct, SavedLook  # noqa: E402,F401

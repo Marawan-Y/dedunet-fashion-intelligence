@@ -35,3 +35,8 @@
 
 .facts dt { color: var(--ds-text-muted); }
 .facts dd { margin: 0; }
+
+.saveRow {
+  display: flex;
+  margin-block: var(--ds-space-3);
+}

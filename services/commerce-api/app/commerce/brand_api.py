@@ -26,7 +26,7 @@ from __future__ import annotations
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from . import modes
+from . import catalog_scope, modes
 from .brands import (
     Brand,
     BrandOwnershipType,
@@ -100,8 +100,7 @@ def product_count_map(session: Session, brand_ids: list[int]) -> dict[int, int]:
     # but has no external identity, so preview mode hides it on the detail page while the
     # card still advertised "1 piece". A count that does not match the list under it is a
     # defect a customer notices before anyone else does.
-    if modes.is_preview_mode():
-        stmt = stmt.where(Product.external_product_id.is_not(None))
+    stmt = catalog_scope.apply_preview_scope(stmt)
     return {brand_id: count for brand_id, count in session.execute(stmt).all()}
 
 
@@ -124,8 +123,7 @@ def cover_image_map(session: Session, brand_ids: list[int]) -> dict[int, str]:
         .where(Product.brand_id.in_(brand_ids), Product.is_active.is_(True))
         .order_by(Product.brand_id, Product.name, ProductMedia.sort_order)
     )
-    if modes.is_preview_mode():
-        stmt = stmt.where(Product.external_product_id.is_not(None))
+    stmt = catalog_scope.apply_preview_scope(stmt)
 
     covers: dict[int, str] = {}
     for brand_id, path in session.execute(stmt).all():

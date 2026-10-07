@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { FixtureBadge } from "../../components/Badge";
 import { ButtonLink } from "../../components/Button";
 import { Card } from "../../components/Card";
+import { SaveButton } from "../../components/SaveButton";
 import {
   Container,
   Eyebrow,
@@ -78,6 +79,14 @@ export default function LooksPage() {
                     ratio="3 / 2"
                     slot={`look-${look.slug}`}
                     testId="look-card"
+                    saveControl={
+                      <SaveButton
+                        kind="looks"
+                        slug={look.slug}
+                        name={look.name}
+                        testId={`save-look-${look.slug}`}
+                      />
+                    }
                     headingLevel={2}
                     footer={
                       <span style={{ fontSize: "var(--ds-text-sm)", color: "var(--ds-text-muted)" }}>

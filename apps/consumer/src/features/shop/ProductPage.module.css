@@ -176,3 +176,12 @@
 .externalAction:hover {
   opacity: 0.9;
 }
+
+/* The save row, under the purchase control. Its own row rather than beside the button:
+   at 320px a disabled full-width CTA and a save control cannot share a line without one
+   of them shrinking below the 44px touch floor. */
+.saveRow {
+  display: flex;
+  justify-content: flex-start;
+  margin-top: var(--ds-space-3);
+}

@@ -24,12 +24,46 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
+      # Node, for the jsdom harnesses that drive the browser clients.
+      #
+      # WITHOUT THIS, NINE GUARDS WERE NEVER CHECKED. The harnesses skip themselves when
+      # node or jsdom is absent, a skipped test exits 0, and the mutation harness read that
+      # as "the guard removal was not detected" -- so CI reported nine accepted behaviours
+      # as unguarded while in fact it had not tested them at all. Among them: the preview
+      # purchase refusal, the refusal reaching its control, and stale-session clearing on
+      # 401.
+      #
+      # Only jsdom is installed, not the whole React Native toolchain: `apps/mobile` is
+      # merely where these harnesses look for it (NODE_PATH), and pulling a mobile
+      # dependency tree to render a <div> would be minutes of CI for nothing.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - name: Install jsdom for the browser-client harnesses
+        run: npm install --no-save --prefix apps/mobile jsdom
+
       - name: Install backend dependencies
         working-directory: services/commerce-api
         run: pip install -r requirements.txt
 
       - name: Byte-compile backend and scripts
         run: python -m compileall -q services/commerce-api scripts
+
+      - name: Browser-client harnesses must RUN, not skip
+        working-directory: services/commerce-api
+        env:
+          DATABASE_URL: "sqlite+pysqlite:///:memory:"
+          APP_ENV: test
+        # A skipped guard is not a passing guard. These three modules self-skip without
+        # node and jsdom, which is how nine of them went unchecked; this step fails if they
+        # skip rather than letting the suite report green over them.
+        run: |
+          python -m pytest -q -p no:cacheprovider -rs             tests/test_web_gallery.py             tests/test_storefront_purchase_refusal.py             tests/test_storefront_session_expiry.py             | tee harness-run.txt
+          if grep -qE "skipped" harness-run.txt; then
+            echo "FAIL: the browser-client harnesses skipped; node/jsdom is not available"
+            exit 1
+          fi
+          rm -f harness-run.txt
 
       - name: Backend test suite
         working-directory: services/commerce-api
@@ -168,10 +202,16 @@ jobs:
               "customers", "inventory_items", "notifications", "order_lines", "orders",
               "payments", "products", "promotions", "reservations", "return_requests",
               "shipments", "variants",
+              # Pre-existing gap, closed here: product_media has existed since the DEDUNET
+              # media phase and was never in this set, so the parity job never checked it.
+              "product_media",
               # Multi-brand fashion network. Listed so the PostgreSQL parity job actually
               # covers the brand domain -- the check compares `expected - tables`, so a
               # table left out of this set is a table nobody notices is missing.
               "brands", "brand_ownership", "merchant_organizations",
+              # Saved persistence: the curated look domain and the three personal relations.
+              "looks", "look_items",
+              "saved_looks", "favorite_products", "favorite_brands",
           }
           missing = expected - tables
           assert not missing, f"missing tables on PostgreSQL: {sorted(missing)}"

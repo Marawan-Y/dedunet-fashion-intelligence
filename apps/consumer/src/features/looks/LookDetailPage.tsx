@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { Link, useParams } from "react-router-dom";
 import { Badge, FixtureBadge } from "../../components/Badge";
-import { Button, ButtonLink } from "../../components/Button";
+import { ButtonLink } from "../../components/Button";
 import { Media } from "../../components/Media";
 import {
   Container,
@@ -11,6 +11,7 @@ import {
   Stack,
   Subtle,
 } from "../../components/primitives";
+import { SaveButton } from "../../components/SaveButton";
 import { ErrorState, SkeletonGrid } from "../../components/States";
 import { NotFound } from "../../app/RouteError";
 import { lookBySlug } from "../content";
@@ -150,13 +151,17 @@ export default function LookDetailPage() {
               </Subtle>
 
               <div className={styles.asideActions}>
-                <Button variant="secondary" disabled aria-describedby="save-look-reason">
-                  Save this look
-                </Button>
-                <Subtle id="save-look-reason">
-                  Saving is not built. There is nowhere to store it yet, and a save that
-                  silently forgets is worse than one that says it cannot.
-                </Subtle>
+                {/* Saving a look is real now: it persists to the account against a Look row
+                    with a durable identity. This was a disabled button beside "Saving is
+                    not built", and both are gone -- a built feature must stop disclosing
+                    that it is unbuilt, exactly as an unbuilt one must say so. */}
+                <SaveButton
+                  kind="looks"
+                  slug={look.slug}
+                  name={look.name}
+                  variant="inline"
+                  testId="save-look-detail"
+                />
 
                 <ButtonLink to="/dido" variant="accent">
                   Adjust with Dido

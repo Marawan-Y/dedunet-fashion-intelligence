@@ -18,7 +18,57 @@ not exercised), `BLOCKED`, `EXTERNALLY_PENDING`, `NOT_STARTED`.
 
 ---
 
-## 0. Multi-brand fashion network implemented (2026-08-27)
+## 0. Saved persistence is real (2026-10-01)
+
+Saving looks, products and brands is **implemented and attached to the account**, not to the
+browser. Evidence: `evidence/phase-5/SAVED_PERSISTENCE_EVIDENCE.md`.
+
+**The Saved page no longer says "Saving is not built yet", because it is.** Two stale
+disclosures were removed with it: a disabled "Save" button on the product page beside
+*"Saving is not built. There is nowhere to store it yet."*, and the look detail page's
+equivalent. The production disclosure rule cuts both ways — an unbuilt feature must say so,
+and a built one must stop saying so.
+
+**A Look is now a real row**, so saves have something with identity to point at. It is still
+**curated editorial content composed by a person** — not an outfit engine output, no
+reasoning, no scoring, and **no total price or column for one**, because summing prototype
+prices would invent a figure. The outfit engine, recommendation engine and Style DNA remain
+**NOT STARTED**.
+
+| Item | State |
+|---|---|
+| **Look copy is duplicated** | the consumer renders look prose from `content.ts` while the database is authoritative for identity. `test_look_slug_parity.py` asserts they agree; converging them is follow-up work |
+| **Resume-after-login** | **NOT IMPLEMENTED.** A signed-out save sends the visitor to sign in with a return path; it does not replay the save afterwards |
+| **Saved-state fetch is whole-set** | one request returns every saved slug. Far cheaper than a request per card; a customer with thousands of saves would want a windowed contract |
+| **No reordering or collections** | a flat list per kind |
+| **No admin view of saved items** | deliberate. Saved items are personal data and browsing them is not an operational need |
+
+**Privacy.** Saved rows are deleted with the customer by **two** mechanisms, both needed:
+`ondelete=CASCADE` for a hard delete, and an explicit deletion in `erase_customer`, which
+pseudonymizes rather than deleting so the cascade would never fire. Saved events carry a slug
+and **no customer identifier** — a popularity signal, not a behavioural profile.
+
+**Rollback is not free.** The migration's `downgrade()` destroys customers' saved items. They
+are real user data, not derivable from anything, and re-running `upgrade()` does not bring
+them back.
+
+**Registration stayed strict.** The browser suite originally registered a customer per test
+and failed, because registration is limited to five per hour by design. The limiter was
+**not** loosened; test accounts are created out of band with
+`manage.py create-test-customer`, credentials from the environment and never defaulted.
+
+---
+
+## 0a. Multi-brand fashion network ACCEPTED (2026-09-30)
+
+**`MULTI_BRAND_FASHION_NETWORK_ACCEPTED`** — human review on a physical iPhone in Safari
+against deployed staging at `a1abed3`. Recorded in
+`evidence/team-acceptance/MULTI_BRAND_NETWORK_ACCEPTANCE.md`.
+
+The acceptance covers the **domain and its surfaces**. It accepts no commercial
+relationship, because none exists, and it is not native iOS acceptance.
+
+## 0b. Multi-brand fashion network implemented (2026-08-27)
 
 Products now belong to **brands**. `Brand` is first-class with an explicit `ownership_type`
 (`PLATFORM_CURATED` / `MERCHANT_OWNED` / `EXTERNAL_CURATED`), commerce routing is a separate
@@ -413,3 +463,51 @@ check.
 **iOS native is `NOT TESTED`** — never built. No signing, no TestFlight, no App Store, Apple
 Developer Program `DEFERRED — FUNDING`. Do not infer it from the Android result, and do not
 infer it from the iPhone *mobile-web* result either: Safari is not the native application.
+
+**CI had been green over 546 of 703 tests.** The jsdom browser-client harnesses self-skip when
+Node is absent, the backend job installed Python only, and **pytest exits 0 when every selected
+test is skipped** — so 157 tests skipped, the run passed, and the mutation harness read the
+exit code alone and reported nine perfectly good guards as `SURVIVED`. Among the tests not
+running were the preview purchase refusal and stale-session clearing on 401, two behaviours
+this programme treats as accepted. Fixed on `26c3120`: Node and jsdom are installed, a step
+fails if those harnesses skip, and the harness has a third `INCONCLUSIVE` verdict that fails
+the run instead of being folded into either column.
+
+**No single CI job runs the whole suite, and the green badge does not say otherwise.** On run
+#7 the three `backend` legs run 701 of 703 — skipping the two row-locking tests that need real
+PostgreSQL — and the `postgres` job runs 548, skipping the 155 jsdom harnesses because it has
+no Node. The two sets are complementary and their union is the full 703, so every test executes
+somewhere in the run, but **no individual job is evidence for the whole suite**. Deliberate:
+putting Node on the `postgres` job would buy a fourth run of tests with no database in them.
+Cite CI by run id and by job, never by badge.
+
+**The matrix runs twice per push.** `on: [push, pull_request]` triggers two complete runs of
+the same commit when a PR is open — for `26c3120`, runs #6 and #7, six backend legs, and the
+77-mutation harness executed six times. Costs ~12 minutes of duplicated mutation execution per
+push and buys nothing. Tracked as `R-018`; recorded rather than fixed so that the run which
+proved the CI fix is the configuration that ships.
+
+**A green build says nothing about what the device is served.** On 2026-10-07 a physical iPhone
+acceptance failed on a stale disclosure, with the code, the database, the API and CI all
+correct: port 13080 was reaching `dedunet-consumer-candidate` — a six-week-old cutover
+rehearsal container, tagged with a commit the publication history rewrite had already removed —
+instead of the staging web container, which had served no request at all since it started.
+A host restart had crossed the Docker port map. Nothing in this repository caused it and no
+check here would have caught it, because every signal the repository produces describes the
+code rather than the deployment. Before a device acceptance, compare the `ETag` from the
+acceptance URL against the serving container's own, and query containers by IP rather than by
+`localhost` — `localhost` resolved to `::1` and reached a different relay than the LAN address
+the phone uses. Tracked as `R-019`;
+`evidence/phase-5/SAVED_ACCEPTANCE_DEPLOYMENT_INCIDENT.md`.
+
+**The Saved acceptance passed on the retest, and the stale-deployment finding stands.** The
+physical iPhone Safari acceptance passed on 2026-10-07 against the repaired deployment, all
+eleven gates including persistence across a Safari restart — `SAVED_PERSISTENCE_ACCEPTED`,
+`evidence/team-acceptance/SAVED_PERSISTENCE_IPHONE_ACCEPTANCE.md`. The failed first attempt is
+kept in that record rather than tidied away, because an acceptance log showing only the
+successful attempt would imply the deployment had always been correct. The stale candidate
+**container** has been removed and its **images** kept as rollback material, exactly one
+container now publishes 13080, and a probe through the LAN URL reaches it. What is *not* fixed
+is the class of failure: **no automated check asserts deployment provenance**, so
+`docs/operations/DEPLOYMENT_PROVENANCE_GATE.md` is a procedure a person has to actually run.
+`R-019` stays open on that automation.

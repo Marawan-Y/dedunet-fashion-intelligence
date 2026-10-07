@@ -2558,6 +2558,66 @@
         ]
       }
     },
+    "/api/v1/looks": {
+      "get": {
+        "description": "The curated looks. Public, unauthenticated, read-only.\n\nEditorial content composed of real catalogue products -- not an engine output. There is\nno total price and no field for one: every DEDUNET product is a prototype, so a look\ntotal would be a number this platform invented.",
+        "operationId": "list_looks_api_v1_looks_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "List Looks",
+        "tags": [
+          "commerce"
+        ]
+      }
+    },
+    "/api/v1/looks/{slug}": {
+      "get": {
+        "operationId": "get_look_api_v1_looks__slug__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "slug",
+            "required": true,
+            "schema": {
+              "title": "Slug",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Look",
+        "tags": [
+          "commerce"
+        ]
+      }
+    },
     "/api/v1/me": {
       "delete": {
         "operationId": "erase_me_api_v1_me_delete",
@@ -2786,6 +2846,571 @@
           }
         },
         "summary": "Create Return",
+        "tags": [
+          "commerce"
+        ]
+      }
+    },
+    "/api/v1/me/saved": {
+      "get": {
+        "description": "Counts plus the full saved-state sets, in one request.\n\nThis is what a freshly loaded client asks for: enough to render every save control on\nevery surface without a request per card. See `saved_service.saved_state`.",
+        "operationId": "saved_overview_api_v1_me_saved_get",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "default": "",
+              "title": "Authorization",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Saved Overview",
+        "tags": [
+          "commerce"
+        ]
+      }
+    },
+    "/api/v1/me/saved/brands": {
+      "get": {
+        "operationId": "list_saved_brands_api_v1_me_saved_brands_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "default": "",
+              "title": "Authorization",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Saved Brands",
+        "tags": [
+          "commerce"
+        ]
+      }
+    },
+    "/api/v1/me/saved/brands/{slug}": {
+      "delete": {
+        "operationId": "unsave_brand_api_v1_me_saved_brands__slug__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "slug",
+            "required": true,
+            "schema": {
+              "title": "Slug",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "default": "",
+              "title": "Authorization",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Unsave Brand",
+        "tags": [
+          "commerce"
+        ]
+      },
+      "post": {
+        "description": "Save a brand.\n\nA development fixture brand is saveable while it is visible, and stops being either the\nmoment public commerce is enabled -- both go through the same `brands_visible` gate, so\nsaving cannot promote fixture content to production validity. The saved entry carries the\nfixture flag and notice like every other brand payload.",
+        "operationId": "save_brand_api_v1_me_saved_brands__slug__post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "slug",
+            "required": true,
+            "schema": {
+              "title": "Slug",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "default": "",
+              "title": "Authorization",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Save Brand",
+        "tags": [
+          "commerce"
+        ]
+      }
+    },
+    "/api/v1/me/saved/looks": {
+      "get": {
+        "operationId": "list_saved_looks_api_v1_me_saved_looks_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "default": "",
+              "title": "Authorization",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Saved Looks",
+        "tags": [
+          "commerce"
+        ]
+      }
+    },
+    "/api/v1/me/saved/looks/{slug}": {
+      "delete": {
+        "operationId": "unsave_look_api_v1_me_saved_looks__slug__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "slug",
+            "required": true,
+            "schema": {
+              "title": "Slug",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "default": "",
+              "title": "Authorization",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Unsave Look",
+        "tags": [
+          "commerce"
+        ]
+      },
+      "post": {
+        "operationId": "save_look_api_v1_me_saved_looks__slug__post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "slug",
+            "required": true,
+            "schema": {
+              "title": "Slug",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "default": "",
+              "title": "Authorization",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Save Look",
+        "tags": [
+          "commerce"
+        ]
+      }
+    },
+    "/api/v1/me/saved/products": {
+      "get": {
+        "description": "Saved products, most recently saved first.\n\nDeterministic order: `created_at DESC, id DESC`. The timestamp alone is not a total\norder -- two saves in the same transaction share it -- and a list whose order wobbles\nbetween requests makes pagination skip and repeat rows.",
+        "operationId": "list_saved_products_api_v1_me_saved_products_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "default": "",
+              "title": "Authorization",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Saved Products",
+        "tags": [
+          "commerce"
+        ]
+      }
+    },
+    "/api/v1/me/saved/products/{slug}": {
+      "delete": {
+        "description": "Unsave a product. Idempotent: unsaving something not saved succeeds.\n\nThe target is resolved WITHOUT the visibility filter. A product the customer saved and\nwhich has since been unpublished must still be removable -- refusing to let someone\nun-save something is a worse failure than briefly confirming a row exists that they\nalready knew about.",
+        "operationId": "unsave_product_api_v1_me_saved_products__slug__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "slug",
+            "required": true,
+            "schema": {
+              "title": "Slug",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "default": "",
+              "title": "Authorization",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Unsave Product",
+        "tags": [
+          "commerce"
+        ]
+      },
+      "post": {
+        "description": "Save a product. Idempotent: saving an already-saved product succeeds, creating nothing.\n\n200 rather than 201 on both paths, deliberately. The client cares about the resulting\nSTATE, not about which request happened to create the row, and making it distinguish\n201 from 200 would push it into treating a double tap as an error.",
+        "operationId": "save_product_api_v1_me_saved_products__slug__post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "slug",
+            "required": true,
+            "schema": {
+              "title": "Slug",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "default": "",
+              "title": "Authorization",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Save Product",
+        "tags": [
+          "commerce"
+        ]
+      }
+    },
+    "/api/v1/me/saved/state": {
+      "get": {
+        "description": "Just the saved-state sets.\n\nThe endpoint that stops Home from issuing twenty save-status requests. Slug sets are\nsmall and cacheable in the client for the session, and a mutation patches them locally\nrather than refetching.",
+        "operationId": "saved_state_api_v1_me_saved_state_get",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "default": "",
+              "title": "Authorization",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Saved State",
         "tags": [
           "commerce"
         ]

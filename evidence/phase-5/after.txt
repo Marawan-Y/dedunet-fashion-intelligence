@@ -1,0 +1,9 @@
+counts|6|63|2|3
+093e07688e9b342aa932c20192f974e2
+restore-test-item|published|t|NON_PURCHASABLE
+the-measure-trouser|preview|f|NON_PURCHASABLE
+the-passage-shirt|preview|f|NON_PURCHASABLE
+the-source-tee|preview|f|NON_PURCHASABLE
+the-structure-overshirt|preview|f|NON_PURCHASABLE
+the-trace-scarf|preview|f|NON_PURCHASABLE
+looks=4|look_items=10|saved_looks=0|fav_products=0|fav_brands=0

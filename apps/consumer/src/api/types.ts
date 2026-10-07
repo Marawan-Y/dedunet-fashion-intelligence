@@ -233,3 +233,87 @@ export interface BrandListing {
   limit: number;
   offset: number;
 }
+
+/* ------------------------------------------------------------------ saved items */
+
+/** Which slugs the signed-in customer has saved. One request serves every surface. */
+export interface SavedState {
+  products: string[];
+  brands: string[];
+  looks: string[];
+}
+
+export interface SavedCounts {
+  products: number;
+  brands: number;
+  looks: number;
+}
+
+export interface SavedOverview {
+  counts: SavedCounts;
+  state: SavedState;
+}
+
+/** Common shape of every saved list entry. */
+interface SavedEntryBase {
+  slug: string;
+  name: string;
+  saved_at: string;
+  /** False when the target has since become unpublished. Render it, do NOT link it. */
+  available: boolean;
+}
+
+export interface SavedProductEntry extends SavedEntryBase {
+  kind: "product";
+  category: string;
+  currency: string;
+  price_minor_units_min: number | null;
+  price_minor_units_max: number | null;
+  image_url: string;
+  brand: Pick<BrandSummary, "slug" | "name" | "relationship_label" | "is_development_fixture"> | null;
+  commerce_route: CommerceRouteName;
+}
+
+export interface SavedBrandEntry extends SavedEntryBase {
+  kind: "brand";
+  relationship_label: string;
+  logo_url: string;
+  is_development_fixture: boolean;
+  fixture_notice: string;
+}
+
+export interface SavedLookEntry extends SavedEntryBase {
+  kind: "look";
+  occasion: string;
+  item_count: number;
+  image_url: string;
+}
+
+export interface SavedListing<T> {
+  items: T[];
+  total: number;
+  limit: number;
+  offset: number;
+}
+
+/** A curated look. Composed by a person; there is deliberately no total price. */
+export interface LookItemPayload {
+  product_slug: string;
+  product_name: string;
+  role: string;
+  image_url: string;
+  category: string;
+}
+
+export interface LookPayload {
+  slug: string;
+  name: string;
+  occasion: string;
+  story: string;
+  descriptors: string[];
+  publication_status: string;
+  items: LookItemPayload[];
+}
+
+/** The three things that can be saved. */
+export type SaveKind = "products" | "brands" | "looks";

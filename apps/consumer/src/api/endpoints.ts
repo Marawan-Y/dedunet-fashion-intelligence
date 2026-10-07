@@ -2,6 +2,14 @@ import { api, session } from "./client";
 import type {
   BrandDetail,
   BrandListing,
+  LookPayload,
+  SaveKind,
+  SavedBrandEntry,
+  SavedListing,
+  SavedLookEntry,
+  SavedOverview,
+  SavedProductEntry,
+  SavedState,
   CatalogProduct,
   CommerceModeDisclosure,
   CustomerOrder,
@@ -68,4 +76,66 @@ export function fetchBrands(signal?: AbortSignal): Promise<BrandListing> {
 /** One brand and its catalogue. 404s for a brand the caller may not see. */
 export function fetchBrand(slug: string, signal?: AbortSignal): Promise<BrandDetail> {
   return api<BrandDetail>(`/brands/${encodeURIComponent(slug)}`, { signal });
+}
+
+/* ------------------------------------------------------------------ saved items */
+
+/**
+ * Everything the signed-in customer has saved, in ONE request.
+ *
+ * This is what stops a page of twenty cards issuing twenty save-status requests. Fetched
+ * once when a session appears and patched locally on every mutation.
+ */
+export function fetchSavedState(signal?: AbortSignal): Promise<SavedState> {
+  return api<SavedState>("/me/saved/state", { authenticated: true, signal });
+}
+
+export function fetchSavedOverview(signal?: AbortSignal): Promise<SavedOverview> {
+  return api<SavedOverview>("/me/saved", { authenticated: true, signal });
+}
+
+export function fetchSavedProducts(signal?: AbortSignal): Promise<SavedListing<SavedProductEntry>> {
+  return api<SavedListing<SavedProductEntry>>("/me/saved/products?limit=100", {
+    authenticated: true,
+    signal,
+  });
+}
+
+export function fetchSavedBrands(signal?: AbortSignal): Promise<SavedListing<SavedBrandEntry>> {
+  return api<SavedListing<SavedBrandEntry>>("/me/saved/brands?limit=100", {
+    authenticated: true,
+    signal,
+  });
+}
+
+export function fetchSavedLooks(signal?: AbortSignal): Promise<SavedListing<SavedLookEntry>> {
+  return api<SavedListing<SavedLookEntry>>("/me/saved/looks?limit=100", {
+    authenticated: true,
+    signal,
+  });
+}
+
+/** Save. Idempotent on the server: a repeated call succeeds and creates nothing. */
+export function saveItem(kind: SaveKind, slug: string): Promise<unknown> {
+  return api(`/me/saved/${kind}/${encodeURIComponent(slug)}`, {
+    method: "POST",
+    authenticated: true,
+  });
+}
+
+/** Unsave. Also idempotent: unsaving something not saved succeeds. */
+export function unsaveItem(kind: SaveKind, slug: string): Promise<unknown> {
+  return api(`/me/saved/${kind}/${encodeURIComponent(slug)}`, {
+    method: "DELETE",
+    authenticated: true,
+  });
+}
+
+/** The curated looks. Public and unauthenticated -- editorial content, not an engine. */
+export function fetchLooks(signal?: AbortSignal): Promise<LookPayload[]> {
+  return api<LookPayload[]>("/looks", { signal });
+}
+
+export function fetchLook(slug: string, signal?: AbortSignal): Promise<LookPayload> {
+  return api<LookPayload>(`/looks/${encodeURIComponent(slug)}`, { signal });
 }

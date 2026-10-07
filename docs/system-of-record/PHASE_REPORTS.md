@@ -661,6 +661,93 @@ none exists.
 
 ---
 
+## PHASE 5 — Saved persistence
+
+**Decision: `PHASE_5_READY_FOR_HUMAN_ACCEPTANCE`.**
+
+Saving looks, products and brands is real and attached to the account.
+
+### 5.1 What was delivered
+
+| | |
+|---|---|
+| Domain | `looks`, `look_items`, `saved_looks`, `favorite_products`, `favorite_brands`; uniqueness as a database constraint; no tenant column on any saved table |
+| Look identity | four curated editorial arrangements became real rows, so saves have something to point at. **Not** an engine output: no reasoning, no scoring, **no total price** |
+| APIs | 10 endpoints, current-user semantics only — not one accepts a customer id |
+| Consumer | one canonical save control on Shop, Product, Brands, Brand detail, Looks, Look detail and Saved; one shared state fetch; optimistic update with a real rollback |
+| Privacy | deleted with the customer by cascade **and** by explicit deletion in the pseudonymizing erasure path; events carry no customer identifier |
+
+### 5.2 The Look decision
+
+Looks were identified only by a slug in a TypeScript constant. Saving against that would have
+been persistence in name only — a row pointing at a string no foreign key could protect.
+
+> **A durable reference needs a durable identity.** §11's path A was taken not because a Look
+> domain was wanted for its own sake, but because the alternative was a saved row that breaks
+> silently the first time somebody edits an array.
+
+### 5.3 Two stale disclosures, found and removed
+
+The product page carried a **disabled** Save button beside *"Saving is not built. There is
+nowhere to store it yet."* The look detail page carried its own. Both are gone.
+
+> **The production disclosure rule cuts both ways.** An unbuilt feature must say so; a built
+> one must stop saying so. Leaving those sentences up would have been the same defect in the
+> other direction — and leaving the disabled buttons beside working ones would have given
+> each page two save controls, one of which never works.
+
+### 5.4 A limiter that was right, and a test that was wrong
+
+The browser suite first registered a customer per test and every dependent test failed.
+Registration is limited to **five per hour** by design.
+
+> **The limiter was not loosened.** Trading a real abuse control for test convenience is the
+> wrong trade. Accounts are created out of band with `manage.py create-test-customer`, the
+> same pattern the administrator already uses, and the suite signs in — 10 per 60s, which two
+> logins sit comfortably inside. Credentials come from the environment and are never
+> defaulted, because a password in tracked source is a weak credential.
+
+### 5.4b A bug Chromium hid
+
+The Saved list refetched on the **optimistic** saved set, before the DELETE had committed, so
+it could be served the row the server was still removing — with nothing to trigger a second
+fetch. Chromium passed every time. WebKit and the Mobile Safari viewport failed consistently.
+
+> **An optimistic update is a claim about the future; a list must follow the past.** Lists now
+> depend on a version that advances only once a mutation has settled. Running three engines is
+> what turned silent staleness into a reproducible failure.
+
+### 5.5 Verification
+
+| Check | Result |
+|---|---|
+| Backend `pytest -q` | **701 passed, 2 skipped** (was 657) |
+| — saved persistence / look parity | 34 / 2 |
+| Consumer unit tests | **26 passed** (was 13) |
+| Browser E2E vs deployed `:13080` | **488 passed, 0 failed, 1 flaky** — 163 tests each on Chromium, WebKit and the Mobile Safari viewport. The flaky one passed on retry and is reported as flaky rather than folded into the pass count |
+| Migration integrity | catalogue byte-identical; variant SKU+price md5 unchanged; 0 orphan look items |
+| Rollback | exercised both ways; destroys saved items, which is stated rather than glossed |
+| Governance · brand drift · Side A · data validators | PASS · NO_DRIFT · VERIFIED · 0/0/1 |
+| Secret scan · `git diff --check` | clean · clean |
+| Mutation testing | **18 of 18 detected, 0 survived** — every mutation registered against `services.py`, the one registered target this phase edited |
+| Source Tee | **€72.00**, `NON_PURCHASABLE`, preview — unchanged by saving |
+
+### 5.6 Remaining issues
+
+| Item | Status |
+|---|---|
+| Look copy duplicated between `content.ts` and the database | guarded by a parity test; converging is follow-up |
+| Resume-after-login | **NOT IMPLEMENTED**; honest sign-in flow instead |
+| Saved-state fetch is whole-set | fine for realistic sets; a windowed contract is future work |
+| Reordering, collections, admin view | **NOT BUILT** (the admin view deliberately) |
+| Style DNA · Dido intelligence · recommendation · outfit engine · merchant SaaS | **NOT STARTED** |
+| Media delivery separation · trusted proxy · distributed limiter | open, unchanged |
+| Firefox | **BLOCKED** — cannot launch in this environment |
+
+Phase 5 accepts a **user feature**. It accepts no intelligence, because none was built.
+
+---
+
 ## Platform decisions
 
 Re-stated at every phase boundary, deliberately separate.
