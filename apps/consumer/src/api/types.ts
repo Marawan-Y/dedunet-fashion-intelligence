@@ -317,3 +317,96 @@ export interface LookPayload {
 
 /** The three things that can be saved. */
 export type SaveKind = "products" | "brands" | "looks";
+
+/* ---------------------------------------------------------------- Style DNA
+ *
+ * What the customer has DELIBERATELY TOLD DEDUNET. Every entry carries its `source`, and
+ * in this phase the only value is "USER_EXPLICIT" -- the type says so rather than widening
+ * to `string`, so a future inferred value has to be added here before it can be rendered,
+ * which is the moment somebody decides how to label it to the customer.
+ */
+
+export type StyleSource = "USER_EXPLICIT";
+export type Stance = "PREFERRED" | "AVOIDED";
+
+export interface StanceEntry {
+  slug: string;
+  stance: Stance;
+  source: StyleSource;
+}
+
+export interface BrandStanceEntry extends StanceEntry {
+  name: string;
+}
+
+export interface FitEntry {
+  garment_category: string;
+  fit: string;
+  source: StyleSource;
+}
+
+export interface SizeEntry {
+  garment_category: string;
+  size_system: string;
+  size_label: string;
+  source: StyleSource;
+}
+
+export interface StyleBudget {
+  /** INTEGER minor units. Never divided in the client -- see lib/money.ts. */
+  per_piece_minor_units: number | null;
+  per_look_minor_units: number | null;
+  currency: string | null;
+}
+
+export interface StyleProfile {
+  /** False means "no profile yet", which arrives as a 200, not a 404. */
+  exists: boolean;
+  revision: number;
+  personalization_enabled: boolean;
+  style_directions: StanceEntry[];
+  colours: StanceEntry[];
+  colour_approach: string | null;
+  fits: FitEntry[];
+  sizes: SizeEntry[];
+  materials: StanceEntry[];
+  care_effort: string | null;
+  seasonality: string | null;
+  fit_notes: string;
+  brands: BrandStanceEntry[];
+  budget: StyleBudget;
+  /** A COUNT of filled sections. Never a percentage: there is no model to score. */
+  sections_with_preferences: number;
+  section_count: number;
+  created_at: string | null;
+  updated_at: string | null;
+}
+
+export interface StyleTerm {
+  slug: string;
+  label: string;
+  description: string;
+}
+
+export interface StyleOptions {
+  stances: Stance[];
+  style_directions: StyleTerm[];
+  colours: StyleTerm[];
+  colour_approaches: StyleTerm[];
+  garment_categories: StyleTerm[];
+  fits: StyleTerm[];
+  size_systems: StyleTerm[];
+  materials: StyleTerm[];
+  care_efforts: StyleTerm[];
+  seasonalities: StyleTerm[];
+  limits: Record<string, number>;
+  budget_currencies: string[];
+  sources: StyleSource[];
+}
+
+/** The shape the server sends with a 409. */
+export interface StyleConflictDetail {
+  message: string;
+  expected_revision: number;
+  current_revision: number;
+}

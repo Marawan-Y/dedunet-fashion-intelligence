@@ -947,6 +947,19 @@ def erase_customer(session: Session, customer: Customer, *, actor: str) -> Custo
 
     removed_saved = delete_all_for_customer(session, customer=customer)
 
+    # Style DNA goes the same way, and for the same reason stated twice above: this
+    # function pseudonymizes, so the ondelete=CASCADE foreign keys on the style tables
+    # never fire. It is listed separately rather than folded into the saved call because
+    # they are different domains with different owners, and a reader checking "is my
+    # profile erased?" should find the answer by name.
+    #
+    # Style DNA is the most intimate data the platform holds -- sizes, budgets, fit notes.
+    # Leaving it behind after an erasure request would be the worst version of the bug
+    # Saved persistence caught.
+    from .style_dna_service import delete_all_for_customer as delete_style_dna
+
+    removed_style_profiles = delete_style_dna(session, customer=customer)
+
     record_audit(
         session,
         actor=actor,
@@ -955,7 +968,8 @@ def erase_customer(session: Session, customer: Customer, *, actor: str) -> Custo
         entity_id=str(customer.id),
         detail=(
             "identifiers removed; order history retained for reconciliation; "
-            f"saved items deleted: {removed_saved}"
+            f"saved items deleted: {removed_saved}; "
+            f"style profiles deleted: {removed_style_profiles}"
         ),
     )
     session.commit()

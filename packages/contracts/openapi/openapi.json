@@ -1285,6 +1285,184 @@
         "title": "StockAdjustRequest",
         "type": "object"
       },
+      "StyleDnaPatch": {
+        "additionalProperties": false,
+        "description": "A partial update. Every field is optional, and that is the whole design.\n\n`model_fields_set` distinguishes \"absent\" from \"null\", which the service needs: a field\nthe caller did not mention is left alone, while a field sent as null or [] is cleared.\nWithout that distinction a client could not clear one preference without resending the\nentire profile, and could not change one field without risking every other.",
+        "properties": {
+          "brands": {
+            "anyOf": [
+              {
+                "items": {
+                  "additionalProperties": true,
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Brands"
+          },
+          "budget": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Budget"
+          },
+          "care_effort": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Care Effort"
+          },
+          "colour_approach": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Colour Approach"
+          },
+          "colours": {
+            "anyOf": [
+              {
+                "items": {
+                  "additionalProperties": true,
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Colours"
+          },
+          "expected_revision": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The revision the client last read. Mismatch returns 409 rather than overwriting a concurrent edit. 0 means 'I believe no profile exists yet'.",
+            "title": "Expected Revision"
+          },
+          "fit_notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fit Notes"
+          },
+          "fits": {
+            "anyOf": [
+              {
+                "items": {
+                  "additionalProperties": true,
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fits"
+          },
+          "materials": {
+            "anyOf": [
+              {
+                "items": {
+                  "additionalProperties": true,
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Materials"
+          },
+          "personalization_enabled": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Personalization Enabled"
+          },
+          "seasonality": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Seasonality"
+          },
+          "sizes": {
+            "anyOf": [
+              {
+                "items": {
+                  "additionalProperties": true,
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sizes"
+          },
+          "style_directions": {
+            "anyOf": [
+              {
+                "items": {
+                  "additionalProperties": true,
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Style Directions"
+          }
+        },
+        "title": "StyleDnaPatch",
+        "type": "object"
+      },
       "StylistRecommendation": {
         "properties": {
           "currency": {
@@ -3416,6 +3594,138 @@
         ]
       }
     },
+    "/api/v1/me/style-dna": {
+      "delete": {
+        "description": "Delete the profile and every preference row it owns.\n\nNOTHING ELSE. Not the account, not Saved items, not orders. \"Forget what I told you\nabout how I dress\" is a narrow request, and a delete that quietly took the Saved list\nwith it would destroy data the customer never mentioned.\n\nIdempotent, and returns the empty representation so the client can render the result\nwithout a follow-up GET.",
+        "operationId": "delete_style_dna_api_v1_me_style_dna_delete",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "default": "",
+              "title": "Authorization",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Delete Style Dna",
+        "tags": [
+          "commerce"
+        ]
+      },
+      "get": {
+        "description": "The signed-in customer's profile, or a deterministic empty one.\n\n200 with `exists: false` rather than 404. A 404 would force the client to read absence\nout of an error, which makes \"you have not made a profile\" indistinguishable from \"your\nsession expired\" -- and those need opposite responses from the UI. 401 keeps its single\nmeaning.",
+        "operationId": "get_style_dna_api_v1_me_style_dna_get",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "default": "",
+              "title": "Authorization",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Style Dna",
+        "tags": [
+          "commerce"
+        ]
+      },
+      "patch": {
+        "description": "Create or update the profile. 409 on a stale revision.\n\nOnly the fields the caller actually sent are applied; `model_fields_set` is what makes\nthat possible, and `exclude_unset` would not be enough on its own because a deliberate\nnull must survive.",
+        "operationId": "patch_style_dna_api_v1_me_style_dna_patch",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "default": "",
+              "title": "Authorization",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StyleDnaPatch"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Patch Style Dna",
+        "tags": [
+          "commerce"
+        ]
+      }
+    },
     "/api/v1/media/{asset_path}": {
       "get": {
         "description": "Serve one brand or product asset.\n\nDeliberately narrow. Everything that is not an explicitly allowed file under the\ngenerated asset root is a 404 \u2014 including directories, dotfiles and anything whose\nresolved path escapes the root.",
@@ -3598,6 +3908,26 @@
           }
         },
         "summary": "Get Product"
+      }
+    },
+    "/api/v1/style-dna/options": {
+      "get": {
+        "description": "The controlled vocabularies, labels and limits the editor renders.\n\nPublic and unauthenticated: these are the platform's words, not anybody's data. Serving\nthem from here is what stops the consumer shipping its own copy of the taxonomy and\noffering a choice the server would reject.",
+        "operationId": "style_dna_options_api_v1_style_dna_options_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Style Dna Options",
+        "tags": [
+          "commerce"
+        ]
       }
     },
     "/api/v1/stylist/recommend": {

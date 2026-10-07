@@ -2,6 +2,9 @@ import { api, session } from "./client";
 import type {
   BrandDetail,
   BrandListing,
+  CatalogProduct,
+  CommerceModeDisclosure,
+  CustomerOrder,
   LookPayload,
   SaveKind,
   SavedBrandEntry,
@@ -10,9 +13,8 @@ import type {
   SavedOverview,
   SavedProductEntry,
   SavedState,
-  CatalogProduct,
-  CommerceModeDisclosure,
-  CustomerOrder,
+  StyleOptions,
+  StyleProfile,
   TokenResponse,
 } from "./types";
 
@@ -138,4 +140,41 @@ export function fetchLooks(signal?: AbortSignal): Promise<LookPayload[]> {
 
 export function fetchLook(slug: string, signal?: AbortSignal): Promise<LookPayload> {
   return api<LookPayload>(`/looks/${encodeURIComponent(slug)}`, { signal });
+}
+
+/* ------------------------------------------------------------------ Style DNA */
+
+/** The controlled vocabularies. Public: these are the platform's words, not anyone's data. */
+export function fetchStyleOptions(signal?: AbortSignal): Promise<StyleOptions> {
+  return api<StyleOptions>("/style-dna/options", { signal });
+}
+
+/** The signed-in customer's profile. 200 with `exists: false` when there is none. */
+export function fetchStyleProfile(signal?: AbortSignal): Promise<StyleProfile> {
+  return api<StyleProfile>("/me/style-dna", { authenticated: true, signal });
+}
+
+/**
+ * Partial update. Only the keys present are changed; a key sent as `[]` or `null` clears.
+ *
+ * `expectedRevision` is how a stale tab is caught rather than allowed to overwrite: the
+ * server answers 409 and the client offers a reload instead of silently winning.
+ */
+export function patchStyleProfile(
+  patch: Record<string, unknown>,
+  expectedRevision: number | null,
+): Promise<StyleProfile> {
+  return api<StyleProfile>("/me/style-dna", {
+    method: "PATCH",
+    authenticated: true,
+    body: expectedRevision === null ? patch : { ...patch, expected_revision: expectedRevision },
+  });
+}
+
+/** Delete the profile. Saved items, orders and the account are untouched. */
+export function deleteStyleProfile(): Promise<{ deleted: boolean; profile: StyleProfile }> {
+  return api<{ deleted: boolean; profile: StyleProfile }>("/me/style-dna", {
+    method: "DELETE",
+    authenticated: true,
+  });
 }
