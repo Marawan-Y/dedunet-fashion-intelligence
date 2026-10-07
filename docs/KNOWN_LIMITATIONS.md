@@ -486,3 +486,16 @@ the same commit when a PR is open — for `26c3120`, runs #6 and #7, six backend
 77-mutation harness executed six times. Costs ~12 minutes of duplicated mutation execution per
 push and buys nothing. Tracked as `R-018`; recorded rather than fixed so that the run which
 proved the CI fix is the configuration that ships.
+
+**A green build says nothing about what the device is served.** On 2026-10-07 a physical iPhone
+acceptance failed on a stale disclosure, with the code, the database, the API and CI all
+correct: port 13080 was reaching `dedunet-consumer-candidate` — a six-week-old cutover
+rehearsal container, tagged with a commit the publication history rewrite had already removed —
+instead of the staging web container, which had served no request at all since it started.
+A host restart had crossed the Docker port map. Nothing in this repository caused it and no
+check here would have caught it, because every signal the repository produces describes the
+code rather than the deployment. Before a device acceptance, compare the `ETag` from the
+acceptance URL against the serving container's own, and query containers by IP rather than by
+`localhost` — `localhost` resolved to `::1` and reached a different relay than the LAN address
+the phone uses. Tracked as `R-019`;
+`evidence/phase-5/SAVED_ACCEPTANCE_DEPLOYMENT_INCIDENT.md`.
