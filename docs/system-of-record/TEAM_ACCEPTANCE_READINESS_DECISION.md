@@ -8,6 +8,54 @@
 
 ---
 
+## 0c. Saved persistence accepted (2026-10-07) — a feature, not a capability
+
+# `SAVED_PERSISTENCE_ACCEPTED`
+
+**Date:** 2026-10-07 at `2fcf968` · **Decided by:** repository owner, on a physical iPhone
+
+Saved Looks, Favorite Products and Favorite Brands are real server-backed persistence attached
+to the customer's account. A human confirmed all eleven gates in Safari on real hardware
+against normal staging: the current Saved UI on the Source Tee, sign in, saving a product, a
+brand and a curated Look, counts reading **1 / 1 / 1**, **persistence across a full Safari
+restart**, unsave, cross-page consistency, final counts **0 / 0 / 0**, and signed-out Save
+behaviour. Recorded in
+[`evidence/team-acceptance/SAVED_PERSISTENCE_IPHONE_ACCEPTANCE.md`](../../evidence/team-acceptance/SAVED_PERSISTENCE_IPHONE_ACCEPTANCE.md).
+
+The Safari-restart gate is the one that carries the meaning. This phase refused to write Saved
+state to `localStorage` so that the gate could distinguish server persistence from browser
+state wearing its clothes; the device is where that refusal is cashed in.
+
+**The first attempt at this acceptance FAILED**, on a six-week-old artifact that a crossed
+Docker port map had put behind the acceptance URL, and that failure is kept rather than tidied
+away: see [`evidence/phase-5/SAVED_ACCEPTANCE_DEPLOYMENT_INCIDENT.md`](../../evidence/phase-5/SAVED_ACCEPTANCE_DEPLOYMENT_INCIDENT.md)
+and `R-019`. The lasting finding is that **code provenance and deployment provenance are
+separate facts**, and this programme had been verifying only the first. The gate that now
+precedes any human acceptance is [`docs/operations/DEPLOYMENT_PROVENANCE_GATE.md`](../operations/DEPLOYMENT_PROVENANCE_GATE.md).
+
+### What this status does NOT mean
+
+- **Not `STYLE_DNA_ACCEPTED`**, **not `DIDO_INTELLIGENCE_ACCEPTED`**, **not
+  `RECOMMENDATION_ENGINE_ACCEPTED`**, **not `OUTFIT_ENGINE_ACCEPTED`.** None is started. No
+  scoring exists; Looks remain human-composed, with no total price and no column for one.
+- **Not `NATIVE_IOS_ACCEPTED`.** Safari on an iPhone is not the native application, which has
+  still never been built.
+- **Not `PUBLIC_COMMERCIAL_LAUNCH_READY`.** `PUBLIC_COMMERCIAL_LAUNCH` remains **BLOCKED** and
+  `LEGAL_CLEARANCE_PENDING` is unchanged. The deployment tested was in `BRAND_PREVIEW_MODE`;
+  the Source Tee was **€72.00**, `NON_PURCHASABLE`, and the server refused a cart add with 409
+  during verification. **Saving changes no commerce state.**
+
+### Locked behaviour
+
+`SAVED_PERSISTENCE = ACCEPTED`. A later phase may extend Saved deliberately; these are now
+accepted behaviour and must not be rewritten casually: customer ownership with no endpoint
+accepting a customer id, server persistence with **no `localStorage` fake persistence**,
+uniqueness enforced by a database constraint, idempotent save and unsave, privacy deletion by
+both FK cascade and explicit deletion in `erase_customer`, visibility rules answering **404
+rather than 403** for hidden targets, and cross-surface consistency from one shared fetch.
+
+---
+
 ## 0a. Consumer frontend cutover accepted (2026-08-27) — later than §0, narrower than it
 
 # `STAGING_CUTOVER_ACCEPTED` · `ENTERPRISE_CONSUMER_FOUNDATION_LOCKED`

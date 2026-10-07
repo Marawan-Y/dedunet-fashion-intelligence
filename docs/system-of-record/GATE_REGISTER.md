@@ -79,5 +79,6 @@ directory is Side B's exclusive write lane.
 
 G1 cannot exit regardless of M1, because no approved market, merchant model, product, price, batch,
 operator or policy exists, and three launch blockers remain OPEN: stored XSS (SB-RISK-003),
-non-transactional inventory (SB-RISK-005) and shipped secrets (SB-RISK-011). CI has never executed;
-mobile is untested. No calendar date overrides any of this.
+non-transactional inventory (SB-RISK-005) and shipped secrets (SB-RISK-011). CI now executes and is green on the accepted head (run #7, `26c3120`, and runs #8/#9 on
+`2fcf968`), so that half of the old statement is retired; **mobile is still untested**, and
+no CI result bears on any criterion above. No calendar date overrides any of this.

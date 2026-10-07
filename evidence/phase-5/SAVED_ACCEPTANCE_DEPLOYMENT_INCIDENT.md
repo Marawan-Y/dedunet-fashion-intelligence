@@ -201,3 +201,54 @@ was something stale for it to land on. Tracked as **R-019**.
 - No automated check asserts deployment provenance — the verification in §8 was performed by
   hand this once.
 - **Physical-iPhone Saved acceptance remains outstanding and unclaimed.**
+
+## 11. Closure — 2026-10-07
+
+### Human acceptance passed on the repaired deployment
+
+The retest passed on physical iPhone Safari against `http://10.0.0.2:13080`, all eleven gates
+including persistence across a Safari restart. Recorded as `SAVED_PERSISTENCE_ACCEPTED` in
+`evidence/team-acceptance/SAVED_PERSISTENCE_IPHONE_ACCEPTANCE.md`.
+
+That record states plainly that the **first** attempt failed and why. The failed attempt is not
+rewritten as a success anywhere, because the finding it produced is the more valuable half.
+
+### Operational cleanup of R-019
+
+Verified before removing anything:
+
+| Precondition | Result |
+|---|---|
+| Candidate container stopped | `exited (0)` at 2026-10-07T11:11:29Z |
+| Persistent volumes or mounts | **none** — nothing to lose |
+| Image provenance recorded | `41eac42082ba`, created 2026-08-26T08:48:35Z, label `dedunet.head=e29e019`, tags `e29e019` and `latest`, 77 MB |
+| Normal staging owns 13080 | `dedunet-staging-web-1` |
+
+Then `docker rm dedunet-consumer-candidate` — **the container only**.
+
+| Kept | Removed |
+|---|---|
+| All six `dedunet-consumer-candidate` images (`e29e019`, `latest`, `b91ed77`, `387df5f`, `f65c49c`, `608fc56`) | the stale container |
+| Every Docker volume, including `dedunet-staging_staging-pgdata` | — |
+| Database contents | — |
+
+The image is rollback material and costs only disk. The container was the hazard: a stopped
+container still holds a port binding, and a binding is what a host restart can hand back.
+
+### Proof after cleanup
+
+| Check | Result |
+|---|---|
+| Containers publishing 13080 | **exactly 1** — `dedunet-staging-web-1` |
+| LAN URL `http://10.0.0.2:13080/` | `ETag "6abd9488-7af"`, entry `index-BW2pDhkZ.js` |
+| Active container's own `index.html` | same entry chunk, sha256 `c71ea174378d495f` |
+| Access-log probe via the LAN URL | **reached `dedunet-staging-web-1`** |
+| Same-origin `/api` | `/api/v1/commerce/mode` → **200**, `BRAND_PREVIEW_MODE` |
+
+### What remains open
+
+The cleanup removes the residue; it does not remove the class of failure. A crossed port map
+can recur, and **no automated check asserts deployment provenance**. What exists now is a
+written gate — `docs/operations/DEPLOYMENT_PROVENANCE_GATE.md` — with five checks that must be
+run before a human is asked to test. `R-019` stays `BLOCKED` on the automation, not on the
+cleanup.

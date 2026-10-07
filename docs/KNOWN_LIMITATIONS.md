@@ -499,3 +499,15 @@ acceptance URL against the serving container's own, and query containers by IP r
 `localhost` — `localhost` resolved to `::1` and reached a different relay than the LAN address
 the phone uses. Tracked as `R-019`;
 `evidence/phase-5/SAVED_ACCEPTANCE_DEPLOYMENT_INCIDENT.md`.
+
+**The Saved acceptance passed on the retest, and the stale-deployment finding stands.** The
+physical iPhone Safari acceptance passed on 2026-10-07 against the repaired deployment, all
+eleven gates including persistence across a Safari restart — `SAVED_PERSISTENCE_ACCEPTED`,
+`evidence/team-acceptance/SAVED_PERSISTENCE_IPHONE_ACCEPTANCE.md`. The failed first attempt is
+kept in that record rather than tidied away, because an acceptance log showing only the
+successful attempt would imply the deployment had always been correct. The stale candidate
+**container** has been removed and its **images** kept as rollback material, exactly one
+container now publishes 13080, and a probe through the LAN URL reaches it. What is *not* fixed
+is the class of failure: **no automated check asserts deployment provenance**, so
+`docs/operations/DEPLOYMENT_PROVENANCE_GATE.md` is a procedure a person has to actually run.
+`R-019` stays open on that automation.
