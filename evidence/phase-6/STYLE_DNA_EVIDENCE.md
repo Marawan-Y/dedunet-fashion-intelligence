@@ -403,3 +403,59 @@ a preference, disable personalisation, confirm the values remain, re-enable, del
 DNA, confirm the profile is empty, and confirm Saved content is intact.
 
 No automated result in this phase substitutes for it, and none is offered as doing so.
+
+## 20. Closure — 2026-10-08
+
+### Human acceptance
+
+Physical iPhone Safari, normal staging `http://10.0.0.2:13080`, all thirteen gates PASS.
+`STYLE_DNA_ACCEPTED` and `STYLE_DNA_LOCKED`, recorded in
+`evidence/team-acceptance/STYLE_DNA_IPHONE_ACCEPTANCE.md` and in
+`TEAM_ACCEPTANCE_READINESS_DECISION.md` §0d.
+
+Deployment provenance was verified **before** the human was asked to test — and the gate
+caught a stale artifact on that first run, which is recorded in §16 rather than tidied away.
+
+### Merge
+
+| | |
+|---|---|
+| PR | **#2**, merged 2026-10-08T20:30:47Z |
+| Merge commit | **`d97aaf266798b5f1f04bc63b1f63f971bc3110e0`** |
+| Parents | `752989d` + `67930c7` — a **merge commit**, not a squash |
+| Post-merge CI | run **#22** on `main`, **success**, all five jobs |
+
+Merge commit rather than squash because tracked evidence cites `dc1713e`, `93d044e`,
+`752989d` and others **by hash**. All ten checked hashes remain reachable from `main`; a
+squash would have left those references pointing at commits absent from its history.
+
+### Staging equivalence — no redeploy
+
+`93d044e → d97aaf2` touches **four files, all under `docs/` or `evidence/`**. `apps`,
+`services`, `platform`, `packages`, `docker-compose.staging.yml` and `.github` are **0 files
+changed**.
+
+The accepted staging deployment is therefore **behaviourally equivalent** to `main`, and was
+not rebuilt or restarted. Confirmed rather than assumed: one container owns 13080, a probe
+through the LAN URL reaches it, the host `ETag "6ac782a1-7af"` and entry chunk
+`index-CqwjVyBg.js` match the container's own file, the database is at `a9f3e26b104c`, and
+the commerce mode is still `BRAND_PREVIEW_MODE` with `purchasable: false`.
+
+**The full human test was not repeated**, because nothing it tested changed.
+
+### R-019 — still open, and deliberately so
+
+The provenance gate passed, and on its first real use it caught a second stale deployment.
+That is the gate working, not the risk closing. **No automated check asserts deployment
+provenance**, so `R-019` remains `BLOCKED` on the automation. Closing it because a manual
+procedure succeeded would be recording the opposite of what was learned.
+
+### State
+
+```
+STYLE_DNA = ACCEPTED
+STYLE_DNA = LOCKED
+```
+
+The next authorized phase is **Dido conversational intelligence**. It is **not started**: no
+schema, no endpoint, no stub, no flag. `PUBLIC_COMMERCIAL_LAUNCH` remains **BLOCKED**.
