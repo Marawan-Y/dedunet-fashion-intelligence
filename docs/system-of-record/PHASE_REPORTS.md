@@ -748,6 +748,53 @@ Phase 5 accepts a **user feature**. It accepts no intelligence, because none was
 
 ---
 
+## PHASE 6 — Style DNA: the explicit customer style profile
+
+**Branch** `feat/style-dna-explicit-profile` from `main` at `752989d` · **Migration**
+`a9f3e26b104c` · **Evidence** `evidence/phase-6/STYLE_DNA_EVIDENCE.md`
+
+The first real structured customer style profile. **Explicit user input only**: five
+sections, seven tables, ten controlled vocabularies, and one rule the domain hangs from --
+every row exists because a person chose it.
+
+| Decision | What was built, and why |
+|---|---|
+| **Provenance** | `source = 'USER_EXPLICIT'` with a database CHECK on all six preference tables. A future inference phase must change the constraint, which is a migration somebody reviews -- so it cannot quietly reuse rows that were never explicit |
+| **Saved is not an input** | A save is an act of interest, not a statement of preference; people save things to decide against them. Inference needs its own source, confidence, explanation, correction, consent and decay. None exists, so nothing infers |
+| **Two controls** | Disable preserves everything and withdraws use; delete removes the profile and its rows and **nothing else**. Conflating them would destroy data somebody meant to keep |
+| **Erasure** | Explicit deletion in `erase_customer`, because it pseudonymizes and the FK cascade never fires. Inherited from Phase 5 rather than rediscovered |
+| **Sizes** | Stored as stated, **never converted** between systems or brands. `EU 50 = UK 40 = M` is approximately true across brands and exactly true within none |
+| **Money** | Integer minor units, explicit currency, float **rejected** not coerced |
+| **Brands** | Foreign keys into the real Brand domain; development fixtures refused. A preference implies no partnership or endorsement |
+| **Concurrency** | `revision` with 409. A profile edited from a phone and a laptop is exactly the shape that loses updates |
+| **Completeness** | "3 of 5 sections contain preferences" -- a count the reader can check. **No percentage**, because there is no model to produce one |
+| **Taxonomy** | One owner: the server validates, so the server holds the words. The one pre-existing client list is held by a drift test |
+
+**Verification.** Backend 770 passed / 2 skipped (was 701); consumer unit 54 (was 26);
+mutation 82 run, 82 detected, 0 survived, 0 inconclusive; Style DNA E2E 48 passed / 0 failed
+across Chromium, WebKit and Mobile Safari; OpenAPI +2 paths with no existing path changed;
+migration applied to staging with catalogue and brand md5 **byte-identical** and every row
+count unchanged.
+
+**The deployment provenance gate earned its place on first use.** The staging web build
+failed on three TypeScript errors, `docker compose build` reported success through a pipe
+that swallowed the exit code, `up -d` recreated from the six-week-old image, and the
+deployed artifact contained no Style DNA. Healthy containers, a correct API and green CI all
+agreed nothing was wrong; only the artifact-identity checks disagreed.
+
+| Limitation | Status |
+|---|---|
+| Nothing **uses** the profile -- Dido, catalogue and ranking all ignore it | stored, not applied |
+| Cross-brand / cross-system size conversion | **NOT BUILT**, deliberately |
+| Saved inference · browsing inference · LLM profiles · Dido intelligence · recommendation · outfit engine · merchant SaaS | **NOT STARTED** |
+| Deployment provenance automation (`R-019`) | open, unchanged |
+| Firefox | **BLOCKED** -- cannot launch in this environment |
+
+Phase 6 accepts **a record of what a customer said**. It accepts no intelligence, because
+none was built, and the page says so where a customer will read it.
+
+---
+
 ## Platform decisions
 
 Re-stated at every phase boundary, deliberately separate.
