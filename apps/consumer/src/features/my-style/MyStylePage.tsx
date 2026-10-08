@@ -187,6 +187,17 @@ export default function MyStylePage() {
   }, []);
 
   if (!signedIn) {
+    /* A SIGNED-OUT VISITOR STILL SEES WHAT STYLE DNA COVERS.
+     *
+     * The page this replaced listed the five sections and their signals to everyone, and
+     * that was its whole value: you could see what DEDUNET would ask before deciding
+     * whether to tell it. Replacing that with a bare sign-in panel would have been a real
+     * downgrade -- "sign in to find out what we want to know about you" is a worse offer --
+     * and the repository's own substance test caught it.
+     *
+     * So the vocabulary is shown read-only. The options endpoint is public because these
+     * are the platform's words rather than anybody's data, which is exactly what makes this
+     * possible without a session. */
     return (
       <Container>
         <Section>
@@ -194,13 +205,43 @@ export default function MyStylePage() {
             <Header filled={0} exists={false} />
             <EmptyState
               title="Sign in to build your Style DNA"
-              body="Your Style DNA is kept to your account rather than to this browser, so it is the same wherever you sign in."
+              body="Your Style DNA is kept to your account rather than to this browser, so it is the same wherever you sign in. Nothing below is set until you set it."
               action={
                 <ButtonLink to="/account?next=/my-style" variant="primary">
                   Sign in
                 </ButtonLink>
               }
             />
+            {options ? (
+              <div data-testid="style-preview">
+                <Stack gap="loose">
+                  {([
+                    [SECTION_TITLES[0], "The styles you gravitate to, and the ones you never wear.", options.style_directions],
+                    [SECTION_TITLES[1], "What you reach for, and what you have decided against.", options.colours],
+                    [SECTION_TITLES[2], "How you like things to sit, and the sizes you already know.", options.fits],
+                    [SECTION_TITLES[3], "What your skin, your climate and your principles allow.", options.materials],
+                    [SECTION_TITLES[4], "Who you already trust, and what a piece is worth to you.", options.care_efforts],
+                  ] as [string, string, StyleTerm[]][]).map(([title, body, terms]) => (
+                    <section key={title} className={styles.group}>
+                      <SectionHead eyebrow="Section" title={title} level={2} />
+                      <p className={styles.groupBody}>{body}</p>
+                      <ul className={styles.previewList}>
+                        {terms.map((term) => (
+                          <li key={term.slug} className={styles.previewItem}>
+                            <span>{term.label}</span>
+                            <span className={styles.notSet}>Not set</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </section>
+                  ))}
+                </Stack>
+              </div>
+            ) : null}
+            <Subtle>
+              Saved activity is not used to infer any of this. Everything in a Style DNA is
+              there because the customer chose it.
+            </Subtle>
           </Stack>
         </Section>
       </Container>

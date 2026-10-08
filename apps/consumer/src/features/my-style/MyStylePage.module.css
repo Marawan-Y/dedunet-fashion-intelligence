@@ -194,3 +194,26 @@
 @media (prefers-reduced-motion: reduce) {
   .chip { transition: none; }
 }
+
+/* The signed-out read-only preview. Reuses the signal-row treatment the previous page
+   used, because what it communicated -- a named slot with an empty value -- was right. */
+.previewList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--ds-space-2);
+  grid-template-columns: repeat(auto-fill, minmax(min(220px, 100%), 1fr));
+}
+
+.previewItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ds-space-3);
+  min-height: var(--ds-target-min);
+  padding: var(--ds-space-2) var(--ds-space-4);
+  background: var(--ds-surface);
+  border: var(--ds-border-width) solid var(--ds-border);
+  font-size: var(--ds-text-sm);
+}

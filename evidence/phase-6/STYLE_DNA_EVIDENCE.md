@@ -292,6 +292,23 @@ Worth recording because each one passed while proving nothing:
    failed on all three engines while the copy was perfectly correct: it was testing the
    stylesheet, not the sentence.
 
+### A regression the repository's own test caught
+
+`rendering.spec.ts` asserts that `/my-style` renders at least 40 elements -- a floor
+deliberately set to catch a stub rather than a thin page. The first version of this phase
+failed it on all three engines, and the test was right.
+
+The page it replaced listed all five sections and their signals **to everyone**, and that
+was its value: you could see what DEDUNET would ask before deciding whether to tell it.
+Replacing that with a bare sign-in panel was a real downgrade -- *"sign in to find out what
+we want to know about you"* is a worse offer than the shell it replaced.
+
+Fixed on the product side rather than by lowering the floor: a signed-out visitor now sees
+the five sections read-only, driven by the real server vocabulary. The options endpoint is
+public precisely because these are the platform's words rather than anybody's data, which is
+what makes it possible without a session. Re-run: **219 passed, 0 failed** across the three
+engines.
+
 ### A mutation that survived, and what was done about it
 
 `M84` was first registered against the explicit child-row deletion in `delete_profile`. It
