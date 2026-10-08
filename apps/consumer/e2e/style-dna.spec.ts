@@ -73,7 +73,17 @@ async function openMyStyle(page: Page): Promise<void> {
 
 async function save(page: Page): Promise<void> {
   await page.getByTestId("style-save").click();
-  await expect(page.getByTestId("style-status")).toContainText("saved", { timeout: 20_000 });
+  /* The EXACT message, not a substring.
+   *
+   * `toContainText("saved")` looked right and was a no-op: the pre-save status reads
+   * "You have unsaved changes.", which contains "saved", so the wait matched instantly
+   * and every test raced ahead of the request it was supposed to be waiting for. It
+   * showed up as an intermittent failure in the longest test and as nothing at all in
+   * the short ones. A substring assertion on a status line is only as good as the other
+   * strings that line can hold. */
+  await expect(page.getByTestId("style-status")).toHaveText("Your Style DNA is saved.", {
+    timeout: 20_000,
+  });
 }
 
 test.beforeAll(async ({ request }) => {
@@ -374,8 +384,19 @@ test.describe("Style DNA", () => {
 
   test("Dido states the profile is stored and not yet applied", async ({ page }) => {
     await page.goto("/dido");
+    // Wait for the lazily-loaded route chunk: reading innerText straight after goto
+    // asserted against an empty shell.
+    await expect(page.getByText(/stored, not yet applied/i).first()).toBeVisible({
+      timeout: 20_000,
+    });
+
+    /* CASE-INSENSITIVE, because the state column is styled `text-transform: uppercase`
+     * and `innerText` reports text as RENDERED, not as authored. The first version of
+     * this assertion compared against the source casing and failed on all three engines
+     * while the copy was perfectly correct -- a test asserting the stylesheet rather than
+     * the sentence. */
     const body = await page.locator("body").innerText();
-    expect(body).toContain("Stored, not yet applied");
+    expect(body.toLowerCase()).toContain("stored, not yet applied");
     // And it must not claim to be using it.
     expect(body.toLowerCase()).not.toContain("using your style profile");
   });

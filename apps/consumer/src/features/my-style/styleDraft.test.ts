@@ -96,14 +96,14 @@ describe("stance cycling", () => {
 
   it("marks every created entry as explicitly set by the user", () => {
     const entries = cycleStance([], "linen");
-    expect(entries[0].source).toBe("USER_EXPLICIT");
+    expect(entries[0]?.source).toBe("USER_EXPLICIT");
   });
 
   it("cycles brands while keeping the display name", () => {
     let brands = cycleBrandStance([], "dedunet", "DEDUNET");
     expect(brands[0]).toMatchObject({ slug: "dedunet", name: "DEDUNET", stance: "PREFERRED" });
     brands = cycleBrandStance(brands, "dedunet", "DEDUNET");
-    expect(brands[0].stance).toBe("AVOIDED");
+    expect(brands[0]?.stance).toBe("AVOIDED");
     expect(cycleBrandStance(brands, "dedunet", "DEDUNET")).toEqual([]);
   });
 });

@@ -511,3 +511,33 @@ container now publishes 13080, and a probe through the LAN URL reaches it. What 
 is the class of failure: **no automated check asserts deployment provenance**, so
 `docs/operations/DEPLOYMENT_PROVENANCE_GATE.md` is a procedure a person has to actually run.
 `R-019` stays open on that automation.
+
+**Style DNA stores what a customer said and nothing else.** Every row carries
+`source = USER_EXPLICIT`, pinned by a database CHECK on all six preference tables, so an
+inferred preference cannot be written by a code path that forgot the distinction — it would
+take a migration somebody reviews. Saved items are **not** an input: a save is an act of
+interest rather than a statement of preference, and people save things to decide against
+them. Inference needs its own source, confidence, explanation, correction path, consent and
+decay, and none of those exists, so nothing infers. The page says so where a customer will
+read it, because every other platform does infer.
+
+**Nothing uses the Style DNA profile yet.** Dido does not read it, the catalogue does not
+filter or rank on it, and no recommendation engine exists. Dido's capability copy says
+"Stored, not yet applied" rather than "Not built", which was the previous wording and became
+false the moment a customer could record a preference — and rather than "applied", which is
+not true either. Stored and applied are different states.
+
+**Sizes are never converted, between systems or between brands.** `EU 50 = UK 40 = M` is
+approximately true across brands and exactly true within none. A customer who knows two
+systems states both, and both are kept as stated.
+
+**A style preference is not a product claim.** "I prefer cotton" is a fact about the
+customer and authorizes nothing about any garment: composition stays "stated, not verified"
+until supplier documents and testing say otherwise.
+
+**The deployment provenance gate caught a stale deployment on its first real use.** The
+staging web build failed on three TypeScript errors, `docker compose build` reported success
+through a pipe that swallowed the exit code, `up -d` recreated from the six-week-old image,
+and the deployed artifact contained no Style DNA. Healthy containers, a correct API and
+green CI all agreed nothing was wrong. Only the artifact-identity checks disagreed. If a
+build command's output is piped, its exit code must still be checked.

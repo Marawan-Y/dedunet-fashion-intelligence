@@ -211,11 +211,7 @@ export default function MyStylePage() {
     return (
       <Container>
         <Section>
-          <ErrorState
-            title="My Style could not be loaded"
-            body="DEDUNET could not reach the server."
-            action={<Button onClick={() => void load()}>Try again</Button>}
-          />
+          <ErrorState error={loadError} onRetry={() => void load()} testId="style-error" />
         </Section>
       </Container>
     );
@@ -477,13 +473,13 @@ export default function MyStylePage() {
                       data-testid="delete-confirm-yes">
                       Yes, delete it
                     </Button>
-                    <Button variant="ghost" onClick={() => setConfirmingDelete(false)}
+                    <Button variant="quiet" onClick={() => setConfirmingDelete(false)}
                       disabled={disabled}>
                       Keep it
                     </Button>
                   </span>
                 ) : (
-                  <Button variant="ghost" onClick={() => setConfirmingDelete(true)}
+                  <Button variant="quiet" onClick={() => setConfirmingDelete(true)}
                     disabled={disabled} data-testid="style-delete">
                     Delete my Style DNA
                   </Button>

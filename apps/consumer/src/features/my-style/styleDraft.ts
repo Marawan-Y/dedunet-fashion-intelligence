@@ -204,14 +204,18 @@ export class BudgetFormatError extends Error {}
 export function buildPatch(draft: StyleDraft, original: StyleDraft): Record<string, unknown> {
   const patch: Record<string, unknown> = {};
 
-  const sameStances = (a: { slug: string; stance: Stance }[], b: { slug: string; stance: Stance }[]) =>
-    a.length === b.length &&
-    [...a]
-      .sort((x, y) => x.slug.localeCompare(y.slug))
-      .every((entry, i) => {
-        const other = [...b].sort((x, y) => x.slug.localeCompare(y.slug))[i];
-        return entry.slug === other.slug && entry.stance === other.stance;
-      });
+  /* Compare as sorted key strings. The previous version re-sorted `b` inside the
+   * predicate, which TypeScript correctly flagged as possibly-undefined on the index and
+   * which also sorted once per element. One key each, compared directly. */
+  const stanceKey = (entries: { slug: string; stance: Stance }[]) =>
+    entries
+      .map((e) => `${e.slug}:${e.stance}`)
+      .sort()
+      .join("|");
+  const sameStances = (
+    a: { slug: string; stance: Stance }[],
+    b: { slug: string; stance: Stance }[],
+  ) => stanceKey(a) === stanceKey(b);
 
   if (!sameStances(draft.styleDirections, original.styleDirections)) {
     patch.style_directions = draft.styleDirections.map((e) => ({ slug: e.slug, stance: e.stance }));
