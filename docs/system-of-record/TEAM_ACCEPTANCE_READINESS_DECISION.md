@@ -8,6 +8,60 @@
 
 ---
 
+## 0d. Style DNA accepted (2026-10-08) — a record of what a customer said
+
+# `STYLE_DNA_ACCEPTED` · `STYLE_DNA_LOCKED`
+
+**Date:** 2026-10-08 at `93d044e` · **Decided by:** repository owner, on a physical iPhone
+
+Style DNA is a real, explicit, customer-authored style profile: style directions, colour, fit
+and size, material, brand preferences and budgets, with a personalisation switch and a
+delete. A human confirmed all thirteen gates in Safari on real hardware against normal
+staging, including persistence across a Safari restart, that **disabling personalisation
+preserves every value**, and that **a saved item survives Style DNA deletion**. Recorded in
+[`evidence/team-acceptance/STYLE_DNA_IPHONE_ACCEPTANCE.md`](../../evidence/team-acceptance/STYLE_DNA_IPHONE_ACCEPTANCE.md).
+
+Those last two are the gates that separate this from a plausible imitation. A control that
+quietly deleted while claiming to disable, or a delete that took the Saved list with it,
+would both look correct until the moment a customer noticed something gone.
+
+**Nothing here was inferred.** Every row carries `USER_EXPLICIT`, pinned by a database CHECK
+rather than by convention, and Saved activity does not create or alter a profile. The page
+says so out loud, because every other platform does infer and an assumption we know people
+will make is one we are responsible for correcting.
+
+**Deployment provenance was verified before the human was asked to test, and the gate caught
+a stale deployment on its first real use** — a failed build whose exit code a pipe had
+swallowed, leaving a six-week-old artifact behind the acceptance URL. Without the gate this
+would have been the second consecutive phase in which a human tested a page that was not
+there.
+
+### What this status does NOT mean
+
+- **Not `DIDO_INTELLIGENCE_ACCEPTED`**, **not `RECOMMENDATION_ENGINE_ACCEPTED`**, **not
+  `OUTFIT_ENGINE_ACCEPTED`**, **not `FASHION_RAG_ACCEPTED`**. None is started. **Nothing uses
+  the profile** — Dido reads none of it and says "Stored, not yet applied".
+- **Not `SAVED_INFERENCE_ACCEPTED`.** Saved-to-preference inference is deliberately not built.
+- **Not `NATIVE_IOS_ACCEPTED`.** This was Safari on an iPhone. The automated Mobile Safari
+  **viewport** project is a desktop browser emulating a viewport and is weaker evidence
+  again; neither is native-iOS acceptance, and iOS native has still never been built.
+- **Not `PUBLIC_COMMERCIAL_LAUNCH_READY`.** `PUBLIC_COMMERCIAL_LAUNCH` remains **BLOCKED**.
+  The deployment tested was `BRAND_PREVIEW_MODE`; the Source Tee was €72.00,
+  `NON_PURCHASABLE`, and the server refused a cart add with 409 during verification.
+
+### Locked behaviour
+
+`STYLE_DNA = LOCKED`. Fifteen invariants are now accepted behaviour and may be extended by a
+deliberate new phase but not silently weakened: customer ownership with no endpoint accepting
+a customer id; `USER_EXPLICIT` provenance enforced in the schema; no hidden inference; one
+profile per customer; normalized controlled vocabularies; brand preferences by foreign key;
+integer minor-unit budgets with float rejected; **no size conversion**; no body-shape
+inference; **disable ≠ delete**; independent deletion of Style DNA; removal on account
+erasure; Saved never modifying Style DNA; Dido not applying it; and **no fabricated
+confidence or percentage scores**.
+
+---
+
 ## 0c. Saved persistence accepted (2026-10-07) — a feature, not a capability
 
 # `SAVED_PERSISTENCE_ACCEPTED`

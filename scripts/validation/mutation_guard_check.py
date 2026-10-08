@@ -93,6 +93,15 @@ TEST_NOTIFY = "tests/test_notifications.py"
 TEST_BACKUP = "tests/test_backup_guards.py"
 TEST_DEDUNET = "tests/test_dedunet_integration.py"
 TEST_CLOSURE = "tests/test_dedunet_closure.py"
+TEST_STYLE_DNA = "tests/test_style_dna.py"
+
+# Style DNA. The guards worth mutating here are the ones that keep the domain HONEST
+# rather than merely working: a preference must be refused if it is not explicit, a
+# budget must be refused if it is a float, a development fixture must not be offered as
+# a brand, a stale edit must not overwrite a concurrent one, and an erased customer's
+# profile must not survive erasure.
+STYLE_DNA_SERVICE = BACKEND / "app" / "commerce" / "style_dna_service.py"
+STYLE_DNA_MODEL = BACKEND / "app" / "commerce" / "style_dna.py"
 
 API = BACKEND / "app" / "commerce" / "api.py"
 SYNTHETIC = BACKEND / "app" / "commerce" / "synthetic_inventory.py"
@@ -1214,6 +1223,60 @@ MUTATIONS: tuple[Mutation, ...] = (
             "The validation, not the storage. `describe(None)` sends `mode: null`, which "
             "survives this mutation unchanged; what it breaks is the case where a "
             "well-formed payload names a mode the server would refuse to run in."
+        ),
+    ),
+    Mutation(
+        mutation_id="M80_style_dna_budget_rejects_float",
+        guard="an authoritative money value cannot be a float",
+        target=STYLE_DNA_SERVICE,
+        original="        if isinstance(value, bool) or not isinstance(value, int):",
+        mutated="        if False:  # MUTATED: a float budget is accepted and silently truncated",
+        tests=(
+            f"{TEST_STYLE_DNA}::test_budget_rejects_float_negative_bool_string_currency_and_overflow",
+        ),
+        covers=("SIDE_B_MONEY_CONTRACT rule 1: integer minor units, never binary float",),
+    ),
+    Mutation(
+        mutation_id="M81_style_dna_fixture_brand_refused",
+        guard="a development fixture cannot become a customer's brand preference",
+        target=STYLE_DNA_SERVICE,
+        original='            raise StyleDnaError(f"{slug!r} is a development fixture and cannot be a preference")',
+        mutated="            pass  # MUTATED: a scaffold is offered as a fashion house",
+        tests=(f"{TEST_STYLE_DNA}::test_development_fixture_cannot_be_a_brand_preference",),
+        covers=("never present a development fixture as a real brand",),
+    ),
+    Mutation(
+        mutation_id="M82_style_dna_revision_conflict",
+        guard="a stale edit is refused rather than overwriting a concurrent one",
+        target=STYLE_DNA_SERVICE,
+        original="        raise RevisionConflict(expected_revision, profile.revision)",
+        mutated="        pass  # MUTATED: the second device silently erases the first",
+        tests=(f"{TEST_STYLE_DNA}::test_stale_revision_is_409_and_does_not_overwrite",),
+        covers=("optimistic concurrency: no silent lost update across devices",),
+    ),
+    Mutation(
+        mutation_id="M83_style_dna_erased_with_the_customer",
+        guard="a customer's style profile does not survive account erasure",
+        target=STYLE_DNA_SERVICE,
+        original="    result = session.execute(delete(StyleProfile).where(StyleProfile.id.in_(profile_ids)))",
+        mutated="    result = None  # MUTATED: sizes, budgets and fit notes outlive the erasure request",
+        tests=(f"{TEST_STYLE_DNA}::test_erase_customer_removes_style_dna",),
+        covers=(
+            "erase_customer pseudonymizes, so the FK cascade never fires and explicit "
+            "deletion is the only thing that removes personal style data",
+        ),
+    ),
+    Mutation(
+        mutation_id="M84_style_dna_source_is_pinned_by_the_database",
+        guard="only an explicitly chosen preference can be written",
+        target=STYLE_DNA_MODEL,
+        original="""        f"source = '{SOURCE_USER_EXPLICIT}'", name=f"ck_{table}_source_user_explicit\"""",
+        mutated='''        "1 = 1", name=f"ck_{table}_source_user_explicit"  # MUTATED: inferred rows accepted''',
+        tests=(f"{TEST_STYLE_DNA}::test_inferred_source_is_refused_by_the_database",),
+        covers=(
+            "the defining rule of Style DNA: every row exists because a person chose it, "
+            "enforced in the schema so a future code path cannot write an inferred "
+            "preference into a table that claims to hold explicit ones",
         ),
     ),
 )

@@ -39,15 +39,24 @@ const QUESTIONS: Record<Exclude<Step, "done">, { prompt: string; options: string
 /* The inputs a styling model needs, and the honest state of each.
  *
  * Listed rather than described in prose because the state column is the point: a reader
- * should be able to see at a glance how much of this exists, and the answer is none of it.
- * Section 47 — the structure is real, the capability is not, and both are stated. */
+ * should be able to see at a glance how much of this exists.
+ *
+ * FOUR OF THESE CHANGED WHEN STYLE DNA SHIPPED, and the copy had to change with them.
+ * "Not built" was true of the style profile, fit and size, colour and budget until a
+ * customer could actually record them; it is now false, and a page that kept saying it
+ * would be understating the platform in exactly the way this repository's disclosure rule
+ * forbids overstating it. The rule cuts both ways: an unbuilt feature must say so, and a
+ * built one must stop saying so.
+ *
+ * What they do NOT now say is that Dido uses any of it. Stored and applied are different
+ * states, and "Stored, not yet applied" is the only one of them that is true. */
 const DIDO_INPUTS = [
-  { name: "Style profile", body: "How you dress, and what you never wear", state: "Not built" },
+  { name: "Style profile", body: "How you dress, and what you never wear", state: "Stored, not yet applied" },
   { name: "Occasion", body: "Where you are going and what it asks of you", state: "Asked, not modelled" },
   { name: "Dress code", body: "What the invitation actually requires", state: "Not built" },
-  { name: "Fit and size", body: "Your measurements and how you like things to sit", state: "Not built" },
-  { name: "Colour", body: "What you reach for and what you avoid", state: "Not built" },
-  { name: "Budget", body: "What a piece and a whole look are worth to you", state: "Asked, not applied" },
+  { name: "Fit and size", body: "The sizes you state and how you like things to sit", state: "Stored, not yet applied" },
+  { name: "Colour", body: "What you reach for and what you avoid", state: "Stored, not yet applied" },
+  { name: "Budget", body: "What a piece and a whole look are worth to you", state: "Stored, not yet applied" },
   { name: "Weather", body: "The forecast where you will be wearing it", state: "Not built" },
   { name: "Catalogue", body: "What is actually available, in your size", state: "Read-only, five pieces" },
 ] as const;

@@ -40,3 +40,180 @@
   color: var(--ds-text-muted);
   white-space: nowrap;
 }
+
+/* ---------------------------------------------------------------- Style DNA editor
+   Design-system tokens only. No new colours, no new type scale, no visual reset: this
+   phase replaces the page's CONTENT, not the platform's appearance. */
+
+.fieldset {
+  border: none;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--ds-space-3);
+  padding: 0 0 var(--ds-space-3);
+  font-size: var(--ds-text-xs);
+  letter-spacing: var(--ds-tracking-eyebrow);
+  text-transform: uppercase;
+  color: var(--ds-text-muted);
+}
+
+.legendHint {
+  text-transform: none;
+  letter-spacing: normal;
+  font-size: var(--ds-text-xs);
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ds-space-2);
+}
+
+/* A three-state control. The state is carried by data-stance so it is assertable in a
+   test without reading computed colour, and announced in the aria-label so a screen
+   reader never has to infer "avoided" from an appearance. */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ds-space-2);
+  min-height: var(--ds-target-min);
+  padding: var(--ds-space-2) var(--ds-space-4);
+  background: var(--ds-surface);
+  color: var(--ds-text);
+  border: var(--ds-border-width) solid var(--ds-border);
+  font: inherit;
+  font-size: var(--ds-text-sm);
+  cursor: pointer;
+  transition: background var(--ds-motion-fast) ease, border-color var(--ds-motion-fast) ease;
+}
+
+.chip:hover:not(:disabled) { border-color: var(--ds-text); }
+.chip:disabled { opacity: 0.55; cursor: not-allowed; }
+
+.chip[data-stance="PREFERRED"] {
+  background: var(--ds-text);
+  color: var(--ds-surface);
+  border-color: var(--ds-text);
+}
+
+/* Avoided is distinguished by more than colour: the label is struck through, so the
+   difference survives greyscale, low vision and a monochrome print. */
+.chip[data-stance="AVOIDED"] {
+  border-color: var(--ds-text);
+  border-style: dashed;
+}
+.chip[data-stance="AVOIDED"] .chipLabel { text-decoration: line-through; }
+
+.chipState {
+  font-size: var(--ds-text-xs);
+  letter-spacing: var(--ds-tracking-eyebrow);
+  text-transform: uppercase;
+  opacity: 0.75;
+}
+
+.rows {
+  display: grid;
+  gap: var(--ds-space-5);
+  grid-template-columns: repeat(auto-fit, minmax(min(260px, 100%), 1fr));
+}
+
+.row, .sizeRow {
+  display: grid;
+  gap: var(--ds-space-3);
+  min-width: 0;
+}
+
+.alsoStated {
+  margin: 0;
+  font-size: var(--ds-text-xs);
+  color: var(--ds-text-muted);
+}
+
+.completeness {
+  margin: 0;
+  font-size: var(--ds-text-sm);
+  color: var(--ds-text-muted);
+}
+
+.controls {
+  padding-top: var(--ds-space-5);
+  border-top: var(--ds-border-width) solid var(--ds-border);
+  display: grid;
+  gap: var(--ds-space-4);
+}
+
+.toggle {
+  display: flex;
+  align-items: center;
+  gap: var(--ds-space-3);
+  min-height: var(--ds-target-min);
+  cursor: pointer;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--ds-space-3);
+}
+
+.confirm {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--ds-space-3);
+  font-size: var(--ds-text-sm);
+}
+
+.live {
+  margin: 0;
+  min-height: 1.5em;
+  font-size: var(--ds-text-sm);
+  color: var(--ds-text-muted);
+}
+
+.disabledBanner, .conflict {
+  margin: 0;
+  padding: var(--ds-space-4);
+  border: var(--ds-border-width) solid var(--ds-border);
+  background: var(--ds-surface-alt, var(--ds-surface));
+  font-size: var(--ds-text-sm);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--ds-space-3);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chip { transition: none; }
+}
+
+/* The signed-out read-only preview. Reuses the signal-row treatment the previous page
+   used, because what it communicated -- a named slot with an empty value -- was right. */
+.previewList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--ds-space-2);
+  grid-template-columns: repeat(auto-fill, minmax(min(220px, 100%), 1fr));
+}
+
+.previewItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ds-space-3);
+  min-height: var(--ds-target-min);
+  padding: var(--ds-space-2) var(--ds-space-4);
+  background: var(--ds-surface);
+  border: var(--ds-border-width) solid var(--ds-border);
+  font-size: var(--ds-text-sm);
+}

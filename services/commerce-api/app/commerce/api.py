@@ -17,7 +17,16 @@ from pydantic import BaseModel, Field
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from . import brand_api, catalog_scope, modes, payments, saved_service, services
+from . import (
+    brand_api,
+    catalog_scope,
+    modes,
+    payments,
+    saved_service,
+    services,
+    style_dna_service,
+    style_taxonomy,
+)
 from .brand_registry import DEDUNET_BRAND_SLUG
 from .brands import Brand, BrandOwnershipType, CommerceRoute
 from .db import get_session
@@ -1242,3 +1251,143 @@ def admin_approve_return(
     except services.DomainError as exc:
         raise HTTPException(status.HTTP_409_CONFLICT, str(exc))
     return {"return_id": return_id, "status": request_row.status.value}
+
+
+# --------------------------------------------------------------------------- Style DNA
+#
+# What the customer has DELIBERATELY TOLD DEDUNET about how they dress. Nothing here is
+# inferred, and in particular nothing is derived from Saved items -- see `style_dna.py`.
+#
+# Current-user semantics only. No route in this section accepts a customer id in a path, a
+# query or a body; identity comes from the bearer token and nothing else. The same rule as
+# Saved, and for stronger reasons: a leaked saved list is embarrassing, a leaked profile is
+# someone's measurements.
+
+
+class StyleDnaPatch(BaseModel):
+    """A partial update. Every field is optional, and that is the whole design.
+
+    `model_fields_set` distinguishes "absent" from "null", which the service needs: a field
+    the caller did not mention is left alone, while a field sent as null or [] is cleared.
+    Without that distinction a client could not clear one preference without resending the
+    entire profile, and could not change one field without risking every other.
+    """
+
+    model_config = {"extra": "forbid"}
+
+    expected_revision: int | None = Field(
+        default=None,
+        ge=0,
+        description=(
+            "The revision the client last read. Mismatch returns 409 rather than "
+            "overwriting a concurrent edit. 0 means 'I believe no profile exists yet'."
+        ),
+    )
+    personalization_enabled: bool | None = None
+    style_directions: list[dict] | None = None
+    colours: list[dict] | None = None
+    colour_approach: str | None = None
+    fits: list[dict] | None = None
+    sizes: list[dict] | None = None
+    materials: list[dict] | None = None
+    care_effort: str | None = None
+    seasonality: str | None = None
+    fit_notes: str | None = None
+    brands: list[dict] | None = None
+    budget: dict | None = None
+
+
+@router.get("/style-dna/options")
+def style_dna_options():
+    """The controlled vocabularies, labels and limits the editor renders.
+
+    Public and unauthenticated: these are the platform's words, not anybody's data. Serving
+    them from here is what stops the consumer shipping its own copy of the taxonomy and
+    offering a choice the server would reject.
+    """
+
+    return style_taxonomy.options_payload()
+
+
+@router.get("/me/style-dna")
+def get_style_dna(
+    session: Annotated[Session, Depends(get_session)],
+    customer: Annotated[Customer, Depends(current_customer)],
+):
+    """The signed-in customer's profile, or a deterministic empty one.
+
+    200 with `exists: false` rather than 404. A 404 would force the client to read absence
+    out of an error, which makes "you have not made a profile" indistinguishable from "your
+    session expired" -- and those need opposite responses from the UI. 401 keeps its single
+    meaning.
+    """
+
+    profile = style_dna_service.get_profile(session, customer=customer)
+    if profile is None:
+        return style_dna_service.empty_profile_payload()
+    return style_dna_service.serialize(session, profile)
+
+
+@router.patch("/me/style-dna")
+def patch_style_dna(
+    payload: StyleDnaPatch,
+    session: Annotated[Session, Depends(get_session)],
+    customer: Annotated[Customer, Depends(current_customer)],
+    correlation: Annotated[str, Depends(correlation_id)],
+):
+    """Create or update the profile. 409 on a stale revision.
+
+    Only the fields the caller actually sent are applied; `model_fields_set` is what makes
+    that possible, and `exclude_unset` would not be enough on its own because a deliberate
+    null must survive.
+    """
+
+    patch = {
+        name: getattr(payload, name)
+        for name in payload.model_fields_set
+        if name != "expected_revision"
+    }
+    try:
+        profile = style_dna_service.update_profile(
+            session,
+            customer=customer,
+            patch=patch,
+            expected_revision=payload.expected_revision,
+            correlation_id=correlation,
+        )
+    except style_dna_service.RevisionConflict as exc:
+        # The current revision travels with the error so the client can say what happened
+        # and offer a reload without a second request.
+        raise HTTPException(
+            status.HTTP_409_CONFLICT,
+            {
+                "message": "this profile was changed somewhere else",
+                "expected_revision": exc.expected,
+                "current_revision": exc.actual,
+            },
+        )
+    except style_dna_service.StyleDnaError as exc:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, str(exc))
+    return style_dna_service.serialize(session, profile)
+
+
+@router.delete("/me/style-dna")
+def delete_style_dna(
+    session: Annotated[Session, Depends(get_session)],
+    customer: Annotated[Customer, Depends(current_customer)],
+    correlation: Annotated[str, Depends(correlation_id)],
+):
+    """Delete the profile and every preference row it owns.
+
+    NOTHING ELSE. Not the account, not Saved items, not orders. "Forget what I told you
+    about how I dress" is a narrow request, and a delete that quietly took the Saved list
+    with it would destroy data the customer never mentioned.
+
+    Idempotent, and returns the empty representation so the client can render the result
+    without a follow-up GET.
+    """
+
+    deleted = style_dna_service.delete_profile(
+        session, customer=customer, correlation_id=correlation
+    )
+    return {"deleted": deleted, "profile": style_dna_service.empty_profile_payload()}
