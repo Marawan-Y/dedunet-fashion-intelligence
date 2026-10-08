@@ -270,11 +270,30 @@ Round trip verified on a scratch database: `upgrade → 7 tables`, `downgrade �
 | `npm run build` (`tsc -b && vite build`) | exit 0 |
 | Mutation testing | **82 run, 82 detected, 0 survived, 0 inconclusive** |
 | Browser E2E, Style DNA | **48 passed, 0 failed** — 16 tests × Chromium, WebKit, Mobile Safari |
+| Browser E2E, Style DNA + rendering | **219 passed, 0 failed** after the signed-out fix |
+| Browser E2E, **full suite** | **528 passed, 1 failed, 1 flaky** — see below |
 | OpenAPI | regenerated, 2 new paths, no existing path changed |
 | Governance (`controller_validate.py`) | PASS, 0 errors |
 | Brand drift | `BRAND_PACKAGE_NO_DRIFT` |
 | Packaged assets | `PACKAGED_BRAND_ASSETS_VERIFIED` |
 | Firefox | **NOT RUN** — `browserType.launch: spawn UNKNOWN`. Not claimed |
+
+### The one full-suite failure was the known media limiter, not this phase
+
+The full browser run finished **528 passed, 1 failed, 1 flaky**. The failure was in the
+**existing Saved suite** — `save a product and a brand, and they persist across a refresh`,
+Chromium only — and it **passes 9 of 9 in isolation**.
+
+Diagnosed from the API log rather than assumed: **109 rate-limit refusals**, of which the top
+entries are all static product media under `/api/v1/media/assets/...`, with six
+`/me/saved/state` refusals as collateral. That is the already-recorded architectural finding
+that **product media shares the general API limiter**, which this phase was not scoped to fix
+and did not.
+
+**The limiter was not raised and no assertion was weakened.** The suite is simply larger now —
+this phase added 16 tests across three engines — which brings the shared budget closer to its
+edge. The flaky Style DNA test (`a chip cycles like, avoid, unset`, Chromium) passed on retry
+and is reported as flaky rather than folded into the pass count.
 
 ### Three defects in my own tests, found and fixed
 
