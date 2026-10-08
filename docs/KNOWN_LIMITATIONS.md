@@ -541,3 +541,26 @@ through a pipe that swallowed the exit code, `up -d` recreated from the six-week
 and the deployed artifact contained no Style DNA. Healthy containers, a correct API and
 green CI all agreed nothing was wrong. Only the artifact-identity checks disagreed. If a
 build command's output is piped, its exit code must still be checked.
+
+**Style DNA is accepted and locked, and nothing uses it.** The physical iPhone Safari
+acceptance passed on 2026-10-08, all thirteen gates — `STYLE_DNA_ACCEPTED`,
+`evidence/team-acceptance/STYLE_DNA_IPHONE_ACCEPTANCE.md`. The two gates that carry the
+meaning are that **disabling personalisation preserved every value** and that **a saved item
+survived Style DNA deletion**: a control that quietly deleted while claiming to disable, or a
+delete that took the Saved list with it, would both look correct until a customer noticed
+something gone. What is accepted is a record of what a customer said. Dido reads none of it,
+the catalogue does not rank on it, and no recommendation exists.
+
+**The provenance gate caught a second stale deployment, and `R-019` is still open.** On its
+first real use the gate found that the staging artifact had no Style DNA in it: the consumer
+build had failed on three TypeScript errors, `docker compose build` reported success through
+a pipe that swallowed the exit code, and `up -d` recreated from a six-week-old image. Healthy
+containers, a correct API and green CI all agreed nothing was wrong. Twice now the only thing
+that disagreed was an artifact-identity check. **The gate passing by hand is not the same as
+being automated**, so `R-019` stays open — and a build command's exit code must be checked
+even when its output is piped.
+
+**Safari on an iPhone is not native iOS, and an emulated viewport is not even Safari.** The
+Style DNA acceptance was performed in mobile Safari; the automated "Mobile Safari" Playwright
+project is a desktop browser emulating a viewport and is weaker evidence again. Neither is
+native-iOS acceptance. iOS native has still never been built.
