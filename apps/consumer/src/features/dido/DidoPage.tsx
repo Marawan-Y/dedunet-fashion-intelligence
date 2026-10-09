@@ -152,7 +152,8 @@ export default function DidoPage() {
 
   const send = useCallback(
     async (text: string) => {
-      if (!session || !text.trim()) return;
+      // Guards the double submit that keeping the textarea enabled makes possible.
+      if (!session || !text.trim() || pending) return;
       setPending(true);
       setError(null);
       try {
@@ -173,7 +174,7 @@ export default function DidoPage() {
         setPending(false);
       }
     },
-    [session],
+    [session, pending],
   );
 
   const complete = useCallback(async () => {
@@ -362,7 +363,14 @@ export default function DidoPage() {
                         value={draft}
                         rows={2}
                         maxLength={options.limits.message_length ?? 1000}
-                        disabled={pending}
+                        /* NOT disabled while sending.
+                         *
+                         * A disabled element loses focus, so disabling this threw a
+                         * keyboard user out of the box they had just pressed Enter in,
+                         * on every single message. The send button carries the pending
+                         * state instead, and `send` refuses a second submit itself. */
+                        readOnly={pending}
+                        aria-busy={pending}
                         placeholder="Outdoor wedding next weekend, smart but not too formal, around 300, no wool."
                         data-testid="dido-input"
                         onChange={(event) => setDraft(event.target.value)}

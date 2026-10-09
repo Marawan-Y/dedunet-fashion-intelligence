@@ -124,6 +124,24 @@ def load_owned(session: Session, *, customer: Customer, session_id: int) -> Dido
     return row
 
 
+def usable_style_dna(session: Session, *, customer: Customer) -> tuple[dict | None, int | None]:
+    """The profile Dido may use, or (None, None). THE ONLY PLACE THE SWITCH IS CHECKED.
+
+    It was checked in two places -- when starting a session and when refreshing one --
+    and the mutation harness refused to run because its anchor matched twice. That
+    refusal was right about more than the anchor: a hard privacy invariant written out
+    twice is one edit away from being true in one place and false in the other, which is
+    exactly how `catalog_scope` came to exist.
+
+    So there is one function, one audit point, and one line for M85 to mutate.
+    """
+
+    profile = style_dna_service.get_profile(session, customer=customer)
+    if profile is None or not profile.personalization_enabled:
+        return None, None
+    return style_dna_service.serialize(session, profile), profile.revision
+
+
 def current_session(session: Session, *, customer: Customer) -> DidoSession | None:
     """The customer's one ACTIVE session, if any."""
 
@@ -156,15 +174,11 @@ def start_session(
         existing.status = tax.STATUS_ABANDONED
 
     brief = dido_brief.empty_brief()
-    profile = style_dna_service.get_profile(session, customer=customer)
+    payload, revision_used = usable_style_dna(session, customer=customer)
 
-    personalization_used = False
-    revision_used = None
-    if profile is not None and profile.personalization_enabled:
-        payload = style_dna_service.serialize(session, profile)
+    personalization_used = payload is not None
+    if payload is not None:
         brief = dido_brief.apply_style_profile(brief, payload)
-        personalization_used = True
-        revision_used = profile.revision
     # PERSONALISATION OFF IS A HARD STOP. Not a filter applied later, not a flag the
     # composer checks -- the values are never loaded, so there is nothing to leak into a
     # prompt, a brief or a reply. A profile may exist and remain entirely unused.
@@ -488,17 +502,13 @@ def refresh_style_profile(
     """
 
     row = load_owned(session, customer=customer, session_id=session_id)
-    profile = style_dna_service.get_profile(session, customer=customer)
+    payload, revision = usable_style_dna(session, customer=customer)
     brief = json.loads(row.brief_json)
 
-    if profile is not None and profile.personalization_enabled:
-        payload = style_dna_service.serialize(session, profile)
+    if payload is not None:
         brief = dido_brief.apply_style_profile(brief, payload)
-        row.style_profile_revision_used = profile.revision
-        row.personalization_used = True
-    else:
-        row.personalization_used = False
-        row.style_profile_revision_used = None
+    row.personalization_used = payload is not None
+    row.style_profile_revision_used = revision
 
     row.brief_json = json.dumps(brief)
     row.revision += 1
