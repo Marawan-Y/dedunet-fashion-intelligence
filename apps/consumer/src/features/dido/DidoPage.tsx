@@ -1,295 +1,711 @@
-import { useEffect, useRef, useState } from "react";
-import { ButtonLink } from "../../components/Button";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Link } from "react-router-dom";
+import { Button, ButtonLink } from "../../components/Button";
 import {
   Container,
   Eyebrow,
   Lede,
   Section,
+  SectionHead,
   Stack,
   Subtle,
 } from "../../components/primitives";
-import { OCCASIONS } from "../content";
-import { DidoFigure, didoStateLabel, type DidoState } from "./DidoFigure";
+import { EmptyState, ErrorState } from "../../components/States";
+import { onSessionChange, session as apiSession } from "../../api/client";
+import {
+  completeDidoSession,
+  correctDidoBrief,
+  deleteDidoSession,
+  fetchCurrentDidoSession,
+  fetchDidoInUse,
+  fetchDidoOptions,
+  sendDidoMessage,
+  startDidoSession,
+} from "../../api/endpoints";
+import type {
+  BriefEntry,
+  DidoInUse,
+  DidoOptions,
+  DidoSessionPayload,
+} from "../../api/types";
+import { DidoFigure, type DidoState } from "./DidoFigure";
+import {
+  countedEntries,
+  degradedNotice,
+  didoErrorMessage,
+  labelFor,
+  newMessageId,
+  stateFor,
+  valueFor,
+  type DidoUiState,
+} from "./didoState";
 import styles from "./DidoPage.module.css";
 
-/* Section 11: Dido asks one useful thing at a time. Never a form. */
-interface Turn {
-  id: number;
-  from: "dido" | "you";
-  text: string;
-}
-
-type Step = "occasion" | "formality" | "budget" | "done";
-
-const QUESTIONS: Record<Exclude<Step, "done">, { prompt: string; options: string[] }> = {
-  occasion: {
-    prompt: "Where are you going?",
-    options: OCCASIONS.slice(0, 6).map((o) => o.name),
-  },
-  formality: {
-    prompt: "How formal does it need to be?",
-    options: ["Relaxed", "Smart casual", "Formal", "Not sure"],
-  },
-  budget: {
-    prompt: "What are you working with?",
-    options: ["Under 100", "100 to 250", "250 plus", "Rather not say"],
-  },
-};
-
-/* The inputs a styling model needs, and the honest state of each.
- *
- * Listed rather than described in prose because the state column is the point: a reader
- * should be able to see at a glance how much of this exists.
- *
- * FOUR OF THESE CHANGED WHEN STYLE DNA SHIPPED, and the copy had to change with them.
- * "Not built" was true of the style profile, fit and size, colour and budget until a
- * customer could actually record them; it is now false, and a page that kept saying it
- * would be understating the platform in exactly the way this repository's disclosure rule
- * forbids overstating it. The rule cuts both ways: an unbuilt feature must say so, and a
- * built one must stop saying so.
- *
- * What they do NOT now say is that Dido uses any of it. Stored and applied are different
- * states, and "Stored, not yet applied" is the only one of them that is true. */
-const DIDO_INPUTS = [
-  { name: "Style profile", body: "How you dress, and what you never wear", state: "Stored, not yet applied" },
-  { name: "Occasion", body: "Where you are going and what it asks of you", state: "Asked, not modelled" },
-  { name: "Dress code", body: "What the invitation actually requires", state: "Not built" },
-  { name: "Fit and size", body: "The sizes you state and how you like things to sit", state: "Stored, not yet applied" },
-  { name: "Colour", body: "What you reach for and what you avoid", state: "Stored, not yet applied" },
-  { name: "Budget", body: "What a piece and a whole look are worth to you", state: "Stored, not yet applied" },
-  { name: "Weather", body: "The forecast where you will be wearing it", state: "Not built" },
-  { name: "Catalogue", body: "What is actually available, in your size", state: "Read-only, five pieces" },
-] as const;
-
-const NEXT: Record<Exclude<Step, "done">, Step> = {
-  occasion: "formality",
-  formality: "budget",
-  budget: "done",
-};
-
 /**
- * Style with Dido.
+ * Style with Dido — the conversational styling intake.
  *
- * THIS IS AN EXPERIENCE SHELL AND IT SAYS SO. Section 22 is explicit that a Dido phase
- * shell must be labelled as a shell until the AI phase, and section 47 forbids fake AI
- * responses.
+ * WHAT CHANGED, AND WHAT DELIBERATELY DID NOT.
  *
- * So the conversation is real — the state machine, the one-question-at-a-time flow, the
- * transitions, the live region, the reduced-motion behaviour all work and are all worth
- * having early. What Dido will not do is invent a recommendation. At the end of the flow it
- * says, in as many words, that it cannot style anyone yet and what it would need in order
- * to. Scripting a plausible outfit here would be the single most misleading thing this
- * platform could do, because it is the thing a reviewer would most want to believe.
+ * The shell is gone: this talks to a real server-side conversation that understands free
+ * text, applies accepted Style DNA when personalisation is on, and accumulates a
+ * structured Styling Brief. The old disclosure — "this is the conversation, not the
+ * intelligence" — was true and is now false, so it had to go.
+ *
+ * What replaced it is NOT silence. The boundary moved; it did not disappear. Dido
+ * understands and records. It does not rank products, build outfits, check availability
+ * or know what anything costs beyond what it was told, and the page says so in the place
+ * a customer would otherwise assume otherwise: at the end, where a recommendation would
+ * have gone.
+ *
+ * THE BRIEF IS THE AUTHORITY, NOT THE PROSE. Every value on the review panel comes from
+ * the server's structured brief, grouped by where it came from. Dido's sentences are
+ * composed server-side from that same state, so the two cannot disagree.
+ *
+ * THE FIGURE ONLY SHOWS STATES THAT EXIST. `DidoFigure` can depict searching, styling,
+ * comparing and assembling. None of those happens, so none of them is used here — an
+ * animation implying a catalogue search would be a fake capability with no words to
+ * correct it.
  */
-export default function DidoPage() {
-  const [state, setState] = useState<DidoState>("welcome");
-  const [step, setStep] = useState<Step>("occasion");
-  const [turns, setTurns] = useState<Turn[]>([
-    {
-      id: 0,
-      from: "dido",
-      text: "I am Dido. Tell me where you are going and I will work out what you should wear.",
-    },
-  ]);
 
-  const nextId = useRef(1);
-  const timers = useRef<number[]>([]);
+/** Figure states this page is allowed to use. See the note above. */
+const FIGURE_FOR: Record<DidoUiState, DidoState> = {
+  loading: "idle",
+  "signed-out": "idle",
+  welcome: "welcome",
+  listening: "listening",
+  interpreting: "thinking",
+  asking: "asking",
+  conflict: "asking",
+  "brief-ready": "success",
+  completed: "success",
+  degraded: "error",
+  "rate-limited": "error",
+  error: "error",
+};
+
+export default function DidoPage() {
+  const [signedIn, setSignedIn] = useState(() => Boolean(apiSession.token));
+  const [options, setOptions] = useState<DidoOptions | null>(null);
+  const [session, setSession] = useState<DidoSessionPayload | null>(null);
+  const [pending, setPending] = useState(false);
+  const [draft, setDraft] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<unknown>(null);
+  const [inUse, setInUse] = useState<DidoInUse | null>(null);
+  const [showWhy, setShowWhy] = useState(false);
+  const logEndRef = useRef<HTMLDivElement | null>(null);
+  const inputRef = useRef<HTMLTextAreaElement | null>(null);
+  /** Held so a retry reuses the key rather than storing the message twice. */
+  const messageIdRef = useRef<string>(newMessageId());
 
   useEffect(() => {
     document.title = "Style with Dido — DEDUNET";
-    /* Settle from welcome into listening, so the first thing a visitor sees is Dido
-       arriving rather than Dido already waiting. */
-    const t = window.setTimeout(() => setState("listening"), 900);
-    return () => window.clearTimeout(t);
   }, []);
 
-  /* Every timer is tracked and cleared on unmount. A pending setState after navigation is
-     a React warning at best and a leak at worst, and this component sets several. */
+  useEffect(() => onSessionChange(() => setSignedIn(Boolean(apiSession.token))), []);
+
+  const load = useCallback(async (signal?: AbortSignal) => {
+    setLoadError(null);
+    try {
+      const [opts, current] = await Promise.all([
+        fetchDidoOptions(signal),
+        apiSession.token
+          ? fetchCurrentDidoSession(signal)
+          : Promise.resolve({ session: null }),
+      ]);
+      setOptions(opts);
+      setSession(current.session);
+    } catch (err) {
+      if ((err as { name?: string }).name !== "AbortError") setLoadError(err);
+    }
+  }, []);
+
   useEffect(() => {
-    const pending = timers.current;
-    return () => {
-      for (const id of pending) window.clearTimeout(id);
-    };
+    const controller = new AbortController();
+    void load(controller.signal);
+    return () => controller.abort();
+  }, [load, signedIn]);
+
+  const uiState = stateFor(session, { pending, signedIn });
+
+  /* Scroll the newest turn into view WITHOUT moving focus.
+   * Stealing focus on every reply would throw a screen-reader user out of whatever they
+   * were reading, and would fight a keyboard user mid-sentence. The log is a polite live
+   * region; it announces itself. */
+  useEffect(() => {
+    if (!session?.turns?.length) return;
+    logEndRef.current?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+  }, [session?.turns?.length]);
+
+  const begin = useCallback(async () => {
+    setPending(true);
+    setError(null);
+    try {
+      setSession(await startDidoSession());
+      setInUse(null);
+    } catch (err) {
+      setError(didoErrorMessage(err));
+    } finally {
+      setPending(false);
+    }
   }, []);
 
-  function later(fn: () => void, ms: number) {
-    const id = window.setTimeout(fn, ms);
-    timers.current.push(id);
-  }
-
-  function say(from: Turn["from"], text: string) {
-    setTurns((prev) => [...prev, { id: nextId.current++, from, text }]);
-  }
-
-  function answer(option: string) {
-    if (step === "done") return;
-
-    say("you", option);
-    setState("thinking");
-
-    const upcoming = NEXT[step];
-
-    later(() => {
-      if (upcoming === "done") {
-        setState("error");
-        say(
-          "dido",
-          "This is where I would build you a look — and I have to be straight with you: I cannot yet.",
+  const send = useCallback(
+    async (text: string) => {
+      if (!session || !text.trim()) return;
+      setPending(true);
+      setError(null);
+      try {
+        const updated = await sendDidoMessage(
+          session.session_id,
+          text.trim(),
+          session.revision,
+          messageIdRef.current,
         );
-        later(() => {
-          say(
-            "dido",
-            "I have your occasion, your formality and your budget, and nothing to do with them. There is no styling model behind me, no outfit engine and no way to score one piece against another. What you told me was recorded by this page and by nothing else.",
-          );
-          setStep("done");
-        }, 1100);
-      } else {
-        setState("asking");
-        say("dido", QUESTIONS[upcoming].prompt);
-        setStep(upcoming);
+        setSession(updated);
+        setDraft("");
+        // A new key only once the message has landed; a failed send keeps its key so a
+        // retry is recognised as the same message.
+        messageIdRef.current = newMessageId();
+      } catch (err) {
+        setError(didoErrorMessage(err));
+      } finally {
+        setPending(false);
       }
-    }, 1200);
+    },
+    [session],
+  );
+
+  const complete = useCallback(async () => {
+    if (!session) return;
+    setPending(true);
+    try {
+      setSession(await completeDidoSession(session.session_id));
+    } catch (err) {
+      setError(didoErrorMessage(err));
+    } finally {
+      setPending(false);
+    }
+  }, [session]);
+
+  const remove = useCallback(async () => {
+    if (!session) return;
+    setPending(true);
+    try {
+      await deleteDidoSession(session.session_id);
+      setSession(null);
+      setInUse(null);
+    } catch (err) {
+      setError(didoErrorMessage(err));
+    } finally {
+      setPending(false);
+    }
+  }, [session]);
+
+  const askWhatYouKnow = useCallback(async () => {
+    if (!session) return;
+    try {
+      setInUse(await fetchDidoInUse(session.session_id));
+    } catch (err) {
+      setError(didoErrorMessage(err));
+    }
+  }, [session]);
+
+  const correct = useCallback(
+    async (field: string, value: unknown) => {
+      if (!session) return;
+      setPending(true);
+      try {
+        setSession(await correctDidoBrief(session.session_id, { [field]: value }, session.revision));
+      } catch (err) {
+        setError(didoErrorMessage(err));
+      } finally {
+        setPending(false);
+      }
+    },
+    [session],
+  );
+
+  // ---- shells -------------------------------------------------------------
+
+  if (loadError) {
+    return (
+      <Container>
+        <Section>
+          <ErrorState error={loadError} onRetry={() => void load()} testId="dido-error" />
+        </Section>
+      </Container>
+    );
   }
 
-  function restart() {
-    setTurns([
-      {
-        id: nextId.current++,
-        from: "dido",
-        text: "Again. Where are you going?",
-      },
-    ]);
-    setStep("occasion");
-    setState("listening");
+  if (!signedIn) {
+    return (
+      <Container>
+        <Section>
+          <Stack gap="loose">
+            <Header />
+            <Boundary />
+            <EmptyState
+              title="Sign in to style with Dido"
+              body="A styling conversation is kept to your account, so you can leave it and come back to it on any device."
+              action={
+                <ButtonLink to="/account?next=/dido" variant="primary">
+                  Sign in
+                </ButtonLink>
+              }
+            />
+          </Stack>
+        </Section>
+      </Container>
+    );
   }
 
-  const question = step === "done" ? null : QUESTIONS[step];
+  if (!options) {
+    return (
+      <Container>
+        <Section>
+          <p data-testid="dido-loading">Loading…</p>
+        </Section>
+      </Container>
+    );
+  }
+
+  const question = session?.next_question ?? null;
+  const guided = question ? guidedOptionsFor(question.key, options) : [];
 
   return (
     <Container>
       <Section>
         <Stack gap="loose">
-          <Stack gap="tight">
-            <Eyebrow>Dido Net</Eyebrow>
-            <h1>Style with Dido</h1>
-            <Lede>
-              Tell Dido where you are going. It asks one thing at a time, the way a stylist
-              would, rather than handing you a form.
-            </Lede>
-          </Stack>
-
-          {/* The shell disclosure, at the top where it is read before the conversation
-              rather than after it. */}
-          <div className={styles.disclosure} data-testid="dido-disclosure" role="note">
-            <strong>This is the conversation, not the intelligence.</strong> Dido can ask and
-            listen. It cannot style anyone yet: there is no model behind it, and it will tell
-            you so rather than inventing an outfit.
-          </div>
+          <Header />
+          <Boundary />
 
           <div className={styles.stage}>
             <div className={styles.figureWrap}>
-              <DidoFigure state={state} />
-              <p className={styles.stateLabel}>{didoStateLabel(state)}</p>
+              <DidoFigure state={FIGURE_FOR[uiState]} />
+              <p className={styles.stateLabel} data-testid="dido-state">
+                {STATE_COPY[uiState]}
+              </p>
             </div>
 
             <div className={styles.conversation} data-testid="dido-convo">
-              {/* The log is a live region so each new turn is announced. Polite, so it
-                  waits for the reader rather than cutting across them. */}
-              <ol className={styles.log} data-testid="dido-log" aria-live="polite" aria-label="Conversation with Dido">
-                {turns.map((turn) => (
-                  <li
-                    key={turn.id}
-                    className={turn.from === "dido" ? styles.fromDido : styles.fromYou}
-                  >
-                    <span className={styles.who}>{turn.from === "dido" ? "Dido" : "You"}</span>
-                    <p className={styles.message}>{turn.text}</p>
-                  </li>
-                ))}
-
-                {state === "thinking" ? (
-                  <li className={styles.fromDido}>
-                    <span className={styles.who}>Dido</span>
-                    <p className={styles.thinking} aria-label="Dido is thinking">
-                      <span />
-                      <span />
-                      <span />
-                    </p>
-                  </li>
-                ) : null}
-              </ol>
-
-              {question ? (
-                <div className={styles.options} data-testid="dido-options">
-                  <p className={styles.optionsPrompt}>{question.prompt}</p>
-                  <div className={styles.optionRow} role="group" aria-label={question.prompt}>
-                    {question.options.map((option) => (
-                      <button
-                        key={option}
-                        type="button"
-                        className={styles.option}
-                        onClick={() => answer(option)}
-                        disabled={state === "thinking"}
-                      >
-                        {option}
-                      </button>
-                    ))}
-                  </div>
+              {!session ? (
+                <div className={styles.options}>
+                  <p className={styles.optionsPrompt}>
+                    Tell Dido where you are going and what it needs to be. You can write it
+                    however you like.
+                  </p>
+                  <Button onClick={() => void begin()} disabled={pending} data-testid="dido-start">
+                    {pending ? "Starting…" : "Start a styling session"}
+                  </Button>
                 </div>
               ) : (
-                <div className={styles.options}>
-                  <Stack gap="tight">
-                    <Subtle>
-                      When the styling model exists, this is where the look would appear —
-                      complete, priced, and explained piece by piece.
-                    </Subtle>
-                    <div className={styles.optionRow}>
-                      <button type="button" className={styles.option} onClick={restart}>
-                        Start again
-                      </button>
-                      <ButtonLink to="/looks" variant="secondary">
-                        See looks built by hand
-                      </ButtonLink>
+                <>
+                  <ol
+                    className={styles.log}
+                    data-testid="dido-log"
+                    aria-live="polite"
+                    aria-label="Conversation with Dido"
+                  >
+                    {(session.turns ?? []).map((turn) => (
+                      <li
+                        key={turn.ordinal}
+                        className={turn.role === "DIDO" ? styles.fromDido : styles.fromYou}
+                      >
+                        <span className={styles.who}>
+                          {turn.role === "DIDO" ? "Dido" : "You"}
+                        </span>
+                        <p className={styles.message}>{turn.body}</p>
+                      </li>
+                    ))}
+                    {pending ? (
+                      <li className={styles.fromDido}>
+                        <span className={styles.who}>Dido</span>
+                        <p className={styles.thinking} aria-label="Dido is reading that">
+                          <span />
+                          <span />
+                          <span />
+                        </p>
+                      </li>
+                    ) : null}
+                    <div ref={logEndRef} />
+                  </ol>
+
+                  {session.interpretation?.degraded ? (
+                    <p className={styles.notice} role="status" data-testid="dido-degraded">
+                      {degradedNotice(session.interpretation.reason)}
+                    </p>
+                  ) : null}
+
+                  {session.brief.contradictions.length ? (
+                    <div className={styles.conflict} data-testid="dido-conflict" role="status">
+                      <strong>These cannot both be true.</strong>{" "}
+                      {session.brief.contradictions[0]?.detail}
                     </div>
-                  </Stack>
-                </div>
+                  ) : null}
+
+                  {session.status !== "BRIEF_READY" ? (
+                    <form
+                      className={styles.composer}
+                      onSubmit={(event) => {
+                        event.preventDefault();
+                        void send(draft);
+                      }}
+                    >
+                      <label className={styles.composerLabel} htmlFor="dido-input">
+                        {question ? question.prompt : "Anything else?"}
+                      </label>
+                      <textarea
+                        id="dido-input"
+                        ref={inputRef}
+                        className={styles.input}
+                        value={draft}
+                        rows={2}
+                        maxLength={options.limits.message_length ?? 1000}
+                        disabled={pending}
+                        placeholder="Outdoor wedding next weekend, smart but not too formal, around 300, no wool."
+                        data-testid="dido-input"
+                        onChange={(event) => setDraft(event.target.value)}
+                        onKeyDown={(event) => {
+                          // Enter sends; Shift+Enter is a newline. A styling answer is a
+                          // sentence, not an essay, so sending is the common case.
+                          if (event.key === "Enter" && !event.shiftKey) {
+                            event.preventDefault();
+                            void send(draft);
+                          }
+                        }}
+                      />
+                      <div className={styles.composerRow}>
+                        <Button type="submit" disabled={pending || !draft.trim()} data-testid="dido-send">
+                          {pending ? "Sending…" : "Send"}
+                        </Button>
+                        {question ? (
+                          <button
+                            type="button"
+                            className={styles.whyLink}
+                            onClick={() => setShowWhy((v) => !v)}
+                            data-testid="dido-why"
+                          >
+                            Why do you need this?
+                          </button>
+                        ) : null}
+                      </div>
+                      {showWhy && question ? (
+                        <p className={styles.why} data-testid="dido-why-answer">
+                          {question.why}
+                        </p>
+                      ) : null}
+                    </form>
+                  ) : null}
+
+                  {guided.length && session.status !== "BRIEF_READY" ? (
+                    <div className={styles.options} data-testid="dido-options">
+                      <div className={styles.optionRow} role="group" aria-label={question?.prompt}>
+                        {guided.map((option) => (
+                          <button
+                            key={option.slug}
+                            type="button"
+                            className={styles.option}
+                            disabled={pending}
+                            data-testid={`dido-option-${option.slug}`}
+                            onClick={() => void send(option.label)}
+                          >
+                            {option.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  ) : null}
+                </>
               )}
             </div>
           </div>
 
-          <section aria-labelledby="dido-what" className={styles.explainer}>
-            <h2 id="dido-what">What Dido will need</h2>
-            <p>
-              Styling is not a language model guessing at an outfit. It is a set of inputs
-              scored against each other, then assembled into a look that holds together and
-              explained back to you.
+          {session ? (
+            <BriefPanel
+              session={session}
+              onCorrect={correct}
+              onComplete={complete}
+              onDelete={remove}
+              onNew={begin}
+              onAsk={askWhatYouKnow}
+              inUse={inUse}
+              pending={pending}
+            />
+          ) : null}
+
+          {error ? (
+            <p className={styles.notice} role="alert" data-testid="dido-message-error">
+              {error}
             </p>
-
-            <ul className={styles.inputs}>
-              {DIDO_INPUTS.map((input) => (
-                <li key={input.name} className={styles.input}>
-                  <span className={styles.inputName}>{input.name}</span>
-                  <span className={styles.inputBody}>{input.body}</span>
-                  <span className={styles.inputState}>{input.state}</span>
-                </li>
-              ))}
-            </ul>
-
-            <p>
-              The conversation above is the part that is built, because getting the questions
-              right is worth doing before there is an engine to answer them.
-            </p>
-
-            <div className={styles.optionRow}>
-              <ButtonLink to="/my-style" variant="secondary">
-                See what DEDUNET knows about you
-              </ButtonLink>
-              <ButtonLink to="/discover" variant="quiet">
-                Browse instead
-              </ButtonLink>
-            </div>
-          </section>
+          ) : null}
         </Stack>
       </Section>
     </Container>
+  );
+}
+
+const STATE_COPY: Record<DidoUiState, string> = {
+  loading: "Dido is waiting",
+  "signed-out": "Dido is waiting",
+  welcome: "Dido is ready",
+  listening: "Dido is listening",
+  interpreting: "Dido is reading that",
+  asking: "Dido is asking a question",
+  conflict: "Dido found a conflict",
+  "brief-ready": "Your brief is ready to review",
+  completed: "Your brief is agreed",
+  degraded: "Dido could not read that",
+  "rate-limited": "Dido is busy",
+  error: "Dido could not continue",
+};
+
+function Header() {
+  return (
+    <Stack gap="tight">
+      <Eyebrow>Dido Net</Eyebrow>
+      <h1>Style with Dido</h1>
+      <Lede>
+        Tell Dido where you are going. It asks one thing at a time, the way a stylist would,
+        rather than handing you a form.
+      </Lede>
+    </Stack>
+  );
+}
+
+/**
+ * The boundary, stated before the conversation rather than after it.
+ *
+ * The previous disclosure said there was no intelligence at all. That is no longer true,
+ * so repeating it would understate the platform — the same disclosure rule that forbids
+ * overstating. What is still true is the harder half: understanding is not recommending.
+ */
+function Boundary() {
+  return (
+    <div className={styles.disclosure} data-testid="dido-disclosure" role="note">
+      <strong>Dido understands your brief. It does not pick the clothes.</strong> It can read
+      what you write, use your Style DNA when personalisation is on, and build a styling brief
+      with you. DEDUNET does not yet rank products or assemble outfits from it, and Dido will
+      say so rather than inventing a look.
+    </div>
+  );
+}
+
+function guidedOptionsFor(
+  key: string,
+  options: DidoOptions,
+): { slug: string; label: string }[] {
+  /* Controlled choices beside the text box, not instead of it.
+   * These are what make the degraded path usable: when the interpreter is unavailable the
+   * client already holds the vocabulary and can offer real answers without a model. */
+  if (key === "occasion") return options.occasions.slice(0, 6);
+  if (key === "dress_code") return options.dress_codes;
+  if (key === "budget") {
+    return [
+      { slug: "100", label: "Around 100" },
+      { slug: "250", label: "Around 250" },
+      { slug: "500", label: "Around 500" },
+      { slug: "skip", label: "Rather not say" },
+    ];
+  }
+  return [];
+}
+
+function BriefPanel({
+  session,
+  onCorrect,
+  onComplete,
+  onDelete,
+  onNew,
+  onAsk,
+  inUse,
+  pending,
+}: {
+  session: DidoSessionPayload;
+  onCorrect: (field: string, value: unknown) => void;
+  onComplete: () => void;
+  onDelete: () => void;
+  onNew: () => void;
+  onAsk: () => void;
+  inUse: DidoInUse | null;
+  pending: boolean;
+}) {
+  const { brief } = session;
+  const total = useMemo(() => countedEntries(brief), [brief]);
+
+  return (
+    <section className={styles.brief} aria-labelledby="brief-heading" data-testid="dido-brief">
+      <SectionHead eyebrow="Your brief" title="What Dido has so far" level={2} id="brief-heading" />
+
+      {/* The personalisation state, said plainly. A customer who turned it off is
+          entitled to see that it stayed off. */}
+      <p className={styles.personalisation} data-testid="dido-personalisation">
+        {session.personalization_used
+          ? "Dido is using your Style DNA. The values it took are marked below."
+          : "Your Style DNA is not being used — either you have not made one, or personalisation is off."}
+      </p>
+
+      {total === 0 ? (
+        <Subtle>Nothing yet. Tell Dido what you need and it will fill in.</Subtle>
+      ) : (
+        <div className={styles.groups}>
+          <BriefGroup
+            title="From this conversation"
+            testId="brief-session"
+            entries={[...brief.from_session, ...brief.derived_from_your_words]}
+            currency={brief.currency}
+            onClear={(field) => onCorrect(field, null)}
+            pending={pending}
+          />
+          <BriefGroup
+            title="From your Style DNA"
+            testId="brief-style-dna"
+            entries={brief.from_style_dna}
+            currency={brief.currency}
+            onClear={(field) => onCorrect(field, null)}
+            pending={pending}
+          />
+        </div>
+      )}
+
+      {brief.size_context.length ? (
+        <div className={styles.sizes} data-testid="brief-sizes">
+          <h3 className={styles.groupTitle}>Sizes you have stated</h3>
+          <ul className={styles.entryList}>
+            {brief.size_context.map((size) => (
+              <li key={`${size.garment_category}-${size.size_system}`} className={styles.entry}>
+                <span className={styles.entryLabel}>{size.garment_category}</span>
+                <span className={styles.entryValue}>
+                  {size.size_system} {size.size_label}
+                </span>
+              </li>
+            ))}
+          </ul>
+          <Subtle>
+            Kept exactly as you stated them. DEDUNET does not convert between size systems or
+            between brands.
+          </Subtle>
+        </div>
+      ) : null}
+
+      {brief.unplaced.length ? (
+        <div className={styles.unplaced} data-testid="brief-unplaced">
+          <h3 className={styles.groupTitle}>Noted, but not understood</h3>
+          <ul className={styles.entryList}>
+            {brief.unplaced.map((note) => (
+              <li key={note} className={styles.entry}>
+                {note}
+              </li>
+            ))}
+          </ul>
+          <Subtle>
+            Dido kept these rather than dropping them, but has not turned them into
+            constraints.
+          </Subtle>
+        </div>
+      ) : null}
+
+      {brief.still_unset.length ? (
+        <p className={styles.stillUnset} data-testid="brief-still-unset">
+          Still unset: {brief.still_unset.map(labelFor).join(", ")}
+        </p>
+      ) : null}
+
+      <div className={styles.briefActions}>
+        {session.status === "BRIEF_READY" ? (
+          <>
+            {/* WHERE A RECOMMENDATION WOULD GO. It says what does not exist, because this
+                is the exact moment a customer expects an outfit to appear. */}
+            <p className={styles.completed} data-testid="dido-completed">
+              Your styling brief is ready. <strong>DEDUNET does not yet rank products or
+              build the outfit from it.</strong> You can browse the catalogue or look at the
+              curated Looks, which are composed by a person.
+            </p>
+            <ButtonLink to="/looks" variant="secondary">
+              See curated Looks
+            </ButtonLink>
+            <ButtonLink to="/shop" variant="secondary">
+              Browse manually
+            </ButtonLink>
+            <Button variant="quiet" onClick={onNew} disabled={pending} data-testid="dido-new">
+              Start a new session
+            </Button>
+          </>
+        ) : (
+          <Button
+            onClick={onComplete}
+            disabled={pending || !brief.ready}
+            data-testid="dido-complete"
+          >
+            {brief.ready ? "Accept this brief" : "Keep going"}
+          </Button>
+        )}
+        <Button variant="quiet" onClick={onAsk} disabled={pending} data-testid="dido-what-you-know">
+          What do you know about me?
+        </Button>
+        <Button variant="quiet" onClick={onDelete} disabled={pending} data-testid="dido-delete">
+          Delete this session
+        </Button>
+      </div>
+
+      {inUse ? (
+        <div className={styles.inUse} data-testid="dido-in-use" role="status">
+          <p>{inUse.note}</p>
+          <p className={styles.inUseDetail}>
+            From your Style DNA: {inUse.from_style_dna.length} value
+            {inUse.from_style_dna.length === 1 ? "" : "s"} · From this conversation:{" "}
+            {inUse.from_this_conversation.length}
+          </p>
+        </div>
+      ) : null}
+
+      <Subtle>
+        Nothing you say here changes your Style DNA. <Link to="/my-style">My Style</Link> is the
+        only place that does.
+      </Subtle>
+    </section>
+  );
+}
+
+function BriefGroup({
+  title,
+  entries,
+  currency,
+  onClear,
+  pending,
+  testId,
+}: {
+  title: string;
+  entries: BriefEntry[];
+  currency: string;
+  onClear: (field: string) => void;
+  pending: boolean;
+  testId: string;
+}) {
+  if (!entries.length) return null;
+  return (
+    <div className={styles.group} data-testid={testId}>
+      <h3 className={styles.groupTitle}>{title}</h3>
+      <ul className={styles.entryList}>
+        {entries.map((entry) => (
+          <li key={entry.field} className={styles.entry}>
+            <span className={styles.entryLabel}>{labelFor(entry.field)}</span>
+            <span className={styles.entryValue} data-testid={`brief-${entry.field}`}>
+              {valueFor(entry, currency)}
+            </span>
+            <button
+              type="button"
+              className={styles.clear}
+              disabled={pending}
+              aria-label={`Remove ${labelFor(entry.field)} from this brief`}
+              data-testid={`brief-clear-${entry.field}`}
+              onClick={() => onClear(entry.field)}
+            >
+              Remove
+            </button>
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 }

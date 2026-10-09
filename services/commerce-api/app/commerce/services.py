@@ -960,6 +960,14 @@ def erase_customer(session: Session, customer: Customer, *, actor: str) -> Custo
 
     removed_style_profiles = delete_style_dna(session, customer=customer)
 
+    # Dido conversations go the same way, for the third time and the same reason: this
+    # function pseudonymizes, so no cascade fires. Conversation text is the most
+    # open-ended personal data here -- whatever the customer chose to type about where
+    # they were going and who with -- and it must not outlive an erasure request.
+    from .dido_service import delete_all_for_customer as delete_dido
+
+    removed_dido_sessions = delete_dido(session, customer=customer)
+
     record_audit(
         session,
         actor=actor,
@@ -969,7 +977,8 @@ def erase_customer(session: Session, customer: Customer, *, actor: str) -> Custo
         detail=(
             "identifiers removed; order history retained for reconciliation; "
             f"saved items deleted: {removed_saved}; "
-            f"style profiles deleted: {removed_style_profiles}"
+            f"style profiles deleted: {removed_style_profiles}; "
+            f"dido sessions deleted: {removed_dido_sessions}"
         ),
     )
     session.commit()

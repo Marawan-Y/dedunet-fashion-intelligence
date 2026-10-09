@@ -26,6 +26,8 @@ from . import (
     services,
     style_dna_service,
     style_taxonomy,
+    dido_service,
+    dido_taxonomy,
 )
 from .brand_registry import DEDUNET_BRAND_SLUG
 from .brands import Brand, BrandOwnershipType, CommerceRoute
@@ -1391,3 +1393,269 @@ def delete_style_dna(
         session, customer=customer, correlation_id=correlation
     )
     return {"deleted": deleted, "profile": style_dna_service.empty_profile_payload()}
+
+
+# --------------------------------------------------------------------------- Dido
+#
+# A conversational stylist INTAKE. It understands constraints, applies accepted Style DNA
+# when personalisation is on, and produces a structured Styling Brief.
+#
+# IT DOES NOT RECOMMEND ANYTHING. No product, no ranking, no outfit, no availability and
+# no price it was not told. Every response carries a `capabilities` block saying so,
+# because the boundary belongs in the contract and not only in the UI copy.
+#
+# Current-user semantics only: no route here accepts a customer id.
+
+
+class DidoMessageIn(BaseModel):
+    model_config = {"extra": "forbid"}
+
+    message: str = Field(min_length=1, max_length=1000)
+    expected_revision: int | None = Field(default=None, ge=1)
+    client_message_id: str = Field(
+        default="",
+        max_length=80,
+        description=(
+            "Idempotency key. A retry carrying the same value returns the existing turn "
+            "rather than writing the message twice."
+        ),
+    )
+
+
+class DidoBriefPatch(BaseModel):
+    model_config = {"extra": "forbid"}
+
+    changes: dict = Field(description="Brief field to value. null clears a field.")
+    expected_revision: int | None = Field(default=None, ge=1)
+
+
+@router.get("/dido/options")
+def dido_options():
+    """The controlled vocabularies the conversation uses.
+
+    Public, like the Style DNA options: the platform's words, not anybody's data. It is
+    also what lets the client offer real choices when the interpreter is unavailable.
+    """
+
+    return dido_taxonomy.options_payload()
+
+
+@router.post("/me/dido/sessions", status_code=201)
+def start_dido_session(
+    session: Annotated[Session, Depends(get_session)],
+    customer: Annotated[Customer, Depends(current_customer)],
+    correlation: Annotated[str, Depends(correlation_id)],
+):
+    """Begin a styling conversation. Any previous active session becomes abandoned."""
+
+    row = dido_service.start_session(session, customer=customer, correlation_id=correlation)
+    return dido_service.serialize_session(row)
+
+
+@router.get("/me/dido/sessions/current")
+def current_dido_session(
+    session: Annotated[Session, Depends(get_session)],
+    customer: Annotated[Customer, Depends(current_customer)],
+):
+    """The active session, or a deterministic empty answer.
+
+    200 with a null session rather than 404, for the reason the Style DNA profile uses: a
+    client reading absence out of an error cannot tell "no conversation yet" from "your
+    session expired", and those need opposite responses.
+    """
+
+    row = dido_service.current_session(session, customer=customer)
+    return {"session": dido_service.serialize_session(row) if row else None}
+
+
+@router.get("/me/dido/sessions/{session_id}")
+def get_dido_session(
+    session_id: int,
+    session: Annotated[Session, Depends(get_session)],
+    customer: Annotated[Customer, Depends(current_customer)],
+):
+    try:
+        row = dido_service.load_owned(session, customer=customer, session_id=session_id)
+    except LookupError:
+        # 404 for another customer's session too. A 403 would confirm it exists.
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "session not found")
+    return dido_service.serialize_session(row)
+
+
+@router.post("/me/dido/sessions/{session_id}/messages")
+def post_dido_message(
+    session_id: int,
+    payload: DidoMessageIn,
+    session: Annotated[Session, Depends(get_session)],
+    customer: Annotated[Customer, Depends(current_customer)],
+    correlation: Annotated[str, Depends(correlation_id)],
+):
+    """Send one message. Returns the updated session, not a bare reply."""
+
+    try:
+        result = dido_service.add_message(
+            session,
+            customer=customer,
+            session_id=session_id,
+            message=payload.message,
+            expected_revision=payload.expected_revision,
+            client_message_id=payload.client_message_id,
+            correlation_id=correlation,
+        )
+    except LookupError:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "session not found")
+    except dido_service.RateLimited as exc:
+        raise HTTPException(
+            status.HTTP_429_TOO_MANY_REQUESTS,
+            "too many messages just now; give it a moment",
+            headers={"Retry-After": str(exc.retry_after)},
+        )
+    except dido_service.SessionConflict as exc:
+        raise HTTPException(
+            status.HTTP_409_CONFLICT,
+            {
+                "message": "this conversation moved on somewhere else",
+                "expected_revision": exc.expected,
+                "current_revision": exc.actual,
+            },
+        )
+    except dido_service.DidoError as exc:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, str(exc))
+
+    payload_out = dido_service.serialize_session(result.session)
+    payload_out["reply"] = result.reply
+    # Product-level only. No provider name, no model id, no raw error, no prompt.
+    payload_out["interpretation"] = {
+        "degraded": result.interpretation.degraded,
+        "reason": result.interpretation.degraded_reason,
+        "ambiguous": result.interpretation.ambiguous,
+    }
+    return payload_out
+
+
+@router.patch("/me/dido/sessions/{session_id}/brief")
+def patch_dido_brief(
+    session_id: int,
+    payload: DidoBriefPatch,
+    session: Annotated[Session, Depends(get_session)],
+    customer: Annotated[Customer, Depends(current_customer)],
+    correlation: Annotated[str, Depends(correlation_id)],
+):
+    """Correct the brief directly. Corrections are always session-explicit.
+
+    This does NOT write back to Style DNA. Correcting tonight's brief is not a statement
+    about every future outfit, and conflating the two would let a one-off change quietly
+    rewrite a profile the customer curated.
+    """
+
+    try:
+        row = dido_service.correct_brief(
+            session,
+            customer=customer,
+            session_id=session_id,
+            changes=payload.changes,
+            expected_revision=payload.expected_revision,
+            correlation_id=correlation,
+        )
+    except LookupError:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "session not found")
+    except dido_service.SessionConflict as exc:
+        raise HTTPException(
+            status.HTTP_409_CONFLICT,
+            {
+                "message": "this conversation moved on somewhere else",
+                "expected_revision": exc.expected,
+                "current_revision": exc.actual,
+            },
+        )
+    except dido_service.DidoError as exc:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, str(exc))
+    return dido_service.serialize_session(row)
+
+
+@router.post("/me/dido/sessions/{session_id}/refresh-style-dna")
+def refresh_dido_style_dna(
+    session_id: int,
+    session: Annotated[Session, Depends(get_session)],
+    customer: Annotated[Customer, Depends(current_customer)],
+):
+    """Pull the current Style DNA into an open session, on request.
+
+    A session keeps the profile snapshot it began with; this is the deliberate way to
+    update it, rather than rewriting a conversation underneath the customer.
+    """
+
+    try:
+        row = dido_service.refresh_style_profile(
+            session, customer=customer, session_id=session_id
+        )
+    except LookupError:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "session not found")
+    return dido_service.serialize_session(row)
+
+
+@router.post("/me/dido/sessions/{session_id}/complete")
+def complete_dido_session(
+    session_id: int,
+    session: Annotated[Session, Depends(get_session)],
+    customer: Annotated[Customer, Depends(current_customer)],
+    correlation: Annotated[str, Depends(correlation_id)],
+):
+    """Agree the brief. This is where the phase ends: no outfit follows."""
+
+    try:
+        row = dido_service.complete_session(
+            session, customer=customer, session_id=session_id, correlation_id=correlation
+        )
+    except LookupError:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "session not found")
+    except dido_service.DidoError as exc:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, str(exc))
+    return dido_service.serialize_session(row)
+
+
+@router.get("/me/dido/sessions/{session_id}/in-use")
+def dido_in_use(
+    session_id: int,
+    session: Annotated[Session, Depends(get_session)],
+    customer: Annotated[Customer, Depends(current_customer)],
+):
+    """What this session is using, grouped by where each value came from.
+
+    The answer to "what do you know about me?", asked inside the conversation.
+    """
+
+    try:
+        row = dido_service.load_owned(session, customer=customer, session_id=session_id)
+    except LookupError:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "session not found")
+    return dido_service.what_is_in_use(row)
+
+
+@router.get("/dido/questions/{question_key:path}")
+def dido_question_rationale(question_key: str):
+    """Why a question was asked, from policy metadata rather than from a model.
+
+    Calling a language model to justify a decision made by an if-statement would produce
+    a plausible explanation that is not the actual reason.
+    """
+
+    explained = dido_service.explain_question(question_key)
+    if explained is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "no such question")
+    return explained
+
+
+@router.delete("/me/dido/sessions/{session_id}")
+def delete_dido_session(
+    session_id: int,
+    session: Annotated[Session, Depends(get_session)],
+    customer: Annotated[Customer, Depends(current_customer)],
+    correlation: Annotated[str, Depends(correlation_id)],
+):
+    """Delete a conversation and its turns. Style DNA and Saved are untouched."""
+
+    deleted = dido_service.delete_session(
+        session, customer=customer, session_id=session_id, correlation_id=correlation
+    )
+    return {"deleted": deleted}

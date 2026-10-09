@@ -5,6 +5,9 @@ import type {
   CatalogProduct,
   CommerceModeDisclosure,
   CustomerOrder,
+  DidoInUse,
+  DidoOptions,
+  DidoSessionPayload,
   LookPayload,
   SaveKind,
   SavedBrandEntry,
@@ -177,4 +180,83 @@ export function deleteStyleProfile(): Promise<{ deleted: boolean; profile: Style
     method: "DELETE",
     authenticated: true,
   });
+}
+
+/* ------------------------------------------------------------------ Dido */
+
+/** The conversation vocabularies. Public: the platform's words, not anyone's data. */
+export function fetchDidoOptions(signal?: AbortSignal): Promise<DidoOptions> {
+  return api<DidoOptions>("/dido/options", { signal });
+}
+
+/** The active session, or null. 200 either way, so absence is not read out of an error. */
+export function fetchCurrentDidoSession(
+  signal?: AbortSignal,
+): Promise<{ session: DidoSessionPayload | null }> {
+  return api<{ session: DidoSessionPayload | null }>("/me/dido/sessions/current", {
+    authenticated: true,
+    signal,
+  });
+}
+
+export function startDidoSession(): Promise<DidoSessionPayload> {
+  return api<DidoSessionPayload>("/me/dido/sessions", {
+    method: "POST",
+    authenticated: true,
+  });
+}
+
+/**
+ * Send one message.
+ *
+ * `clientMessageId` makes a retry safe: the server returns the existing turn rather than
+ * storing the message twice. A timeout the client never saw is the ordinary cause of a
+ * double submit, and this is cheaper than making the customer wonder.
+ */
+export function sendDidoMessage(
+  sessionId: number,
+  message: string,
+  expectedRevision: number,
+  clientMessageId: string,
+): Promise<DidoSessionPayload> {
+  return api<DidoSessionPayload>(`/me/dido/sessions/${sessionId}/messages`, {
+    method: "POST",
+    authenticated: true,
+    body: {
+      message,
+      expected_revision: expectedRevision,
+      client_message_id: clientMessageId,
+    },
+  });
+}
+
+export function correctDidoBrief(
+  sessionId: number,
+  changes: Record<string, unknown>,
+  expectedRevision: number,
+): Promise<DidoSessionPayload> {
+  return api<DidoSessionPayload>(`/me/dido/sessions/${sessionId}/brief`, {
+    method: "PATCH",
+    authenticated: true,
+    body: { changes, expected_revision: expectedRevision },
+  });
+}
+
+export function completeDidoSession(sessionId: number): Promise<DidoSessionPayload> {
+  return api<DidoSessionPayload>(`/me/dido/sessions/${sessionId}/complete`, {
+    method: "POST",
+    authenticated: true,
+  });
+}
+
+export function deleteDidoSession(sessionId: number): Promise<{ deleted: boolean }> {
+  return api<{ deleted: boolean }>(`/me/dido/sessions/${sessionId}`, {
+    method: "DELETE",
+    authenticated: true,
+  });
+}
+
+/** What the session is using, grouped by source. "What do you know about me?" */
+export function fetchDidoInUse(sessionId: number): Promise<DidoInUse> {
+  return api<DidoInUse>(`/me/dido/sessions/${sessionId}/in-use`, { authenticated: true });
 }
