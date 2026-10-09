@@ -382,22 +382,29 @@ test.describe("Style DNA", () => {
     await context.close();
   });
 
-  test("Dido states the profile is stored and not yet applied", async ({ page }) => {
+  test("Dido tells the truth about the profile, which Phase 7 changed", async ({ page }) => {
+    /* THIS ASSERTION USED TO READ "stored, not yet applied", AND IT WAS CORRECT.
+     *
+     * Phase 6 shipped a profile nothing consumed, so that was the honest sentence. Phase 7
+     * made Dido actually read it, which made the sentence false -- and a test still
+     * demanding it would have been pinning the product to a claim that had stopped being
+     * true. Updated rather than deleted: the thing worth guarding is that the page states
+     * the CURRENT boundary, not that it states one particular wording forever.
+     *
+     * What must still hold is the harder half: understanding is not recommending.
+     */
     await page.goto("/dido");
-    // Wait for the lazily-loaded route chunk: reading innerText straight after goto
-    // asserted against an empty shell.
-    await expect(page.getByText(/stored, not yet applied/i).first()).toBeVisible({
-      timeout: 20_000,
-    });
+    await expect(page.getByTestId("dido-disclosure")).toBeVisible({ timeout: 20_000 });
 
-    /* CASE-INSENSITIVE, because the state column is styled `text-transform: uppercase`
-     * and `innerText` reports text as RENDERED, not as authored. The first version of
-     * this assertion compared against the source casing and failed on all three engines
-     * while the copy was perfectly correct -- a test asserting the stylesheet rather than
-     * the sentence. */
-    const body = await page.locator("body").innerText();
-    expect(body.toLowerCase()).toContain("stored, not yet applied");
-    // And it must not claim to be using it.
-    expect(body.toLowerCase()).not.toContain("using your style profile");
+    const body = (await page.locator("body").innerText()).toLowerCase();
+
+    // The stale Phase 6 wording must be gone from the Dido surface.
+    expect(body).not.toContain("stored, not yet applied");
+    // The boundary that still holds is stated.
+    expect(body).toContain("does not pick the clothes");
+    expect(body).toContain("does not yet rank products");
+    // And nothing claims a recommendation exists.
+    expect(body).not.toContain("we recommend");
+    expect(body).not.toContain("best match");
   });
 });

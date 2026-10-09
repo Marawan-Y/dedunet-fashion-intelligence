@@ -305,6 +305,8 @@ Round trip verified on a scratch database with exit codes checked. **Applied to 
 | `npm run build` | exit 0 |
 | Mutation testing | **87 run, 87 detected, 0 survived, 0 inconclusive** |
 | Dido E2E vs deployed staging | **54 passed, 0 failed** — 18 × Chromium, WebKit, Mobile Safari |
+| Browser E2E, **full suite** | **580 passed, 6 failed, 5 flaky** on the first run — both failures fixed, see below |
+| Browser E2E, Dido + rendering + Style DNA after the fixes | **273 passed, 0 failed** |
 | OpenAPI | +10 paths, no existing path changed |
 | Governance · brand drift · packaged assets | PASS (0 errors) · `NO_DRIFT` · `VERIFIED` |
 | Security headers on `/dido` · `/api` | 4 of 4 · keeps `no-referrer` |
@@ -318,6 +320,33 @@ a vendor's model: A interview/business-casual/€200 → one question not three;
 black" → exclusion not preference; C profile applied when on; D nothing loaded when off; E
 session override wins and profile unchanged; F ambiguous → asks; G €100.50 → 10050; H unknown
 enum dropped; I injection changes nothing; J conflict → clarification.
+
+### What the full suite found, and the cross-phase one
+
+The first full run finished **580 passed, 6 failed, 5 flaky**. The six were two tests failing
+on all three engines, and both were real.
+
+**`dido renders at least 40 elements`** — the signed-out Dido page had become a sign-in panel.
+The same mistake Phase 6 made on My Style, caught by the same substance test: *"sign in to find
+out what we want to know about you"* tells a visitor nothing about what they are signing in for.
+The signed-out page now shows what Dido will ask, driven by the public vocabulary endpoint, so
+the preview cannot drift from the conversation.
+
+**`Dido states the profile is stored and not yet applied`** — a **Phase 6 test**, and it was
+correct when written. Phase 6 shipped a profile nothing consumed, so *"stored, not yet applied"*
+was the honest sentence. **Phase 7 made Dido actually read it, which made that sentence false.**
+A test still demanding it would have been pinning the product to a claim that had stopped being
+true.
+
+Rewritten rather than deleted. What is worth guarding is that the page states the **current**
+boundary — understanding is not recommending — not that it states one particular wording for
+ever. This is the clearest case yet of the disclosure rule cutting both ways, and it arrived as
+a failing test rather than as a judgement call.
+
+**The five flaky were the known media limiter.** The API log shows **90 refusals, 75 of them
+static media** under `/api/v1/media/` — the already-recorded finding that product media shares
+the general API limiter, with one `POST /me/...` as collateral. **The limiter was not raised and
+no assertion was weakened.** The per-customer Dido bucket is separate and behaved.
 
 ### Defects found by the tests
 

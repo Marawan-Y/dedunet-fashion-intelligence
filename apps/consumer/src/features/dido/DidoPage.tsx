@@ -255,6 +255,44 @@ export default function DidoPage() {
                 </ButtonLink>
               }
             />
+
+            {/* A SIGNED-OUT VISITOR STILL SEES WHAT DIDO WILL ASK.
+              *
+              * The same mistake I made on My Style, caught by the same substance test:
+              * replacing a page with a sign-in panel tells a visitor nothing about what
+              * they are being asked to sign in FOR. "Sign in to find out what we want to
+              * know about you" is a worse offer than showing them.
+              *
+              * The vocabularies are public because they are the platform's words rather
+              * than anybody's data, which is what makes this possible without a session
+              * and keeps it from drifting from what the conversation actually offers. */}
+            {options ? (
+              <div data-testid="dido-preview">
+                <Stack gap="loose">
+                  {([
+                    ["What you are dressing for", options.occasions],
+                    ["How formal it needs to be", options.dress_codes],
+                    ["Where it is", options.settings],
+                  ] as [string, { slug: string; label: string }[]][]).map(([title, terms]) => (
+                    <section key={title} className={styles.previewGroup}>
+                      <SectionHead eyebrow="Dido asks about" title={title} level={2} />
+                      <ul className={styles.previewList}>
+                        {terms.map((term) => (
+                          <li key={term.slug} className={styles.previewItem}>
+                            {term.label}
+                          </li>
+                        ))}
+                      </ul>
+                    </section>
+                  ))}
+                </Stack>
+              </div>
+            ) : null}
+
+            <Subtle>
+              Dido asks one thing at a time and only what it still needs. If you have a Style
+              DNA and personalisation is on, it starts from that instead of asking again.
+            </Subtle>
           </Stack>
         </Section>
       </Container>

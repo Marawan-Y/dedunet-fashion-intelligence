@@ -343,3 +343,31 @@
 @media (prefers-reduced-motion: reduce) {
   .log { scroll-behavior: auto; }
 }
+
+/* The signed-out preview. Reuses the row treatment from the Style DNA preview, because
+   what it communicates -- a named thing with no value yet -- is the same idea. */
+.previewGroup {
+  padding-bottom: var(--ds-space-5);
+  border-bottom: var(--ds-border-width) solid var(--ds-border);
+}
+
+.previewGroup:last-child { border-bottom: none; }
+
+.previewList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ds-space-2);
+}
+
+.previewItem {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--ds-target-min);
+  padding: var(--ds-space-2) var(--ds-space-4);
+  background: var(--ds-surface);
+  border: var(--ds-border-width) solid var(--ds-border);
+  font-size: var(--ds-text-sm);
+}
