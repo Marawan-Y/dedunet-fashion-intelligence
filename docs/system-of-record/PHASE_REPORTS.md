@@ -795,6 +795,57 @@ none was built, and the page says so where a customer will read it.
 
 ---
 
+## PHASE 7 — Dido conversational intelligence
+
+**Branch** `feat/dido-conversational-intelligence` from `main` at `c5ac352` · **Migration**
+`b2e74c09d8a1` · **Evidence** `evidence/phase-7/DIDO_CONVERSATIONAL_INTELLIGENCE_EVIDENCE.md`
+
+A conversational styling **intake**. Dido reads free text, applies accepted Style DNA when
+personalisation is on, detects contradictions, asks one useful thing at a time, and
+accumulates a structured Styling Brief. **It ends at the brief.**
+
+| Decision | What was built, and why |
+|---|---|
+| **The interpreter proposes; it never decides** | Every model output is a candidate, validated against the taxonomy and re-parsed for money before it can enter a brief. What it may not own is listed rather than assumed: money arithmetic, identity, Style DNA values, catalogue and brand truth, availability, price, authorization |
+| **The deterministic interpreter is not a stub** | It is the fallback AND what CI runs. **No test in this phase needs an API key** -- a phase whose tests require paid credentials is a phase whose tests nobody runs |
+| **Precedence** | `SESSION > STYLE_DNA > SYSTEM_DERIVED`, in one tuple and one function. This is what makes "no black tonight" win **without touching the profile** |
+| **`SYSTEM_DERIVED` is narrow** | A controlled term matched from the customer's own words by a documented synonym, carrying the matched phrase. A guess that cannot be traced to a listed phrase becomes a question instead |
+| **Personalisation OFF is a hard stop** | The values are never loaded, so there is nothing to leak into a prompt, a brief or a reply. Checked in **one function** -- it was written twice and the mutation anchor matched twice, which was right about more than the anchor |
+| **Contradictions are surfaced, never resolved** | Deciding between two things a customer said would be the system choosing something about their evening, and they would find out by reading a brief that says the opposite |
+| **The reply is composed from the stored brief** | Structurally unable to promise a budget the brief does not hold |
+| **Prompt-injection boundary** | The system instruction is a constant with no interpolation point; output is validated regardless, so a compromised instruction still cannot put an unknown value in a brief |
+| **Fail closed** | Missing key, outage, timeout, 429, unusable output -- all produce a question and the controlled choices, never a guess |
+| **Per-customer rate limit** | The existing limiter keys on IP, wrong in both directions for an authenticated paid endpoint. The global limiter still applies underneath and was not redesigned |
+
+**Verification.** Backend 842 passed / 2 skipped (was 770); consumer unit 80 (was 54);
+mutation 87 run, 87 detected, 0 survived, 0 inconclusive; Dido E2E 54 passed / 0 failed
+across Chromium, WebKit and Mobile Safari; OpenAPI +10 paths with no existing path changed;
+migration applied to staging with catalogue and brand md5 **byte-identical** and every row
+count unchanged including Style DNA.
+
+**Two overclaims removed from the home page.** The Dido animation ran through `searching`,
+`assembling` and `presenting`, none of which exists -- an animation of a catalogue search is
+a stronger claim than any sentence. While verifying that fix, the hero two sections above was
+found still saying Dido "builds complete looks".
+
+**Defects the tests found:** a falsy-zero turn ordinal caught by a unique constraint rather
+than by a conversation silently reordering; a disabled textarea that lost focus on every
+message; and two limits firing at the same boundary with different messages.
+
+| Limitation | Status |
+|---|---|
+| Recommendation ranking · product scoring · outfit generation · fashion RAG | **NOT STARTED** |
+| Live weather / location · cross-brand size recommendation | **NOT BUILT**, deliberately |
+| Saved-item conversation input | out of the MVP by §53 |
+| Conversation archive | one active session, not a history |
+| Deployment provenance automation (`R-019`) | open, unchanged |
+| Firefox | **BLOCKED** -- cannot launch in this environment |
+
+Phase 7 accepts **an understanding of what a customer wants**. It accepts no recommendation,
+because none was built, and the page says so at the moment one would appear.
+
+---
+
 ## Platform decisions
 
 Re-stated at every phase boundary, deliberately separate.
