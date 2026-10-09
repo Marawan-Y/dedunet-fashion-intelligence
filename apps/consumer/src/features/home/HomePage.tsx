@@ -82,9 +82,14 @@ export default function HomePage() {
               </span>
             </h1>
 
+            {/* "It builds complete looks" was the loudest claim on the site and it is
+                not true: Phase 7 built the conversation and the brief, not the engine
+                that picks clothes. Found while verifying the DidoMoment copy below --
+                fixing one overclaim and leaving a larger one two sections above it would
+                have been worse than leaving both. */}
             <p className={styles.heroLede}>
-              Tell Dido where you are going. It builds complete looks, explains every piece,
-              and traces each one back to the brand that makes it.
+              Tell Dido where you are going. It works out what you need, uses what you have
+              told it about your style, and traces every brand back to who makes it.
             </p>
 
             <div className={styles.heroActions}>

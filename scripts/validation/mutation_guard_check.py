@@ -102,6 +102,15 @@ TEST_STYLE_DNA = "tests/test_style_dna.py"
 # profile must not survive erasure.
 STYLE_DNA_SERVICE = BACKEND / "app" / "commerce" / "style_dna_service.py"
 STYLE_DNA_MODEL = BACKEND / "app" / "commerce" / "style_dna.py"
+TEST_DIDO = "tests/test_dido_conversation.py"
+
+# Dido. The guards worth mutating are the ones that keep the conversation HONEST rather
+# than merely working: personalisation OFF must load nothing, a session instruction must
+# outrank a stored preference, an unknown taxonomy value must be dropped rather than
+# coerced, a failed interpretation must never become invented state, and a conversation
+# must not survive account erasure.
+DIDO_SERVICE = BACKEND / "app" / "commerce" / "dido_service.py"
+DIDO_BRIEF = BACKEND / "app" / "commerce" / "dido_brief.py"
 
 API = BACKEND / "app" / "commerce" / "api.py"
 SYNTHETIC = BACKEND / "app" / "commerce" / "synthetic_inventory.py"
@@ -1277,6 +1286,58 @@ MUTATIONS: tuple[Mutation, ...] = (
             "the defining rule of Style DNA: every row exists because a person chose it, "
             "enforced in the schema so a future code path cannot write an inferred "
             "preference into a table that claims to hold explicit ones",
+        ),
+    ),
+    Mutation(
+        mutation_id="M85_dido_personalization_off_loads_nothing",
+        guard="a profile is not used when personalisation is off",
+        target=DIDO_SERVICE,
+        original="    if profile is None or not profile.personalization_enabled:",
+        mutated="    if profile is None:  # MUTATED: the personalisation switch is ignored",
+        tests=(f"{TEST_DIDO}::test_eval_d_personalization_off_loads_nothing",),
+        covers=(
+            "the hard invariant: a stored profile may exist and remain entirely unused",
+        ),
+    ),
+    Mutation(
+        mutation_id="M86_dido_session_outranks_the_profile",
+        guard="a session instruction overrides a stored preference",
+        target=DIDO_BRIEF,
+        original="        if existing and not tax.outranks(effective, existing.get(\"source\")):",
+        mutated="        if existing:  # MUTATED: whatever landed first wins",
+        tests=(f"{TEST_DIDO}::test_eval_e_session_override_wins_and_profile_is_untouched",),
+        covers=("precedence: what you say tonight beats what you saved in March",),
+    ),
+    Mutation(
+        mutation_id="M87_dido_unknown_taxonomy_value_is_dropped",
+        guard="a value outside the taxonomy cannot enter a brief",
+        target=DIDO_BRIEF,
+        original="        return slug if slug in _SINGLE_SLUG_FIELDS[field] else None",
+        mutated="        return slug  # MUTATED: anything the model says is accepted",
+        tests=(f"{TEST_DIDO}::test_eval_h_unsupported_enum_from_the_model_is_dropped",),
+        covers=("the interpreter proposes and never decides",),
+    ),
+    Mutation(
+        mutation_id="M88_dido_float_money_is_refused",
+        guard="an authoritative budget cannot be a float",
+        target=DIDO_BRIEF,
+        original="        if isinstance(value, bool) or not isinstance(value, int):",
+        mutated="        if False:  # MUTATED: a float budget is silently truncated",
+        tests=(
+            f"{TEST_DIDO}::test_a_float_budget_candidate_is_refused_not_rounded",
+        ),
+        covers=("SIDE_B_MONEY_CONTRACT rule 1, inside the conversation",),
+    ),
+    Mutation(
+        mutation_id="M89_dido_conversations_are_erased_with_the_customer",
+        guard="a styling conversation does not survive account erasure",
+        target=DIDO_SERVICE,
+        original="    result = session.execute(delete(DidoSession).where(DidoSession.id.in_(ids)))",
+        mutated="    result = None  # MUTATED: conversation text outlives the erasure request",
+        tests=(f"{TEST_DIDO}::test_erase_customer_removes_every_conversation",),
+        covers=(
+            "erase_customer pseudonymizes, so the FK cascade never fires and explicit "
+            "deletion is the only thing that removes conversation text",
         ),
     ),
 )
