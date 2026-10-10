@@ -417,3 +417,85 @@ start another session and confirm Dido says it is not using the profile; delete 
 and confirm Style DNA and Saved remain.
 
 No automated result here substitutes for it, and none is offered as doing so.
+
+## 27. Two defects a human found, and the identity proof for the retest
+
+### What was wrong
+
+A human typed into the deployed build and found two things, both mine.
+
+**Dido could not be asked anything.** Every message went through constraint extraction, so
+*"What budget do you currently have for this styling session?"* came back as *"I did not catch
+a styling constraint in that."* The data was all there — the brief held it and `/in-use`
+returned it — but it was reachable only by a button, which is not where somebody
+mid-conversation reaches. **A transparency promise that cannot be exercised where the customer
+actually is may as well not exist.**
+
+**A stated constraint vanished.** *"I do not want anything too bright"* matched no vocabulary,
+and the deterministic interpreter never populated `unplaced`, so it was simply not there
+afterwards. That is the specific failure this programme exists to avoid: the brief looked
+**more** complete than it was.
+
+### What changed
+
+A **question branch**, checked before the interpreter and answered from the **stored brief**.
+Deterministic on purpose — the honest answer to "what are you using about me?" is a readout of
+state, and asking a language model to describe state it cannot see is how a system comes to
+confidently misreport itself. It spends **no model token**, because checking what Dido holds
+must never be the thing that rate-limits a customer; the global limiter still applies
+underneath.
+
+Detection is conservative: a message must end in `?` or open with an interrogative. **A false
+positive silently discards a real constraint, which is the worse error** — a missed question
+gives an unhelpful reply, a missed constraint gives a brief that is quietly wrong and looks
+complete. *"I want to avoid wool"* stays a constraint; *"what did I tell you to avoid?"* does
+not.
+
+And negated phrases nothing can map are now kept **verbatim** as unplaced — suppressed when
+the negation was already understood as a real exclusion, so a customer never sees their own
+constraint twice, contradicting itself.
+
+Nine regression tests, including that a question edits no constraint, that twenty-five
+consecutive questions are never rate-limited, and that personalisation-off answers honestly
+rather than listing values it is not using.
+
+### Identity, proved before asking for a retest
+
+| | |
+|---|---|
+| `git rev-parse HEAD` | `9d0c45c1c36a193481d58f1f4404cb99348c7eec` |
+| `git rev-parse origin/feat/dido-conversational-intelligence` | **identical** |
+| PR #3 head | **identical** |
+| Working tree | 0 uncommitted files |
+| CI | run **#29**, `9d0c45c`, **success**, all five jobs |
+
+### Deployment provenance
+
+Both images were **rebuilt `--no-cache` from the committed tree** after an earlier build was
+found to **predate its own commit by six minutes** — survivable only when content is provably
+identical, never as an assumption, and not something to hand a human with an explanation
+attached.
+
+| Gate | Result |
+|---|---|
+| 1 — exclusive port ownership | **1** container, `dedunet-staging-web-1` |
+| 2 — LAN probe `http://10.0.0.2:13080` | **reached that container's access log** |
+| 3 — artifact identity | `ETag "6acaba51-7af"`, entry `index-BKpE_mrO.js`, and `index.html` **sha256 `b8e364794c82a666` identical host and container** |
+| 4 — image vs source | web `c0622dbc56af`, api `3574e152964e`, both built **2026-10-10T22:21Z**, after the commit at 22:10Z |
+| 5 — artifact contains Phase 7 | `DidoPage-Dro1k16C.js`; **10 Dido paths** on the deployed API; staging at `b2e74c09d8a1` |
+
+### Deployed smoke, on that exact artifact
+
+Opening message — *"job interview tomorrow, business casual, around 200 euros. I do not want
+anything too bright."* The constraint is **kept**: `unplaced: ["do not want anything too
+bright"]`, and the reply says so.
+
+| Query | Answer |
+|---|---|
+| *"What information from my Style DNA are you using for this styling session?"* | "From your Style DNA I am using: colours you want: navy; materials to avoid: wool. **From this conversation, separately:** budget for the whole look: €200.00; dress level: business casual; occasion: interview." |
+| *"What budget do you currently have for this styling session?"* | "Your budget for this session is **€200.00 for the whole look** (from this conversation)." |
+| *"What did I tell you to avoid for this session?"* | "You also said \"do not want anything too bright\" — **I kept that, but I have not turned it into a constraint I can act on.** From your Style DNA: materials to avoid: wool." |
+
+Verification after the fix: backend **858 passed, 2 skipped** (was 842); Dido E2E **54 passed,
+0 failed** across Chromium, WebKit and Mobile Safari; OpenAPI **unchanged** — no path added,
+removed or altered, because this is behaviour inside an existing contract.
