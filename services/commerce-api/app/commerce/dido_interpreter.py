@@ -47,6 +47,8 @@ from typing import Protocol
 
 from . import dido_taxonomy as tax
 
+MAX_UNPLACED = tax.MAX_FREE_TEXT_CONSTRAINTS
+
 logger = logging.getLogger(__name__)
 
 
@@ -194,6 +196,48 @@ _MATERIALS = (
 _COLOUR_CANONICAL = {"gray": "grey"}
 
 
+#: How much of the phrase after a negation to keep. Short enough that it reads as a note
+#: rather than a transcript, long enough to hold "anything too bright".
+_UNPLACED_SPAN = 40
+
+#: Words that mean the negation was already understood, so re-capturing it as "not
+#: understood" would show the customer their own constraint twice -- once as a working
+#: exclusion and once as a note Dido could not read.
+_PLACED_MARKERS = _COLOURS + _MATERIALS + _GARMENTS
+
+
+def _unplaced_negations(text: str, *, placed: tuple[str, ...]) -> tuple[str, ...]:
+    """Phrases the customer clearly meant as constraints that nothing could map.
+
+    Kept VERBATIM and shown as unplaced. The alternative is what the first version did:
+    drop them, and let the brief look more complete than it is.
+    """
+
+    notes: list[str] = []
+    for negation in ("do not want", "don't want", "nothing ", "no ", "not too ", "avoid "):
+        start = 0
+        while True:
+            idx = text.find(negation, start)
+            if idx == -1:
+                break
+            start = idx + len(negation)
+            span = text[idx : idx + _UNPLACED_SPAN].strip()
+            # Cut at the first sentence or clause break so one note is one thought.
+            for stop in (".", ",", ";", " and ", " but "):
+                cut = span.find(stop, len(negation))
+                if cut != -1:
+                    span = span[:cut].strip()
+            tail = span[len(negation):].strip()
+            if not tail or len(tail) < 3:
+                continue
+            # Already handled as a real exclusion: do not report it twice.
+            if any(marker in tail for marker in _PLACED_MARKERS):
+                continue
+            if span not in notes:
+                notes.append(span)
+    return tuple(notes[:MAX_UNPLACED])
+
+
 class DeterministicInterpreter:
     """Synonym and pattern matching. No model, no network, no key, no cost.
 
@@ -290,9 +334,19 @@ class DeterministicInterpreter:
         if any(h in text for h in ("rather not say", "prefer not to say", "no budget")):
             add("budget_skipped", True, "rather not say")
 
+        # ---- anything negated that nothing above could place
+        #
+        # "I do not want anything too bright" vanished entirely in the first version of
+        # this phase: no vocabulary matched, and the deterministic interpreter never
+        # populated `unplaced`, so a constraint the customer had stated simply was not
+        # there. A brief that silently drops what someone said is worse than one that
+        # admits it did not understand -- the first looks complete.
+        unplaced = _unplaced_negations(text, placed=tuple(c.field for c in candidates))
+
         return Interpretation(
             candidates=tuple(candidates),
-            ambiguous=not candidates,
+            unplaced=unplaced,
+            ambiguous=not candidates and not unplaced,
         )
 
 

@@ -34,6 +34,7 @@ import json
 from typing import Any, Final
 
 from . import dido_taxonomy as tax
+from .dido_taxonomy import SOURCE_SESSION, SOURCE_STYLE_DNA, SOURCE_SYSTEM
 
 #: Fields whose value is a single taxonomy slug.
 _SINGLE_SLUG_FIELDS: Final[dict[str, frozenset[str]]] = {
@@ -432,3 +433,222 @@ def summarize(brief: dict[str, Any]) -> dict[str, Any]:
         "still_unset": missing,
         "ready": is_ready(brief),
     }
+
+
+# --------------------------------------------------------------------------- questions
+#
+# THE CUSTOMER MAY ASK, NOT ONLY TELL.
+#
+# The first version of this phase treated every message as constraint extraction, so
+# "what budget do I have for this?" produced "I did not catch a styling constraint in
+# that." The data was all there -- the brief holds it and /in-use returns it -- but it was
+# reachable only by a button, which is not where somebody mid-conversation looks.
+#
+# A question is answered from the STORED BRIEF, deterministically, and never from a model.
+# That is not a shortcut: the honest answer to "what are you using about me?" is a readout
+# of state, and asking a language model to describe state it cannot see is how a system
+# comes to confidently misreport itself.
+
+#: Interrogative openers. A message must either end in "?" or start with one of these to
+#: count as a question, so "I want to avoid wool" stays a constraint while
+#: "what did I tell you to avoid?" does not.
+_INTERROGATIVE: Final[tuple[str, ...]] = (
+    "what", "which", "who", "when", "where", "why", "how",
+    "do you", "are you", "can you", "could you", "did i", "have i",
+    "tell me", "remind me", "show me", "list",
+)
+
+QUERY_STYLE_DNA: Final = "style_dna_in_use"
+QUERY_BUDGET: Final = "budget_in_use"
+QUERY_AVOIDANCES: Final = "avoidances_in_use"
+QUERY_EVERYTHING: Final = "everything_in_use"
+
+#: Subject matter, checked only once the message is known to be a question. Ordered: the
+#: specific subjects are tried before the catch-all, so "what budget do I have?" is
+#: answered with the budget rather than with everything.
+_QUERY_SUBJECTS: Final[tuple[tuple[str, tuple[str, ...]], ...]] = (
+    (QUERY_BUDGET, ("budget", "spend", "spending", "price range", "how much")),
+    (QUERY_AVOIDANCES, ("avoid", "not want", "exclude", "stay away", "rule out", "ruled out")),
+    (QUERY_STYLE_DNA, ("style dna", "style profile", "my profile", "profile")),
+    (QUERY_EVERYTHING, ("know about me", "about me", "using", "have so far", "so far", "my brief")),
+)
+
+
+def detect_query(message: str) -> str | None:
+    """Is this a question about the session, and about what? Otherwise None.
+
+    Deliberately conservative. A false positive silently discards a real constraint, which
+    is worse than a false negative: a missed question produces an unhelpful reply, while a
+    missed constraint produces a brief that is quietly wrong and looks complete.
+    """
+
+    text = (message or "").strip().lower()
+    if not text:
+        return None
+
+    if not (text.endswith("?") or text.startswith(_INTERROGATIVE)):
+        return None
+
+    for intent, phrases in _QUERY_SUBJECTS:
+        if any(phrase in text for phrase in phrases):
+            return intent
+    return None
+
+
+def _money_words(value: object, currency: str) -> str:
+    """Integer minor units to words by SLICING DIGITS. Never division."""
+
+    if not isinstance(value, int) or isinstance(value, bool):
+        return str(value)
+    symbol = "EUR " if currency != "EUR" else "€"
+    digits = str(abs(value)).rjust(3, "0")
+    return f"{symbol}{digits[:-2]}.{digits[-2:]}"
+
+
+_READABLE_LABELS: Final[dict[str, str]] = {
+    "occasion": "occasion",
+    "dress_code": "dress level",
+    "setting": "setting",
+    "temperature": "weather, as you described it",
+    "colour_preferences": "colours you want",
+    "colour_avoidances": "colours to avoid",
+    "material_preferences": "materials you want",
+    "material_avoidances": "materials to avoid",
+    "brand_preferences": "brands you follow",
+    "brand_avoidances": "brands to exclude",
+    "fit_preferences": "fit",
+    "requested_categories": "pieces you mentioned",
+    "budget_total": "budget for the whole look",
+    "budget_per_piece": "budget per piece",
+    "budget_skipped": "budget",
+}
+
+
+def _readable(field: str, value: object, currency: str) -> str:
+    label = _READABLE_LABELS.get(field, field.replace("_", " "))
+    if field in ("budget_total", "budget_per_piece"):
+        return f"{label}: {_money_words(value, currency)}"
+    if isinstance(value, list):
+        return f"{label}: {', '.join(str(v).replace('-', ' ') for v in value)}"
+    return f"{label}: {str(value).replace('-', ' ')}"
+
+
+def answer_query(brief: dict[str, Any], intent: str, *, personalization_used: bool) -> str:
+    """Answer a question from stored state, in sentences a person can read.
+
+    THE GROUPING IS THE ANSWER. "Avoid wool" means something different depending on
+    whether it came from a profile saved in March or from this conversation, and a flat
+    list would hide the one thing the customer is actually asking about.
+    """
+
+    fields = brief.get("fields", {})
+    currency = brief.get("currency", "EUR")
+    unplaced = brief.get("unplaced", [])
+
+    def group(source: str) -> list[tuple[str, Any]]:
+        return sorted(
+            (name, entry["value"])
+            for name, entry in fields.items()
+            if entry.get("source") == source
+        )
+
+    from_profile = group(SOURCE_STYLE_DNA)
+    from_session = group(SOURCE_SESSION) + group(SOURCE_SYSTEM)
+
+    if intent == QUERY_STYLE_DNA:
+        if not personalization_used:
+            return (
+                "I am not using your Style DNA for this session. Either you have not made "
+                "one, or personalisation is switched off in My Style. Everything in this "
+                "brief came from what you have told me here."
+            )
+        if not from_profile:
+            return (
+                "Personalisation is on, but nothing from your Style DNA has gone into this "
+                "brief yet."
+            )
+        profile_line = "; ".join(_readable(f, v, currency) for f, v in from_profile)
+        if from_session:
+            session_line = "; ".join(_readable(f, v, currency) for f, v in from_session)
+            tail = f" From this conversation, separately: {session_line}."
+        else:
+            tail = " You have not added anything to it in this conversation yet."
+        return f"From your Style DNA I am using: {profile_line}.{tail}"
+
+    if intent == QUERY_BUDGET:
+        if (fields.get("budget_skipped") or {}).get("value"):
+            return "You said you would rather not give a budget, so I am not working to one."
+        total = fields.get("budget_total")
+        per_piece = fields.get("budget_per_piece")
+        if not total and not per_piece:
+            return "You have not given me a budget for this session yet."
+        parts = []
+        for entry, label in ((total, "for the whole look"), (per_piece, "per piece")):
+            if entry:
+                origin = (
+                    "from your Style DNA"
+                    if entry.get("source") == SOURCE_STYLE_DNA
+                    else "from this conversation"
+                )
+                parts.append(
+                    f"{_money_words(entry['value'], currency)} {label} ({origin})"
+                )
+        return "Your budget for this session is " + " and ".join(parts) + "."
+
+    if intent == QUERY_AVOIDANCES:
+        avoid = [
+            (name, entry)
+            for name, entry in sorted(fields.items())
+            if name.endswith("_avoidances")
+        ]
+        if not avoid and not unplaced:
+            return "You have not told me anything to avoid for this session."
+        said_here = [
+            _readable(name, entry["value"], currency)
+            for name, entry in avoid
+            if entry.get("source") != SOURCE_STYLE_DNA
+        ]
+        from_dna = [
+            _readable(name, entry["value"], currency)
+            for name, entry in avoid
+            if entry.get("source") == SOURCE_STYLE_DNA
+        ]
+        parts = []
+        if said_here:
+            parts.append("For this session you told me to avoid " + "; ".join(said_here) + ".")
+        if unplaced:
+            # Kept verbatim and flagged as NOT a working constraint. Implying otherwise
+            # would be worse than having dropped it: the customer would believe it was
+            # being honoured.
+            quoted = "; ".join(f'"{note}"' for note in unplaced)
+            parts.append(
+                f"You also said {quoted} — I kept that, but I have not turned it into a "
+                "constraint I can act on."
+            )
+        if from_dna:
+            parts.append("From your Style DNA: " + "; ".join(from_dna) + ".")
+        return " ".join(parts)
+
+    parts = []
+    if from_profile:
+        parts.append(
+            "From your Style DNA: "
+            + "; ".join(_readable(f, v, currency) for f, v in from_profile)
+            + "."
+        )
+    elif personalization_used:
+        parts.append("Nothing from your Style DNA applies to this brief yet.")
+    else:
+        parts.append("I am not using your Style DNA — personalisation is off.")
+    if from_session:
+        parts.append(
+            "From this conversation: "
+            + "; ".join(_readable(f, v, currency) for f, v in from_session)
+            + "."
+        )
+    else:
+        parts.append("You have not told me anything in this conversation yet.")
+    if unplaced:
+        quoted = "; ".join(f'"{note}"' for note in unplaced)
+        parts.append(f"Noted but not understood: {quoted}.")
+    return " ".join(parts)

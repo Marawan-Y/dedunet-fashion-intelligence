@@ -337,6 +337,41 @@ def add_message(
                 question=dido_brief.next_question(brief),
             )
 
+    # ---- IS THIS A QUESTION ABOUT THE SESSION?
+    #
+    # Checked BEFORE the rate check and before the interpreter, and answered from the
+    # stored brief. The first version of this phase had no such branch at all, so
+    # "what budget do I have for this?" came back as "I did not catch a styling
+    # constraint in that" -- the data was all there and simply could not be asked for in
+    # the place somebody would ask.
+    #
+    # Deterministic on purpose. The honest answer to "what are you using about me?" is a
+    # readout of state, and asking a model to describe state it cannot see is how a
+    # system comes to confidently misreport itself.
+    #
+    # It also spends no model token, because CHECKING WHAT DIDO HOLDS MUST NEVER BE THE
+    # THING THAT RATE-LIMITS A CUSTOMER. The global limiter still applies underneath, so
+    # the endpoint is not unbounded.
+    intent = dido_brief.detect_query(text)
+    if intent is not None:
+        _add_turn(session, row, role="CUSTOMER", body=text)
+        brief = json.loads(row.brief_json)
+        answer = dido_brief.answer_query(
+            brief, intent, personalization_used=row.personalization_used
+        )
+        question = dido_brief.next_question(brief)
+        if question:
+            answer = f"{answer} {question['prompt']}"
+        _add_turn(
+            session, row, role="DIDO", body=answer,
+            question_key=question["key"] if question else "",
+        )
+        row.revision += 1
+        record_event(session, "dido_question_answered", {"intent": intent}, correlation_id)
+        session.commit()
+        session.refresh(row)
+        return MessageResult(row, Interpretation(), answer, question)
+
     _check_rate(customer.id)
 
     # The customer's turn is stored FIRST, so a provider failure never loses it.

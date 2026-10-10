@@ -948,3 +948,143 @@ def test_options_endpoint_serves_the_vocabulary(client):
         assert key in body
     assert set(body["sources"]) == tax.ALLOWED_SOURCES
     assert body["currencies"] == ["EUR"]
+
+
+# --------------------------------------------------------------------------- questions
+#
+# THE DEFECTS A HUMAN FOUND, as regression tests.
+#
+# The first version of this phase treated every message as constraint extraction, so a
+# customer asking what Dido was using about them got "I did not catch a styling constraint
+# in that." The data existed and could not be asked for. And a constraint the customer
+# stated -- "nothing too bright" -- vanished entirely, because the deterministic
+# interpreter never populated `unplaced`.
+#
+# Both are worse than they look. The first makes the transparency promise unreachable in
+# the one place somebody would reach for it. The second makes the brief look MORE complete
+# than it is, which is the specific failure this whole programme exists to avoid.
+
+
+def test_a_question_about_style_dna_is_answered_not_extracted(client, owner):
+    _make_profile(client, owner, enabled=True)
+    started = _start(client, owner)
+    _say(client, owner, started["session_id"], "Interview, business casual, 200 euros")
+
+    result = _say(
+        client, owner, started["session_id"],
+        "What information from my Style DNA are you using for this styling session?",
+    )
+    reply = result["reply"]
+
+    assert "did not catch" not in reply
+    # Human-readable separation: the profile side and the conversation side, named.
+    assert "From your Style DNA" in reply
+    assert "from this conversation" in reply.lower()
+    assert "wool" in reply, "the profile value must be named, not merely counted"
+
+
+def test_a_question_about_budget_reads_the_authoritative_stored_value(client, owner):
+    started = _start(client, owner)
+    _say(client, owner, started["session_id"], "Interview, business casual, 200 euros")
+
+    reply = _say(
+        client, owner, started["session_id"],
+        "What budget do you currently have for this styling session?",
+    )["reply"]
+
+    # The stored integer minor units, rendered by slicing digits.
+    assert "\u20ac200.00" in reply
+    assert "whole look" in reply
+    assert "from this conversation" in reply
+
+
+def test_a_question_about_avoidances_preserves_what_could_not_be_mapped(client, owner):
+    started = _start(client, owner)
+    _say(
+        client, owner, started["session_id"],
+        "I have a job interview tomorrow, business casual, around 200 euros. "
+        "I do not want anything too bright.",
+    )
+
+    reply = _say(
+        client, owner, started["session_id"], "What did I tell you to avoid for this session?"
+    )["reply"]
+
+    # Kept verbatim...
+    assert "bright" in reply
+    # ...and honestly flagged as not a working constraint.
+    assert "not turned it into a constraint" in reply
+
+
+def test_an_unmappable_constraint_is_kept_rather_than_dropped(client, owner):
+    started = _start(client, owner)
+    result = _say(
+        client, owner, started["session_id"],
+        "Interview, business casual, 200 euros. I do not want anything too bright.",
+    )
+    assert any("bright" in note for note in result["brief"]["unplaced"]), (
+        "a constraint the customer stated must not vanish; a brief that drops it looks "
+        "more complete than it is"
+    )
+
+
+def test_an_understood_exclusion_is_not_also_reported_as_not_understood(client, owner):
+    """Otherwise the customer sees their own constraint twice, contradicting itself."""
+
+    started = _start(client, owner)
+    result = _say(client, owner, started["session_id"], "Wedding. No black. Around 300 euros.")
+
+    fields = _fields(result)
+    assert fields["colour_avoidances"]["value"] == ["black"]
+    assert result["brief"]["unplaced"] == []
+
+
+@pytest.mark.parametrize(
+    "message",
+    [
+        "I want to avoid wool",
+        "No black tonight",
+        "A wedding, formal, 300 euros",
+        "Nothing too bright",
+    ],
+)
+def test_a_statement_is_never_mistaken_for_a_question(client, owner, message):
+    """A false positive silently discards a real constraint, which is the worse error."""
+
+    assert dido_brief.detect_query(message) is None
+
+
+def test_answering_a_question_changes_no_constraint(client, owner):
+    started = _start(client, owner)
+    before = _say(client, owner, started["session_id"], "Interview, business casual, 200 euros")
+
+    after = _say(
+        client, owner, started["session_id"], "What do you know about me?"
+    )
+    assert _fields(after) == _fields(before), "a question must not edit the brief"
+
+
+def test_a_question_does_not_spend_a_model_call_or_a_rate_token(client, owner):
+    """Checking what Dido holds must never be the thing that rate-limits a customer."""
+
+    started = _start(client, owner)
+    for _ in range(25):
+        response = client.post(
+            f"/api/v1/me/dido/sessions/{started['session_id']}/messages",
+            headers=owner,
+            json={"message": "What do you know about me?"},
+        )
+        assert response.status_code == 200, response.text
+
+
+def test_personalization_off_answers_the_style_dna_question_honestly(client, owner):
+    _make_profile(client, owner, enabled=False)
+    started = _start(client, owner)
+
+    reply = _say(
+        client, owner, started["session_id"],
+        "What information from my Style DNA are you using?",
+    )["reply"]
+
+    assert "not using your Style DNA" in reply
+    assert "personalisation is switched off" in reply
