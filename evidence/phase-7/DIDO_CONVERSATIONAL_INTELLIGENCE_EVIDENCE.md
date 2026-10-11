@@ -499,3 +499,96 @@ bright"]`, and the reply says so.
 Verification after the fix: backend **858 passed, 2 skipped** (was 842); Dido E2E **54 passed,
 0 failed** across Chromium, WebKit and Mobile Safari; OpenAPI **unchanged** — no path added,
 removed or altered, because this is behaviour inside an existing contract.
+
+## 28. The retest that failed on correct code
+
+A second physical retest reported the same symptom — *"What budget do you currently have for
+this styling session?"* answered with *"I did not catch a styling constraint in that."* — on a
+build whose source contained the question branch.
+
+**Both facts were true, and the second is what made this worth investigating properly rather
+than redeploying and hoping.**
+
+### What was proved, in order, before changing anything
+
+| Check | Result |
+|---|---|
+| Repository `dido_service.py` @ PR head | `68cc6103811e20a4…` |
+| **Running API container** `dido_service.py` | `68cc6103811e20a4…` — **identical** |
+| Repository `dido_brief.py` @ PR head | `6ae98706d47eaa49…` |
+| **Running API container** `dido_brief.py` | `6ae98706d47eaa49…` — **identical** |
+| Loaded modules in the live process | those exact files; `detect_query` present |
+| `detect_query("What budget…?")` in the container | returns **`budget_in_use`** |
+| LAN `:13080` served by | `dedunet-staging-web-1` (confirmed by access-log probe) |
+| nginx `/api` upstream, as loaded | `proxy_pass http://api:8000` |
+| `api` resolves, from the web container, to | `172.19.0.2` = `dedunet-staging-api-1`, the only API container on the network |
+| Start order | api 22:33:29Z, web 22:33:35Z — nginx resolved the live container |
+| Fresh disposable customer via exactly `http://10.0.0.2:13080/api` | **PASSED** |
+
+So the code was right, the route was right, and the human was right. The remaining difference
+was that **the UI sends `client_message_id` and my probe did not.**
+
+### Root cause
+
+**Idempotency was matching on MESSAGE BODY.** A second message whose text equalled an earlier
+one in the same session was treated as a retry, and the earlier reply was replayed.
+
+That is wrong in the ordinary case, not an edge one. Two identical messages are usually two
+messages — *"yes"*, *"no black"*, and asking the same question twice are all legitimate
+repeats. Reproduced through the LAN path on the fixed API:
+
+```
+ask the budget question   ->  "You have not given me a budget for this session yet."
+say "around 200 euros"    ->  brief stores 20000
+ask the SAME question     ->  "You have not given me a budget for this session yet."   <-- stale
+```
+
+A wrong answer delivered with complete confidence while the brief held €200.00. And worse:
+**any question answered before a fix was deployed kept returning the pre-fix answer for the
+life of the session.** That is precisely what the human hit — they asked during the first
+retest, the fix shipped, they asked again in the same session, and correct code replayed the
+old sentence.
+
+### The fix
+
+A retry is identified by **the key the client sent, and nothing else**. Uniqueness is a
+**database constraint**, not an application check — the reason Saved persistence gave: a
+double submit on a flaky connection genuinely races, and two requests that both find no row
+will both insert. `NULL` is repeatable, because a client sending no key is not asking for
+idempotency.
+
+Migration `c4a91f27e6d3`: one nullable column, one constraint, on a table the previous
+revision created. Historical turns keep `NULL` — correct, they carried no key — and the
+migration verifies in-transaction that it invented a key for **none** of them.
+
+### Verification after the fix
+
+| Check | Result |
+|---|---|
+| Backend `pytest -q` | **864 passed, 2 skipped** (was 858) |
+| New regression tests | 6 — same question re-answered, true retry still idempotent, repeated "yes" recorded twice, key stored, uniqueness enforced by the database, no key means no retry |
+| Dido E2E vs deployed staging | **54 passed, 0 failed** — Chromium, WebKit, Mobile Safari |
+| GitHub CI | run **#33**, `8aea715`, **success** |
+| OpenAPI | **unchanged** — no path added, removed or altered |
+| Staging migration | `c4a91f27e6d3`; dido_sessions 24→24, dido_turns 126→126, style_profiles 3→3, catalogue md5 **identical**; **0** turns given an invented key |
+
+### The failing sequence, now, through exactly `http://10.0.0.2:13080/api`
+
+```
+STEP 1  ask the budget question  ->  "You have not given me a budget for this session yet."
+STEP 2  give the budget          ->  "Noted: interview; business casual; in total €200.00."
+STEP 3  ask the SAME question    ->  "Your budget for this session is €200.00 for the
+                                      whole look (from this conversation)."
+```
+
+Direct to `172.19.0.2:8000` and through the LAN proxy return **the same answer**, and the LAN
+response's `x-correlation-id` appears in `dedunet-staging-api-1`'s request log — proving which
+container handled it **without logging any message content**.
+
+### What this cost, and what it is worth
+
+Two retests were spent on a defect that no test caught because every test either sent no
+idempotency key or sent a distinct one per message — which is what a well-behaved client does
+*until a customer repeats themselves*. The lesson is narrower than "test more": **an
+idempotency mechanism must be keyed on the thing that identifies a retry, and a test suite
+that never repeats a message cannot discover that it is not.**
