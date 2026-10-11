@@ -254,7 +254,13 @@ def delete_all_for_customer(session: Session, *, customer: Customer) -> int:
 
 
 def _add_turn(
-    session: Session, row: DidoSession, *, role: str, body: str, question_key: str = ""
+    session: Session,
+    row: DidoSession,
+    *,
+    role: str,
+    body: str,
+    question_key: str = "",
+    client_message_id: str | None = None,
 ) -> DidoTurn:
     # `or -1` would be a bug here and was: ordinal 0 is a perfectly valid first turn and
     # is FALSY, so the second turn would reuse it. The unique constraint caught it rather
@@ -270,6 +276,7 @@ def _add_turn(
         role=role,
         body=body,
         question_key=question_key,
+        client_message_id=client_message_id or None,
     )
     session.add(turn)
     row.turn_count += 1
@@ -316,11 +323,17 @@ def add_message(
     # IDEMPOTENCY BEFORE THE RATE LIMIT. A retry of a message that already landed must not
     # also spend a token, or a flaky connection would be charged twice for one message.
     if client_message_id:
+        # Matched on the KEY, never on the message body.
+        #
+        # Comparing bodies made every legitimate repeat look like a retry: a customer who
+        # asked about their budget, then gave one, then asked again was replayed the first
+        # answer and told they had no budget while the brief held it. Two identical
+        # messages are usually two messages.
         existing = session.scalar(
             select(DidoTurn).where(
                 DidoTurn.session_id == row.id,
                 DidoTurn.role == "CUSTOMER",
-                DidoTurn.body == text,
+                DidoTurn.client_message_id == client_message_id,
             ).order_by(DidoTurn.ordinal.desc())
         )
         if existing is not None:
@@ -354,7 +367,10 @@ def add_message(
     # the endpoint is not unbounded.
     intent = dido_brief.detect_query(text)
     if intent is not None:
-        _add_turn(session, row, role="CUSTOMER", body=text)
+        _add_turn(
+            session, row, role="CUSTOMER", body=text,
+            client_message_id=client_message_id,
+        )
         brief = json.loads(row.brief_json)
         answer = dido_brief.answer_query(
             brief, intent, personalization_used=row.personalization_used
@@ -375,7 +391,9 @@ def add_message(
     _check_rate(customer.id)
 
     # The customer's turn is stored FIRST, so a provider failure never loses it.
-    _add_turn(session, row, role="CUSTOMER", body=text)
+    _add_turn(
+        session, row, role="CUSTOMER", body=text, client_message_id=client_message_id
+    )
 
     brief = json.loads(row.brief_json)
     known_fields = frozenset(brief.get("fields", {}))

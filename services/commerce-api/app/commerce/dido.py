@@ -125,6 +125,21 @@ class DidoTurn(Base):
     __tablename__ = "dido_turns"
     __table_args__ = (
         UniqueConstraint("session_id", "ordinal", name="uq_dido_turn_session_ordinal"),
+        # IDEMPOTENCY IS A DATABASE GUARANTEE, not a text comparison.
+        #
+        # The first version matched a retry by comparing MESSAGE BODIES, which is wrong in
+        # the ordinary case rather than an edge one: two identical messages are usually two
+        # messages. "yes", "no black", or asking the same question twice are all legitimate
+        # repeats, and treating the second as a retry replayed the first answer -- so a
+        # customer who asked about their budget before giving one, then gave one, then
+        # asked again, was told they had no budget while the brief held it.
+        #
+        # NULL is permitted and repeatable: a client that sends no key is simply not asking
+        # for idempotency, and both PostgreSQL and SQLite allow many NULLs under a unique
+        # constraint.
+        UniqueConstraint(
+            "session_id", "client_message_id", name="uq_dido_turn_session_client_message"
+        ),
         CheckConstraint("role IN ('CUSTOMER','DIDO')", name="ck_dido_turn_role"),
         CheckConstraint("ordinal >= 0", name="ck_dido_turn_ordinal"),
     )
@@ -144,6 +159,12 @@ class DidoTurn(Base):
     #: not generated prose. It is what lets "why did you ask that?" be answered without
     #: calling a model to invent a justification for a decision the model did not make.
     question_key: Mapped[str] = mapped_column(String(60), default="", nullable=False)
+
+    #: The client's idempotency key for a CUSTOMER turn, or NULL.
+    #:
+    #: What a retry is identified BY. See the note on the unique constraint above for why
+    #: the message body is not that thing.
+    client_message_id: Mapped[str | None] = mapped_column(String(80), nullable=True)
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=utcnow, nullable=False

@@ -1088,3 +1088,102 @@ def test_personalization_off_answers_the_style_dna_question_honestly(client, own
 
     assert "not using your Style DNA" in reply
     assert "personalisation is switched off" in reply
+
+
+# --------------------------------------------------------------------------- idempotency
+#
+# THE DEFECT THAT SURVIVED A CORRECT FIX.
+#
+# Idempotency compared MESSAGE BODIES, so a second message whose text matched an earlier one
+# was replayed rather than answered. The consequence was a stale answer delivered with full
+# confidence -- and, worse, any question answered before a fix was deployed kept returning
+# the pre-fix answer for the life of the session, ON ENTIRELY CORRECT CODE. A physical
+# retest failed that way while the running container held the right source.
+
+
+def test_two_identical_messages_are_two_messages_not_a_retry(client, owner):
+    """The exact sequence that failed a physical retest."""
+
+    started = _start(client, owner)
+    question = "What budget do you currently have for this styling session?"
+
+    before = _say(client, owner, started["session_id"], question, client_message_id="m-1")
+    assert "not given me a budget" in before["reply"]
+
+    _say(client, owner, started["session_id"], "Interview, business casual, 200 euros",
+         client_message_id="m-2")
+
+    after = _say(client, owner, started["session_id"], question, client_message_id="m-3")
+    assert "\u20ac200.00" in after["reply"], (
+        "the same question asked again must be ANSWERED AGAIN against the current brief, "
+        "not replayed from a stale turn"
+    )
+
+
+def test_a_true_retry_is_still_idempotent(client, owner):
+    """Same key means the same message. That part was right and must stay right."""
+
+    started = _start(client, owner)
+    first = _say(client, owner, started["session_id"], "A wedding", client_message_id="retry-1")
+    second = _say(client, owner, started["session_id"], "A wedding", client_message_id="retry-1")
+
+    assert second["turn_count"] == first["turn_count"]
+    bodies = [t["body"] for t in second["turns"] if t["role"] == "CUSTOMER"]
+    assert bodies.count("A wedding") == 1
+
+
+def test_a_repeated_answer_is_recorded_twice(client, owner):
+    """"yes" twice is two answers, not one answer and an echo."""
+
+    started = _start(client, owner)
+    _say(client, owner, started["session_id"], "yes", client_message_id="y-1")
+    result = _say(client, owner, started["session_id"], "yes", client_message_id="y-2")
+
+    bodies = [t["body"] for t in result["turns"] if t["role"] == "CUSTOMER"]
+    assert bodies.count("yes") == 2
+
+
+def test_the_idempotency_key_is_stored_on_the_turn(client, owner, db_session):
+    started = _start(client, owner)
+    _say(client, owner, started["session_id"], "A wedding", client_message_id="k-77")
+
+    turn = db_session.scalars(
+        select(DidoTurn).where(
+            DidoTurn.session_id == started["session_id"],
+            DidoTurn.role == "CUSTOMER",
+        )
+    ).one()
+    assert turn.client_message_id == "k-77"
+
+
+def test_uniqueness_of_the_key_is_a_database_constraint(db_session, client, owner):
+    """The guarantee, not the application check. A double submit genuinely races."""
+
+    from sqlalchemy.exc import IntegrityError
+
+    started = _start(client, owner)
+    _say(client, owner, started["session_id"], "A wedding", client_message_id="dupe-1")
+
+    db_session.add(
+        DidoTurn(
+            session_id=started["session_id"],
+            ordinal=999,
+            role="CUSTOMER",
+            body="something else entirely",
+            client_message_id="dupe-1",
+        )
+    )
+    with pytest.raises(IntegrityError):
+        db_session.flush()
+    db_session.rollback()
+
+
+def test_messages_without_a_key_are_never_treated_as_retries(client, owner):
+    """No key means the caller is not asking for idempotency."""
+
+    started = _start(client, owner)
+    _say(client, owner, started["session_id"], "A wedding")
+    result = _say(client, owner, started["session_id"], "A wedding")
+
+    bodies = [t["body"] for t in result["turns"] if t["role"] == "CUSTOMER"]
+    assert bodies.count("A wedding") == 2
