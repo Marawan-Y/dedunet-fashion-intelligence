@@ -12,13 +12,23 @@ import styles from "./DidoMoment.module.css";
  * invented for the animation, which is what section 5 means by using the existing
  * character and motion architecture. `pieces` is how many garment plates have arrived by
  * that point, so the assembly and the character stay in step. */
+/* ONLY STATES THAT EXIST.
+ *
+ * This sequence used to run welcome -> listening -> thinking -> SEARCHING -> ASSEMBLING
+ * -> PRESENTING, with catalogue plates arriving on the last three. Phase 7 built the
+ * first three for real; it built none of the last three. An animation that shows Dido
+ * searching a catalogue and assembling a look is a claim, and it was the strongest claim
+ * on the home page -- stronger than any sentence, because nobody reads a caption as
+ * carefully as they watch a thing move.
+ *
+ * So the live sequence now ends where the capability ends. The plates still appear,
+ * because the page needs its illustration, but they arrive on `asking` and the copy
+ * beside them says outright that assembling looks is not built. */
 const SEQUENCE: { state: DidoState; hold: number; pieces: number }[] = [
   { state: "welcome", hold: 900, pieces: 0 },
   { state: "listening", hold: 1100, pieces: 0 },
-  { state: "thinking", hold: 1300, pieces: 0 },
-  { state: "searching", hold: 1200, pieces: 1 },
-  { state: "assembling", hold: 1200, pieces: 2 },
-  { state: "presenting", hold: 2600, pieces: 3 },
+  { state: "thinking", hold: 1300, pieces: 1 },
+  { state: "asking", hold: 2600, pieces: 3 },
 ];
 
 export interface DidoMomentPiece {
@@ -40,10 +50,12 @@ export interface DidoMomentPiece {
  *
  * It does not start until it is on screen, so a phone spends nothing on it while the
  * reader is still in the hero. It does not loop forever — it runs once and rests on
- * `presenting`, because a section that keeps re-animating is a section nobody can read
- * past. And it does not claim Dido works: the copy says plainly that the intelligence is
- * not built, because a convincing animation of a capability that does not exist is the
- * most misleading thing this page could contain.
+ * `asking`, because a section that keeps re-animating is a section nobody can read past.
+ * And it does not animate a capability that does not exist: Phase 7 made the
+ * conversation real, so the sequence runs to `asking` and stops there. Ranking and
+ * assembly remain unbuilt, and the copy says which half is which — a convincing
+ * animation of a capability that does not exist is the most misleading thing this page
+ * could contain, and it is more misleading than any sentence could correct.
  */
 export function DidoMoment({ pieces }: { pieces: DidoMomentPiece[] }) {
   const { ref, revealed } = useReveal<HTMLElement>({ threshold: 0.25 });
@@ -96,13 +108,14 @@ export function DidoMoment({ pieces }: { pieces: DidoMomentPiece[] }) {
           </p>
 
           <h2 id="dido-moment-title" className={styles.title}>
-            Tell it where you are going. <em>It does the rest.</em>
+            Tell it where you are going. <em>It works out what you need.</em>
           </h2>
 
           <p className={styles.body}>
-            Dido reads the occasion, not just the catalogue. It asks what you are dressing
-            for, what you already own and what you are willing to spend, then assembles
-            complete looks and explains every choice.
+            Dido reads the occasion, not just the catalogue. Write how you like — it asks
+            what you are dressing for, how formal it needs to be and what you are willing
+            to spend, uses your Style DNA when you let it, and builds a styling brief with
+            you.
           </p>
 
           <div className={styles.actions}>
@@ -111,9 +124,13 @@ export function DidoMoment({ pieces }: { pieces: DidoMomentPiece[] }) {
             </ButtonLink>
           </div>
 
+          {/* The boundary moved in Phase 7; it did not disappear. Saying "the
+              intelligence is not built" would now understate the platform, and saying
+              nothing would overstate it. This says which half exists. */}
           <p className={styles.note}>
-            The conversation is built. The intelligence behind it is not — Dido will tell you
-            so itself rather than inventing a recommendation.
+            The conversation and the brief are built. <strong>Choosing the clothes is
+            not</strong> — DEDUNET does not yet rank products or assemble looks, and Dido
+            says so rather than inventing one.
           </p>
         </div>
 

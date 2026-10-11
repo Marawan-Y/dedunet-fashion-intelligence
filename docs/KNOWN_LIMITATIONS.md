@@ -564,3 +564,34 @@ even when its output is piped.
 Style DNA acceptance was performed in mobile Safari; the automated "Mobile Safari" Playwright
 project is a desktop browser emulating a viewport and is weaker evidence again. Neither is
 native-iOS acceptance. iOS native has still never been built.
+
+**Dido understands a styling brief. It does not pick the clothes.** Phase 7 built a
+conversational intake: it reads free text, applies accepted Style DNA when personalisation is
+on, detects contradictions and produces a structured Styling Brief. There is no
+recommendation ranking, no product scoring, no outfit generation and no fashion RAG — none
+has a schema, an endpoint, a stub or a flag, and every API response carries a `capabilities`
+block saying so rather than leaving the boundary to UI copy one refactor from disappearing.
+
+**The interpreter proposes and never decides.** Everything a language model returns is a
+candidate, validated against the taxonomy and re-parsed for money before it can enter a
+brief. A model that returns an unknown occasion or a float budget changes nothing. The
+deterministic interpreter is the fallback *and* what CI runs, so no test in the phase needs an
+API key — a phase whose tests require paid credentials is a phase whose tests nobody runs.
+
+**Two home-page overclaims were removed, and the second was the larger one.** The Dido
+animation ran through `searching`, `assembling` and `presenting`, none of which exists; an
+animation of a catalogue search is a stronger claim than any sentence, because nobody reads a
+caption as carefully as they watch a thing move. While verifying that fix, the hero two
+sections above was found still saying Dido *"builds complete looks"*. Fixing the smaller
+overclaim and walking past the larger one would have been worse than leaving both.
+
+**The old Dido disclosure had to be removed, which is the awkward half of the disclosure
+rule.** *"This is the conversation, not the intelligence"* was true and became false; leaving
+it would understate the platform exactly as the rule forbids overstating it. What replaced it
+states the boundary that still holds — understanding is not recommending — before the
+conversation and again at completion, which is the moment a customer expects an outfit.
+
+**A disabled input loses focus, and that was a real accessibility defect.** The Dido textarea
+was disabled while a message was in flight, so anyone typing and pressing Enter was thrown out
+of the box on every message — worse for keyboard and screen-reader users than anyone else. It
+is `readOnly` with `aria-busy` now. Found by a browser test, not by review.

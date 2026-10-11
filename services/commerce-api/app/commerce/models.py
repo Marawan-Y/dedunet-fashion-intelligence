@@ -570,6 +570,7 @@ from .brands import (  # noqa: E402,F401
 )
 from .looks import Look, LookItem  # noqa: E402,F401
 from .saved import FavoriteBrand, FavoriteProduct, SavedLook  # noqa: E402,F401
+from .dido import DidoSession, DidoTurn  # noqa: E402,F401
 from .style_dna import (  # noqa: E402,F401
     StyleBrandPreference,
     StyleColourPreference,

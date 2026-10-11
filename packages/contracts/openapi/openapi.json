@@ -606,6 +606,69 @@
         "title": "CreateProductRequest",
         "type": "object"
       },
+      "DidoBriefPatch": {
+        "additionalProperties": false,
+        "properties": {
+          "changes": {
+            "additionalProperties": true,
+            "description": "Brief field to value. null clears a field.",
+            "title": "Changes",
+            "type": "object"
+          },
+          "expected_revision": {
+            "anyOf": [
+              {
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expected Revision"
+          }
+        },
+        "required": [
+          "changes"
+        ],
+        "title": "DidoBriefPatch",
+        "type": "object"
+      },
+      "DidoMessageIn": {
+        "additionalProperties": false,
+        "properties": {
+          "client_message_id": {
+            "default": "",
+            "description": "Idempotency key. A retry carrying the same value returns the existing turn rather than writing the message twice.",
+            "maxLength": 80,
+            "title": "Client Message Id",
+            "type": "string"
+          },
+          "expected_revision": {
+            "anyOf": [
+              {
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expected Revision"
+          },
+          "message": {
+            "maxLength": 1000,
+            "minLength": 1,
+            "title": "Message",
+            "type": "string"
+          }
+        },
+        "required": [
+          "message"
+        ],
+        "title": "DidoMessageIn",
+        "type": "object"
+      },
       "Dimensions": {
         "properties": {
           "height": {
@@ -2736,6 +2799,67 @@
         ]
       }
     },
+    "/api/v1/dido/options": {
+      "get": {
+        "description": "The controlled vocabularies the conversation uses.\n\nPublic, like the Style DNA options: the platform's words, not anybody's data. It is\nalso what lets the client offer real choices when the interpreter is unavailable.",
+        "operationId": "dido_options_api_v1_dido_options_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Dido Options",
+        "tags": [
+          "commerce"
+        ]
+      }
+    },
+    "/api/v1/dido/questions/{question_key}": {
+      "get": {
+        "description": "Why a question was asked, from policy metadata rather than from a model.\n\nCalling a language model to justify a decision made by an if-statement would produce\na plausible explanation that is not the actual reason.",
+        "operationId": "dido_question_rationale_api_v1_dido_questions__question_key__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "question_key",
+            "required": true,
+            "schema": {
+              "title": "Question Key",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Dido Question Rationale",
+        "tags": [
+          "commerce"
+        ]
+      }
+    },
     "/api/v1/looks": {
       "get": {
         "description": "The curated looks. Public, unauthenticated, read-only.\n\nEditorial content composed of real catalogue products -- not an engine output. There is\nno total price and no field for one: every DEDUNET product is a prototype, so a look\ntotal would be a number this platform invented.",
@@ -2873,6 +2997,464 @@
           }
         },
         "summary": "Data Export",
+        "tags": [
+          "commerce"
+        ]
+      }
+    },
+    "/api/v1/me/dido/sessions": {
+      "post": {
+        "description": "Begin a styling conversation. Any previous active session becomes abandoned.",
+        "operationId": "start_dido_session_api_v1_me_dido_sessions_post",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "default": "",
+              "title": "Authorization",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Start Dido Session",
+        "tags": [
+          "commerce"
+        ]
+      }
+    },
+    "/api/v1/me/dido/sessions/current": {
+      "get": {
+        "description": "The active session, or a deterministic empty answer.\n\n200 with a null session rather than 404, for the reason the Style DNA profile uses: a\nclient reading absence out of an error cannot tell \"no conversation yet\" from \"your\nsession expired\", and those need opposite responses.",
+        "operationId": "current_dido_session_api_v1_me_dido_sessions_current_get",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "default": "",
+              "title": "Authorization",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Current Dido Session",
+        "tags": [
+          "commerce"
+        ]
+      }
+    },
+    "/api/v1/me/dido/sessions/{session_id}": {
+      "delete": {
+        "description": "Delete a conversation and its turns. Style DNA and Saved are untouched.",
+        "operationId": "delete_dido_session_api_v1_me_dido_sessions__session_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "session_id",
+            "required": true,
+            "schema": {
+              "title": "Session Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "default": "",
+              "title": "Authorization",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Delete Dido Session",
+        "tags": [
+          "commerce"
+        ]
+      },
+      "get": {
+        "operationId": "get_dido_session_api_v1_me_dido_sessions__session_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "session_id",
+            "required": true,
+            "schema": {
+              "title": "Session Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "default": "",
+              "title": "Authorization",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Dido Session",
+        "tags": [
+          "commerce"
+        ]
+      }
+    },
+    "/api/v1/me/dido/sessions/{session_id}/brief": {
+      "patch": {
+        "description": "Correct the brief directly. Corrections are always session-explicit.\n\nThis does NOT write back to Style DNA. Correcting tonight's brief is not a statement\nabout every future outfit, and conflating the two would let a one-off change quietly\nrewrite a profile the customer curated.",
+        "operationId": "patch_dido_brief_api_v1_me_dido_sessions__session_id__brief_patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "session_id",
+            "required": true,
+            "schema": {
+              "title": "Session Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "default": "",
+              "title": "Authorization",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DidoBriefPatch"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Patch Dido Brief",
+        "tags": [
+          "commerce"
+        ]
+      }
+    },
+    "/api/v1/me/dido/sessions/{session_id}/complete": {
+      "post": {
+        "description": "Agree the brief. This is where the phase ends: no outfit follows.",
+        "operationId": "complete_dido_session_api_v1_me_dido_sessions__session_id__complete_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "session_id",
+            "required": true,
+            "schema": {
+              "title": "Session Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "default": "",
+              "title": "Authorization",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Complete Dido Session",
+        "tags": [
+          "commerce"
+        ]
+      }
+    },
+    "/api/v1/me/dido/sessions/{session_id}/in-use": {
+      "get": {
+        "description": "What this session is using, grouped by where each value came from.\n\nThe answer to \"what do you know about me?\", asked inside the conversation.",
+        "operationId": "dido_in_use_api_v1_me_dido_sessions__session_id__in_use_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "session_id",
+            "required": true,
+            "schema": {
+              "title": "Session Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "default": "",
+              "title": "Authorization",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Dido In Use",
+        "tags": [
+          "commerce"
+        ]
+      }
+    },
+    "/api/v1/me/dido/sessions/{session_id}/messages": {
+      "post": {
+        "description": "Send one message. Returns the updated session, not a bare reply.",
+        "operationId": "post_dido_message_api_v1_me_dido_sessions__session_id__messages_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "session_id",
+            "required": true,
+            "schema": {
+              "title": "Session Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "default": "",
+              "title": "Authorization",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DidoMessageIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Post Dido Message",
+        "tags": [
+          "commerce"
+        ]
+      }
+    },
+    "/api/v1/me/dido/sessions/{session_id}/refresh-style-dna": {
+      "post": {
+        "description": "Pull the current Style DNA into an open session, on request.\n\nA session keeps the profile snapshot it began with; this is the deliberate way to\nupdate it, rather than rewriting a conversation underneath the customer.",
+        "operationId": "refresh_dido_style_dna_api_v1_me_dido_sessions__session_id__refresh_style_dna_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "session_id",
+            "required": true,
+            "schema": {
+              "title": "Session Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "default": "",
+              "title": "Authorization",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Refresh Dido Style Dna",
         "tags": [
           "commerce"
         ]
