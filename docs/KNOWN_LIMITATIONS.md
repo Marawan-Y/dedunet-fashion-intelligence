@@ -595,3 +595,20 @@ conversation and again at completion, which is the moment a customer expects an 
 was disabled while a message was in flight, so anyone typing and pressing Enter was thrown out
 of the box on every message — worse for keyboard and screen-reader users than anyone else. It
 is `readOnly` with `aria-busy` now. Found by a browser test, not by review.
+
+**A session override is the precedence rule working, not a contradiction.** Checkpoint 6 of
+the Dido acceptance failed because the contradiction check intersected the preferred and
+avoided lists without looking at where either side came from — so a profile preference and a
+session instruction to the contrary were treated as a deadlock and the customer was asked to
+repeat themselves. Precedence now resolves first; only a conflict between constraints of the
+**same** effective precedence reaches contradiction detection, which is the one case with no
+rule to apply. The override is recorded and stated, because silently dropping a value the
+customer can see on their own profile page would be its own small deception.
+
+**The staging LAN address is not stable, and the retest URL moves with it.** The host's WLAN
+address changed from `10.0.0.2` to `10.0.0.3` between acceptance attempts, which made the
+provenance gate fail to connect before anything else could be checked. `STAGING_PUBLIC_HOST`
+is baked into the web image at build time for the admin portal's API base, so a changed
+address leaves that pointing at nothing until the image is rebuilt. The consumer app is
+unaffected because it reaches the API same-origin — the property the staging cutover was
+done for. Confirm the current address before asking anyone to test on a device.

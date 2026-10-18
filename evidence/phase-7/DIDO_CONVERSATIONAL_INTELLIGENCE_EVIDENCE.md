@@ -592,3 +592,87 @@ idempotency key or sent a distinct one per message — which is what a well-beha
 *until a customer repeats themselves*. The lesson is narrower than "test more": **an
 idempotency mechanism must be keyed on the thing that identifies a retry, and a test suite
 that never repeats a message cannot discover that it is not.**
+
+## 29. Checkpoint 6 — a session override is not a contradiction
+
+### What happened
+
+Style DNA said black was preferred. The customer said *"Actually, no black for this one."*
+Dido replied *"Noted: black. Should I keep black in, or leave it out for this one?"*
+
+The persistence boundary was **correct**: black stayed `LIKE` in My Style, the session brief
+recorded it as avoided, and nothing mutated the profile. The **resolution** was wrong.
+
+### Why
+
+`detect_contradictions` intersected the preferred and avoided lists and **never looked at
+where either side came from**. So a general preference and a specific override — which the
+locked order `SESSION_EXPLICIT > STYLE_DNA_EXPLICIT > SYSTEM_DERIVED` already settles — were
+treated as two constraints in deadlock.
+
+Asking made the customer repeat an instruction they had already given, and implied it had not
+been understood. The user was right that this is not a contradiction.
+
+### The fix
+
+**Precedence resolves before anything is called a contradiction.** The lower-precedence side
+loses the overlapping term, and only a conflict between constraints of the **same** effective
+precedence survives to `detect_contradictions` — the one case with no rule to apply, where
+asking is the only honest move. That path is deliberately untouched and test 5 asserts it
+still fires.
+
+Removing the term silently would have been its own small deception, because the customer can
+see `black: LIKE` on their own profile. The resolution is recorded in the brief as `overrides`
+and said out loud.
+
+Two wording defects in the same transcript, both fixed:
+
+- *"Noted: black"* after *"no black"* read as though black had been **added**. The reply
+  phrased bare values with no idea whether a field was a preference or an exclusion.
+- The stale clarification question was being appended to the answer of an unrelated source
+  query, and the avoidance answer leaked its field label — *"told me to avoid colours to
+  avoid: black"*.
+
+### Verified through the LAN path
+
+```
+Style DNA        black = PREFERRED, navy = PREFERRED   (revision 1)
+
+USER   Actually, no black for this one.
+DIDO   Noted: avoiding black. I'll leave black out for this session. Your Style DNA
+       still says you generally like that, and I have not changed it. Where are you going?
+       brief: colour_avoidances=['black'], colour_preferences=['navy']
+       contradictions: []
+
+USER   What did I tell you to avoid for this session?
+DIDO   For this session you told me to avoid black.
+
+My Style after  black = PREFERRED, navy = PREFERRED   (revision 1, unchanged)
+```
+
+Only the overridden term was removed; navy survived. No clarification question. Profile
+untouched.
+
+### Tests
+
+Nine, including the five required: a session exclusion overriding a profile preference
+without asking; the same rule in the opposite direction; the source query reporting the
+override without re-asking; the profile provably unmutated across several overriding turns;
+and a genuine same-precedence contradiction still asking. Plus: only the overridden term is
+removed, the override is recorded, and an exclusion is never worded as a preference.
+
+`M90` guards it — mutating the rank comparison so precedence never resolves makes the
+checkpoint-6 test fail.
+
+### The staging LAN address changed, and the retest URL changes with it
+
+The provenance gate failed to connect before any of this could be checked. The cause was not
+the service: **the host's WLAN address moved from `10.0.0.2` to `10.0.0.3`** over the
+intervening week, so the probe was knocking on an address this machine no longer has.
+
+That matters beyond the probe. `STAGING_PUBLIC_HOST` is baked into the web image at build
+time for the admin portal's API base, so it was left pointing at a dead address; it has been
+corrected and the image rebuilt. The consumer app is unaffected either way because it reaches
+the API same-origin — which is exactly the property the staging cutover was done for.
+
+**The retest URL is now `http://10.0.0.3:13080`.**

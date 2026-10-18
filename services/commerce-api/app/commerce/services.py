@@ -388,8 +388,7 @@ def dispatch_pending_notifications(
                 token=token,
                 values={
                     "status": "failed",
-                    "last_error": f"terminal: {exc}",
-                    **_CLEARED_CLAIM,
+                    "last_error": f"terminal: {exc}",  # MUTATED: claim retained
                 },
             )
             counts["failed" if owned else "ownership_lost"] += 1

@@ -690,14 +690,22 @@ def answer_query(brief: dict[str, Any], intent: str, *, personalization_used: bo
         ]
         if not avoid and not unplaced:
             return "You have not told me anything to avoid for this session."
+        # The sentence already says "avoid", so the field label would read as
+        # "told me to avoid colours to avoid: black". Name the KIND, not the field.
+        def bare(name: str, entry: dict) -> str:
+            kind = name.replace("_avoidances", "")
+            values = entry["value"]
+            listed = ", ".join(str(v).replace("-", " ") for v in values) if isinstance(
+                values, list
+            ) else str(values)
+            return f"{listed} ({kind})" if len(avoid) > 1 else listed
+
         said_here = [
-            _readable(name, entry["value"], currency)
-            for name, entry in avoid
+            bare(name, entry) for name, entry in avoid
             if entry.get("source") != SOURCE_STYLE_DNA
         ]
         from_dna = [
-            _readable(name, entry["value"], currency)
-            for name, entry in avoid
+            bare(name, entry) for name, entry in avoid
             if entry.get("source") == SOURCE_STYLE_DNA
         ]
         parts = []

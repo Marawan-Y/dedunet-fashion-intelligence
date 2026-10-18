@@ -654,11 +654,15 @@ def _compose_reply(
     for override in (brief.get("overrides") or [])[:2]:
         if override.get("winner_source") != tax.SOURCE_SESSION:
             continue
-        verb = "leave out of" if override["applied"] == "avoided" else "keep in"
-        kept = "generally like" if override["applied"] == "avoided" else "generally avoid"
+        if override["applied"] == "avoided":
+            action = f"leave {override['terms']} out for this session"
+            stored = "generally like"
+        else:
+            action = f"keep {override['terms']} in for this session"
+            stored = "generally avoid"
         parts.append(
-            f"I'll {verb} this session: {override['terms']}. Your Style DNA still says you "
-            f"{kept} that, and I have not changed it."
+            f"I'll {action}. Your Style DNA still says you {stored} that, and I have not "
+            "changed it."
         )
 
     if interpretation.unplaced:
