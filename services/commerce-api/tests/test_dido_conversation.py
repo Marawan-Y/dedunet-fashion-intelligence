@@ -1187,3 +1187,170 @@ def test_messages_without_a_key_are_never_treated_as_retries(client, owner):
 
     bodies = [t["body"] for t in result["turns"] if t["role"] == "CUSTOMER"]
     assert bodies.count("A wedding") == 2
+
+
+# --------------------------------------------------------------------------- precedence
+#
+# A SESSION OVERRIDE IS NOT A CONTRADICTION.
+#
+# Checkpoint 6 of the human acceptance failed here. Style DNA said black was preferred, the
+# customer said "actually, no black for this one", and Dido asked "should I keep black in,
+# or leave it out for this one?" -- making them repeat an instruction they had already
+# given, and implying it had not been understood.
+#
+# The locked order already decides it: SESSION_EXPLICIT > STYLE_DNA_EXPLICIT > SYSTEM_DERIVED.
+# A general preference and a specific override are not two constraints in deadlock. Only a
+# conflict between constraints of the SAME effective precedence is a real contradiction,
+# because that is the only case with no rule to apply.
+
+
+def _profile_colour(client, headers, slug: str, stance: str) -> None:
+    client.patch(
+        "/api/v1/me/style-dna",
+        headers=headers,
+        json={"colours": [{"slug": slug, "stance": stance}]},
+    )
+
+
+def test_1_a_session_exclusion_overrides_a_profile_preference_without_asking(client, owner):
+    """The exact checkpoint-6 sequence."""
+
+    _profile_colour(client, owner, "black", "PREFERRED")
+    started = _start(client, owner)
+    assert _fields(started)["colour_preferences"]["value"] == ["black"]
+
+    result = _say(client, owner, started["session_id"], "Actually, no black for this one.")
+    fields = _fields(result)
+
+    # The session instruction applied...
+    assert fields["colour_avoidances"]["value"] == ["black"]
+    assert fields["colour_avoidances"]["source"] == tax.SOURCE_SESSION
+    # ...and black is no longer also listed as preferred.
+    assert "black" not in (fields.get("colour_preferences", {}).get("value") or [])
+
+    # NO CLARIFICATION QUESTION. This is the defect.
+    assert result["brief"]["contradictions"] == []
+    assert not (result["next_question"] or {}).get("kind") == "conflict"
+    assert "keep black in" not in result["reply"]
+
+    # And the profile is untouched.
+    profile = client.get("/api/v1/me/style-dna", headers=owner).json()
+    assert {c["slug"]: c["stance"] for c in profile["colours"]}["black"] == "PREFERRED"
+
+
+def test_2_a_session_preference_overrides_a_profile_exclusion(client, owner):
+    """The same rule in the opposite direction."""
+
+    _profile_colour(client, owner, "black", "AVOIDED")
+    started = _start(client, owner)
+    assert _fields(started)["colour_avoidances"]["value"] == ["black"]
+
+    result = _say(client, owner, started["session_id"], "Black is fine for this session.")
+    fields = _fields(result)
+
+    assert fields["colour_preferences"]["value"] == ["black"]
+    assert fields["colour_preferences"]["source"] == tax.SOURCE_SESSION
+    assert "black" not in (fields.get("colour_avoidances", {}).get("value") or [])
+    assert result["brief"]["contradictions"] == []
+
+    profile = client.get("/api/v1/me/style-dna", headers=owner).json()
+    assert {c["slug"]: c["stance"] for c in profile["colours"]}["black"] == "AVOIDED"
+
+
+def test_3_the_source_query_reports_the_override_and_does_not_re_ask(client, owner):
+    _profile_colour(client, owner, "black", "PREFERRED")
+    started = _start(client, owner)
+    _say(client, owner, started["session_id"], "Actually, no black for this one.")
+
+    reply = _say(
+        client, owner, started["session_id"], "What did I tell you to avoid for this session?"
+    )["reply"]
+
+    assert "black" in reply
+    assert "For this session you told me to avoid" in reply
+    # The question that should never have been asked must not reappear here either.
+    assert "keep black in" not in reply
+
+
+def test_4_a_session_override_never_mutates_style_dna(client, owner, db_session):
+    from app.commerce.style_dna import StyleProfile
+
+    _profile_colour(client, owner, "black", "PREFERRED")
+    before = client.get("/api/v1/me/style-dna", headers=owner).json()
+
+    started = _start(client, owner)
+    for text in ("Actually, no black for this one.", "and nothing in wool", "A wedding, formal"):
+        _say(client, owner, started["session_id"], text)
+
+    after = client.get("/api/v1/me/style-dna", headers=owner).json()
+    assert after == before
+    assert db_session.scalars(select(StyleProfile)).one().revision == before["revision"]
+
+
+def test_5_a_same_precedence_conflict_still_asks(client, owner):
+    """The global contradiction logic must NOT be weakened.
+
+    Two instructions given with equal authority have no rule to settle them, so asking is
+    the only honest move. This is the case the checkpoint-6 fix must leave intact.
+    """
+
+    started = _start(client, owner)
+    brief = dido_brief.apply_candidates(
+        dido_brief.empty_brief(),
+        (
+            Candidate("colour_preferences", ["black"], tax.SOURCE_SESSION),
+            Candidate("colour_avoidances", ["black"], tax.SOURCE_SESSION),
+        ),
+        source=tax.SOURCE_SESSION,
+    )
+    assert any(c["kind"] == "colour_conflict" for c in brief["contradictions"])
+    question = dido_brief.next_question(brief)
+    assert question["kind"] == "conflict"
+    assert started["session_id"]
+
+
+def test_an_override_is_recorded_so_the_brief_can_state_it(client, owner):
+    """Silently dropping a value the customer can see on their profile is its own deception."""
+
+    _profile_colour(client, owner, "black", "PREFERRED")
+    started = _start(client, owner)
+    result = _say(client, owner, started["session_id"], "Actually, no black for this one.")
+
+    overrides = result["brief"]["overrides"]
+    assert overrides, "the brief must record what it did differently from the profile"
+    assert overrides[0]["terms"] == "black"
+    assert overrides[0]["applied"] == "avoided"
+    assert overrides[0]["winner_source"] == tax.SOURCE_SESSION
+    assert overrides[0]["loser_source"] == tax.SOURCE_STYLE_DNA
+
+    # And the reply says so, rather than leaving the customer to wonder.
+    assert "have not changed it" in result["reply"]
+
+
+def test_an_exclusion_is_not_worded_as_a_preference(client, owner):
+    """"Noted: black" after "no black" reads as the opposite of what was said."""
+
+    started = _start(client, owner)
+    reply = _say(client, owner, started["session_id"], "No black for this one.")["reply"]
+    assert "avoiding black" in reply
+    assert "Noted: black." not in reply
+
+
+def test_a_partial_override_keeps_the_rest_of_the_profile_list(client, owner):
+    """Overriding one colour must not discard the others."""
+
+    client.patch(
+        "/api/v1/me/style-dna",
+        headers=owner,
+        json={
+            "colours": [
+                {"slug": "black", "stance": "PREFERRED"},
+                {"slug": "navy", "stance": "PREFERRED"},
+            ]
+        },
+    )
+    started = _start(client, owner)
+    result = _say(client, owner, started["session_id"], "No black for this one.")
+
+    preferences = _fields(result).get("colour_preferences", {}).get("value") or []
+    assert preferences == ["navy"], "only the overridden term may be removed"

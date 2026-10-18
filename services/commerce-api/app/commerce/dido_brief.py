@@ -175,6 +175,7 @@ def apply_candidates(
 
         fields[name] = _entry(cleaned, effective, getattr(candidate, "evidence", ""))
 
+    merged = resolve_precedence_conflicts(merged)
     merged["contradictions"] = detect_contradictions(merged)
     return merged
 
@@ -240,6 +241,7 @@ def apply_style_profile(brief: dict[str, Any], profile_payload: dict[str, Any]) 
             for s in sizes
         ]
 
+    merged = resolve_precedence_conflicts(merged)
     merged["contradictions"] = detect_contradictions(merged)
     return merged
 
@@ -251,6 +253,88 @@ def apply_style_profile(brief: dict[str, Any], profile_payload: dict[str, Any]) 
 #: table exists to catch the obvious impossibility, not to referee taste.
 _STRICT_DRESS_CODES: Final[frozenset[str]] = frozenset({"black-tie", "formal", "business-formal"})
 _CASUAL_MARKERS: Final[tuple[str, ...]] = ("trainers", "sneakers", "t-shirt", "tshirt", "shorts", "hoodie")
+
+
+#: The (preferred, avoided) field pairs where the same term appearing on both sides is a
+#: conflict rather than a coincidence.
+_OPPOSED_FIELDS: Final[tuple[tuple[str, str, str], ...]] = (
+    ("colour", "colour_preferences", "colour_avoidances"),
+    ("material", "material_preferences", "material_avoidances"),
+    ("brand", "brand_preferences", "brand_avoidances"),
+)
+
+
+def resolve_precedence_conflicts(brief: dict[str, Any]) -> dict[str, Any]:
+    """Let the higher-precedence side win, BEFORE anything is called a contradiction.
+
+    THIS IS THE PRECEDENCE RULE DOING ITS JOB, NOT A CONTRADICTION.
+
+    A profile that likes black and a session instruction to avoid black are not two
+    constraints in deadlock. They are a general preference and a specific override, and the
+    locked order -- SESSION_EXPLICIT > STYLE_DNA_EXPLICIT > SYSTEM_DERIVED -- already says
+    which wins. Asking "should I keep black in, or leave it out?" makes the customer repeat
+    an instruction they have already given, and implies the system did not understand it.
+
+    So the lower-precedence side loses the overlapping term here, and only a conflict
+    between constraints of the SAME effective precedence survives to
+    `detect_contradictions`. That is the case where there genuinely is no rule to apply and
+    asking is the only honest move.
+
+    The removal is recorded in `overrides` so the brief can SAY what happened. Silently
+    dropping a value the customer can see on their profile would be its own small
+    deception -- the point is that the profile is untouched and this session differs, which
+    only helps if it is stated.
+
+    Never mutates its input.
+    """
+
+    merged = json.loads(json.dumps(brief))
+    fields: dict[str, Any] = merged.setdefault("fields", {})
+    overrides: list[dict[str, str]] = []
+
+    for kind, pref_field, avoid_field in _OPPOSED_FIELDS:
+        pref = fields.get(pref_field)
+        avoid = fields.get(avoid_field)
+        if not pref or not avoid:
+            continue
+
+        shared = sorted(set(pref.get("value") or []) & set(avoid.get("value") or []))
+        if not shared:
+            continue
+
+        pref_rank = tax.SOURCE_PRECEDENCE.index(pref.get("source", tax.SOURCE_SYSTEM))
+        avoid_rank = tax.SOURCE_PRECEDENCE.index(avoid.get("source", tax.SOURCE_SYSTEM))
+        if pref_rank == avoid_rank:
+            # Same precedence: there is no rule that resolves this, so leave it for
+            # `detect_contradictions` to surface and for the customer to settle.
+            continue
+
+        winner, loser = (
+            (avoid_field, pref_field) if avoid_rank < pref_rank else (pref_field, avoid_field)
+        )
+        loser_entry = fields[loser]
+        remaining = [v for v in loser_entry["value"] if v not in shared]
+
+        overrides.append(
+            {
+                "kind": kind,
+                "terms": ", ".join(shared),
+                "applied": "avoided" if winner == avoid_field else "preferred",
+                "winner_source": fields[winner]["source"],
+                "loser_source": loser_entry["source"],
+            }
+        )
+
+        if remaining:
+            loser_entry["value"] = remaining
+        else:
+            # The whole lower-precedence field was overridden; drop it rather than leave
+            # an empty list, which would render as a heading with nothing under it.
+            fields.pop(loser, None)
+
+    if overrides:
+        merged["overrides"] = overrides
+    return merged
 
 
 def detect_contradictions(brief: dict[str, Any]) -> list[dict[str, str]]:
@@ -268,12 +352,12 @@ def detect_contradictions(brief: dict[str, Any]) -> list[dict[str, str]]:
         entry = fields.get(name)
         return entry.get("value") if entry else None
 
-    # ---- the same term both wanted and refused
-    for kind, pref_field, avoid_field in (
-        ("colour", "colour_preferences", "colour_avoidances"),
-        ("material", "material_preferences", "material_avoidances"),
-        ("brand", "brand_preferences", "brand_avoidances"),
-    ):
+    # ---- the same term both wanted and refused, AT THE SAME PRECEDENCE
+    #
+    # Anything resolvable by precedence has already been settled by
+    # `resolve_precedence_conflicts`, so what reaches here is a real deadlock: the customer
+    # said both things with equal authority, and there is no rule that picks between them.
+    for kind, pref_field, avoid_field in _OPPOSED_FIELDS:
         both = sorted(set(value(pref_field) or []) & set(value(avoid_field) or []))
         if both:
             found.append(
@@ -428,6 +512,9 @@ def summarize(brief: dict[str, Any]) -> dict[str, Any]:
         "derived_from_your_words": groups[tax.SOURCE_SYSTEM],
         "unplaced": brief.get("unplaced", []),
         "contradictions": brief.get("contradictions", []),
+        # What this session does differently from the stored profile, and why. Shown so
+        # the customer can see the profile is intact rather than having to trust it.
+        "overrides": brief.get("overrides", []),
         "size_context": brief.get("size_context", []),
         "currency": brief.get("currency", "EUR"),
         "still_unset": missing,

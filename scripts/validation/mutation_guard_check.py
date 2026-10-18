@@ -1340,6 +1340,21 @@ MUTATIONS: tuple[Mutation, ...] = (
             "deletion is the only thing that removes conversation text",
         ),
     ),
+    Mutation(
+        mutation_id="M90_dido_session_override_is_not_a_contradiction",
+        guard="a session instruction overriding a profile value resolves without asking",
+        target=DIDO_BRIEF,
+        original="        if pref_rank == avoid_rank:",
+        mutated="        if True:  # MUTATED: precedence never resolves, every override asks",
+        tests=(
+            f"{TEST_DIDO}::test_1_a_session_exclusion_overrides_a_profile_preference_without_asking",
+        ),
+        covers=(
+            "a general preference and a specific override are not two constraints in "
+            "deadlock; making the customer repeat an instruction they already gave "
+            "implies it was not understood",
+        ),
+    ),
 )
 
 

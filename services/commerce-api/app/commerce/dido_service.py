@@ -592,6 +592,19 @@ def _label(value: Any) -> str:
     return str(value)
 
 
+#: How a field reads in a sentence. Without this, an exclusion and a preference are
+#: indistinguishable in the reply, which is how "no black" came back as "Noted: black".
+_PHRASING: dict[str, str] = {
+    "colour_preferences": "colours ",
+    "colour_avoidances": "avoiding ",
+    "material_preferences": "materials ",
+    "material_avoidances": "avoiding ",
+    "brand_preferences": "brands ",
+    "brand_avoidances": "avoiding ",
+    "requested_categories": "",
+}
+
+
 def _compose_reply(
     brief: dict[str, Any], interpretation: Interpretation, question: dict[str, str] | None
 ) -> str:
@@ -616,13 +629,37 @@ def _compose_reply(
         for name in applied[:4]:
             value = fields[name]["value"]
             if name in ("budget_total", "budget_per_piece") and isinstance(value, int):
-                readable.append(f"{'per piece' if 'piece' in name else 'in total'} "
-                                f"€{value // 100}.{value % 100:02d}")
+                readable.append(
+                    f"{'per piece' if 'piece' in name else 'in total'} "
+                    f"€{value // 100}.{value % 100:02d}"
+                )
             else:
-                readable.append(_label(value).replace("-", " "))
+                # PHRASED BY FIELD, not by bare value.
+                #
+                # "Noted: black" after "no black for this one" reads as though black had
+                # just been ADDED -- the opposite of what the customer said. The field
+                # already knows whether it is a preference or an exclusion, so it should
+                # say so.
+                readable.append(f"{_PHRASING.get(name, '')}{_label(value)}".replace("-", " "))
         parts.append("Noted: " + "; ".join(readable) + ".")
     elif interpretation.ambiguous:
         parts.append("I did not catch a styling constraint in that.")
+
+    # ---- say when this session differs from the stored profile
+    #
+    # The precedence rule has already applied the override; this makes it visible. The
+    # customer can see "black: LIKE" on their own profile page, so leaving the difference
+    # unstated would look either like a mistake or like a silent profile edit -- and the
+    # whole point is that the profile is untouched.
+    for override in (brief.get("overrides") or [])[:2]:
+        if override.get("winner_source") != tax.SOURCE_SESSION:
+            continue
+        verb = "leave out of" if override["applied"] == "avoided" else "keep in"
+        kept = "generally like" if override["applied"] == "avoided" else "generally avoid"
+        parts.append(
+            f"I'll {verb} this session: {override['terms']}. Your Style DNA still says you "
+            f"{kept} that, and I have not changed it."
+        )
 
     if interpretation.unplaced:
         parts.append(
