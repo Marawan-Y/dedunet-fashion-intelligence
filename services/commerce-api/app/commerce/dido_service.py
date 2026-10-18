@@ -595,13 +595,12 @@ def _label(value: Any) -> str:
 #: How a field reads in a sentence. Without this, an exclusion and a preference are
 #: indistinguishable in the reply, which is how "no black" came back as "Noted: black".
 _PHRASING: dict[str, str] = {
-    "colour_preferences": "colours ",
+    # Preferences read bare -- "Noted: black" is right when black really was added.
+    # Only the exclusions need a marker, which is what makes the two distinguishable;
+    # the original defect was that neither had one.
     "colour_avoidances": "avoiding ",
-    "material_preferences": "materials ",
     "material_avoidances": "avoiding ",
-    "brand_preferences": "brands ",
     "brand_avoidances": "avoiding ",
-    "requested_categories": "",
 }
 
 
@@ -660,10 +659,20 @@ def _compose_reply(
         else:
             action = f"keep {override['terms']} in for this session"
             stored = "generally avoid"
-        parts.append(
-            f"I'll {action}. Your Style DNA still says you {stored} that, and I have not "
-            "changed it."
-        )
+
+        # BRANCH ON WHAT WAS OVERRIDDEN.
+        #
+        # The profile sentence is reassurance about data the customer can see elsewhere
+        # and might fear was edited. Saying it when the thing overridden was their own
+        # earlier sentence would be asserting something about a profile that may not even
+        # exist -- a confident statement about the wrong object.
+        if override.get("loser_source") == tax.SOURCE_STYLE_DNA:
+            parts.append(
+                f"I'll {action}. Your Style DNA still says you {stored} that, and I have "
+                "not changed it."
+            )
+        else:
+            parts.append(f"I'll {action} — that replaces what you told me earlier.")
 
     if interpretation.unplaced:
         parts.append(

@@ -1344,8 +1344,15 @@ MUTATIONS: tuple[Mutation, ...] = (
         mutation_id="M90_dido_session_override_is_not_a_contradiction",
         guard="a session instruction overriding a profile value resolves without asking",
         target=DIDO_BRIEF,
-        original="        if pref_rank == avoid_rank:",
-        mutated="        if True:  # MUTATED: precedence never resolves, every override asks",
+        # ANCHORED ON THE LINE THAT DECIDES, not on the branch that guards it.
+        #
+        # The first version mutated `if pref_rank == avoid_rank:` and SURVIVED, because a
+        # later refactor gave the same-precedence branch real work to do: with the
+        # comparison forced true, a session-versus-profile conflict still resolved through
+        # the correction path. A guard aimed at a condition stops guarding the moment the
+        # body under it changes. This aims at the assignment that picks the winner.
+        original="                (avoid_field, pref_field) if avoid_rank < pref_rank else (pref_field, avoid_field)",
+        mutated="                (pref_field, avoid_field)  # MUTATED: the lower-precedence side wins",
         tests=(
             f"{TEST_DIDO}::test_1_a_session_exclusion_overrides_a_profile_preference_without_asking",
         ),

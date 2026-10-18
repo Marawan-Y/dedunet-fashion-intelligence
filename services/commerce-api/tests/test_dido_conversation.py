@@ -1354,3 +1354,61 @@ def test_a_partial_override_keeps_the_rest_of_the_profile_list(client, owner):
 
     preferences = _fields(result).get("colour_preferences", {}).get("value") or []
     assert preferences == ["navy"], "only the overridden term may be removed"
+
+
+def test_a_later_turn_corrects_an_earlier_one_at_the_same_precedence(client, owner):
+    """"No black", then "black is fine after all", is somebody changing their mind.
+
+    Both statements are SESSION_EXPLICIT, so precedence alone does not separate them. But
+    asking the customer to choose between their old answer and their new one is the same
+    failure as asking them to repeat an override: it treats a correction as a deadlock.
+    """
+
+    started = _start(client, owner)
+    _say(client, owner, started["session_id"], "No black for this one.", client_message_id="c-1")
+    result = _say(
+        client, owner, started["session_id"], "Black is fine after all for this session.",
+        client_message_id="c-2",
+    )
+
+    fields = _fields(result)
+    assert fields["colour_preferences"]["value"] == ["black"]
+    assert "black" not in (fields.get("colour_avoidances", {}).get("value") or [])
+    assert result["brief"]["contradictions"] == [], "a correction is not a contradiction"
+    # No clarification question. "keep black in" alone is too blunt a check -- it also
+    # appears in the correct override announcement.
+    assert "Should I keep black in" not in result["reply"]
+    assert (result["next_question"] or {}).get("kind") != "conflict"
+    # And the announcement must not claim anything about a Style DNA that is not involved.
+    assert "Style DNA" not in result["reply"]
+    assert "replaces what you told me earlier" in result["reply"]
+
+
+def test_a_same_turn_conflict_is_still_simultaneous_and_still_asks(client, owner):
+    """Two opposed constraints in ONE message have no later/earlier to separate them."""
+
+    brief = dido_brief.apply_candidates(
+        dido_brief.empty_brief(),
+        (
+            Candidate("colour_preferences", ["black"], tax.SOURCE_SESSION),
+            Candidate("colour_avoidances", ["black"], tax.SOURCE_SESSION),
+        ),
+        source=tax.SOURCE_SESSION,
+    )
+    assert any(c["kind"] == "colour_conflict" for c in brief["contradictions"])
+    assert dido_brief.next_question(brief)["kind"] == "conflict"
+
+
+def test_an_override_announcement_does_not_survive_into_a_later_turn(client, owner):
+    """Otherwise Dido reports an adjustment it made two turns ago as though it were new."""
+
+    _profile_colour(client, owner, "black", "PREFERRED")
+    started = _start(client, owner)
+
+    first = _say(client, owner, started["session_id"], "No black for this one.",
+                 client_message_id="o-1")
+    assert first["brief"]["overrides"], "the turn that overrode should say so"
+
+    later = _say(client, owner, started["session_id"], "A wedding", client_message_id="o-2")
+    assert later["brief"]["overrides"] == [], "a stale override must not be re-announced"
+    assert "have not changed it" not in later["reply"]

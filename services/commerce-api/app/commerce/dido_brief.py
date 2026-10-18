@@ -151,6 +151,10 @@ def apply_candidates(
 
     merged = json.loads(json.dumps(brief))
     fields: dict[str, Any] = merged.setdefault("fields", {})
+    #: Which fields THIS message wrote. Needed to tell a correction from a simultaneous
+    #: contradiction: the same two fields written in one turn genuinely conflict, while
+    #: one written now against one written earlier is somebody changing their mind.
+    touched: set[str] = set()
 
     for candidate in candidates:
         name = getattr(candidate, "field", None)
@@ -174,8 +178,9 @@ def apply_candidates(
             continue
 
         fields[name] = _entry(cleaned, effective, getattr(candidate, "evidence", ""))
+        touched.add(name)
 
-    merged = resolve_precedence_conflicts(merged)
+    merged = resolve_precedence_conflicts(merged, touched_now=touched)
     merged["contradictions"] = detect_contradictions(merged)
     return merged
 
@@ -264,7 +269,9 @@ _OPPOSED_FIELDS: Final[tuple[tuple[str, str, str], ...]] = (
 )
 
 
-def resolve_precedence_conflicts(brief: dict[str, Any]) -> dict[str, Any]:
+def resolve_precedence_conflicts(
+    brief: dict[str, Any], *, touched_now: set[str] | None = None
+) -> dict[str, Any]:
     """Let the higher-precedence side win, BEFORE anything is called a contradiction.
 
     THIS IS THE PRECEDENCE RULE DOING ITS JOB, NOT A CONTRADICTION.
@@ -290,6 +297,9 @@ def resolve_precedence_conflicts(brief: dict[str, Any]) -> dict[str, Any]:
 
     merged = json.loads(json.dumps(brief))
     fields: dict[str, Any] = merged.setdefault("fields", {})
+    # Recomputed from scratch every time. A carried-over override would have Dido
+    # announcing an adjustment it made two turns ago as though it had just happened.
+    merged.pop("overrides", None)
     overrides: list[dict[str, str]] = []
 
     for kind, pref_field, avoid_field in _OPPOSED_FIELDS:
@@ -305,16 +315,27 @@ def resolve_precedence_conflicts(brief: dict[str, Any]) -> dict[str, Any]:
         pref_rank = tax.SOURCE_PRECEDENCE.index(pref.get("source", tax.SOURCE_SYSTEM))
         avoid_rank = tax.SOURCE_PRECEDENCE.index(avoid.get("source", tax.SOURCE_SYSTEM))
         if pref_rank == avoid_rank:
-            # Same precedence: there is no rule that resolves this, so leave it for
-            # `detect_contradictions` to surface and for the customer to settle.
-            continue
+            # SAME PRECEDENCE. Two cases, and they are not alike.
+            #
+            # Said in DIFFERENT turns, the later one is a CORRECTION: "no black", then
+            # "black is fine after all", is somebody changing their mind, which is how
+            # conversation works. Asking them to choose between their old answer and
+            # their new one is the same failure as asking them to repeat an override.
+            #
+            # Said in the SAME turn, they are simultaneous and genuinely conflict --
+            # "I like black but nothing black" -- and there is no rule that picks one.
+            # That is the case `detect_contradictions` exists for, and it is left alone.
+            if touched_now is None or len(touched_now & {pref_field, avoid_field}) != 1:
+                continue
+            winner = pref_field if pref_field in touched_now else avoid_field
+            loser = avoid_field if winner == pref_field else pref_field
+        else:
+            winner, loser = (
+                (avoid_field, pref_field) if avoid_rank < pref_rank else (pref_field, avoid_field)
+            )
 
-        winner, loser = (
-            (avoid_field, pref_field) if avoid_rank < pref_rank else (pref_field, avoid_field)
-        )
         loser_entry = fields[loser]
         remaining = [v for v in loser_entry["value"] if v not in shared]
-
         overrides.append(
             {
                 "kind": kind,
@@ -324,13 +345,11 @@ def resolve_precedence_conflicts(brief: dict[str, Any]) -> dict[str, Any]:
                 "loser_source": loser_entry["source"],
             }
         )
-
         if remaining:
             loser_entry["value"] = remaining
         else:
-            # The whole lower-precedence field was overridden; drop it rather than leave
-            # an empty list, which would render as a heading with nothing under it.
             fields.pop(loser, None)
+        continue
 
     if overrides:
         merged["overrides"] = overrides

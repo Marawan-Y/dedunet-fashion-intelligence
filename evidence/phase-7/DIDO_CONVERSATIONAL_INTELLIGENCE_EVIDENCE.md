@@ -676,3 +676,43 @@ corrected and the image rebuilt. The consumer app is unaffected either way becau
 the API same-origin — which is exactly the property the staging cutover was done for.
 
 **The retest URL is now `http://10.0.0.3:13080`.**
+
+### A correction is not a contradiction either
+
+Testing the fix through the LAN path exposed the same error one level down. After *"no
+black"*, saying *"black is fine after all for this session"* produced a contradiction and a
+clarification question — because both statements are `SESSION_EXPLICIT`, so precedence alone
+could not separate them.
+
+But they are not simultaneous. **A later turn is a correction**, and asking somebody to choose
+between their old answer and their new one is the same failure as asking them to repeat an
+override.
+
+The distinction that matters is *when*, not *what*: two opposed constraints written in the
+**same message** genuinely conflict and still ask — *"I like black but nothing black"* has no
+later/earlier to separate it, and no rule to pick between the halves. Constraints from
+different turns resolve in favour of the newer one. `apply_candidates` now records which
+fields the current message wrote, which is what makes the two cases distinguishable at all.
+
+Two further wording defects fell out of the same test:
+
+- The override announcement asserted *"Your Style DNA still says you generally avoid that"*
+  **even when the thing overridden was the customer's own earlier sentence** and no profile
+  was involved. It now branches on what actually lost.
+- A stale `overrides` entry survived into later turns, so Dido re-announced an adjustment it
+  had made two turns earlier as though it had just happened.
+
+### My own guard stopped guarding
+
+`M90` was registered against `if pref_rank == avoid_rank:` and **SURVIVED** the next harness
+run. The refactor above gave that branch real work to do, so with the comparison forced true
+a session-versus-profile conflict still resolved — through the correction path instead.
+
+**A mutation aimed at a condition stops guarding the moment the body under it changes.** It
+is now anchored on the assignment that actually picks the winner, which is the line whose
+removal changes the answer.
+
+Worth recording rather than quietly re-pointing: the guard was added *in the same session* as
+the fix it protects, and it was already stale two edits later. That is the ordinary case, not
+an unusual one — which is the argument for running the harness after a refactor rather than
+only after writing a guard.
