@@ -621,3 +621,12 @@ broken, which sends the reader to the wrong place. A named CI step now greps tra
 for `# MUTATED` and says what actually happened. The harness must not be run concurrently with
 editing the files it mutates, and neither must a full test suite: a suite run across a moving
 tree reports nothing.
+
+**A session write replaces a brief field rather than merging into it.** A Styling Brief field
+holds one value with one source, so if a profile contributes `colours: [black, navy]` and the
+customer then says something about colour in the session, the session's list replaces the
+profile's — navy goes with the field. This follows from the provenance model: merging across
+sources would mean a field could no longer carry a single source, and the review screen's
+separation of "from your Style DNA" and "from this conversation" depends on that. The profile
+is untouched and visible on My Style, but a customer could reasonably notice a value
+disappear from the brief without having mentioned it.

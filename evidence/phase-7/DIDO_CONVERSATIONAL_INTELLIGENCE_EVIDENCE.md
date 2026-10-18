@@ -753,3 +753,28 @@ Two changes so it fails loudly and early instead:
 - **A rule for myself, stated here because it is not enforceable in code:** never run the
   mutation harness concurrently with editing the files it mutates. The same mistake produced
   the meaningless "9 failed" suite run — a full suite across a moving tree reports nothing.
+
+### A wrinkle worth naming rather than shipping quietly
+
+Verifying the correction case showed a third-order effect nobody reported. With a profile of
+`black: LIKE, navy: LIKE`:
+
+```
+USER  Actually, no black for this one.    ->  preferences: [navy]   (profile, intact)
+USER  Black is fine after all.            ->  preferences: [black]  (navy is gone)
+```
+
+A brief field holds **one value with one source**, so when the session writes
+`colour_preferences` it replaces the profile's list rather than merging into it. In the first
+turn the session only wrote `colour_avoidances`, so navy survived; in the third it wrote
+`colour_preferences`, and navy went with the field.
+
+This is a consequence of the provenance model, not an accident: merging lists across sources
+would mean a field could no longer carry a single source, and the review screen's separation
+of *"from your Style DNA"* and *"from this conversation"* depends on exactly that. The profile
+itself is untouched and visible on My Style.
+
+It is defensible — once you start telling Dido about colours in this session, this session's
+colour list is what you said — but it is **not obvious**, and a customer could reasonably
+notice navy disappear. Recorded as a known limitation rather than redesigned under a
+checkpoint fix, because changing it means changing how provenance is modelled.
