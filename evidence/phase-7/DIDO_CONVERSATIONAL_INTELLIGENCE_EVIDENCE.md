@@ -716,3 +716,40 @@ Worth recording rather than quietly re-pointing: the guard was added *in the sam
 the fix it protects, and it was already stale two edits later. That is the ordinary case, not
 an unusual one — which is the argument for running the harness after a refactor rather than
 only after writing a guard.
+
+### I committed a mutated source file
+
+Worth recording in full, because the mechanism will recur for anyone else working here.
+
+The mutation harness **edits real source files in place** and restores them afterwards. I
+ran it in the background while continuing to edit and commit, and `git add -A` swept a
+half-applied mutation into commit `186891e`:
+
+```
+"last_error": f"terminal: {exc}",  # MUTATED: claim retained
+```
+
+A deliberately broken line, committed into a documentation-only commit.
+
+**CI caught it.** Runs #38 and #39 failed on that commit. The guard worked; what failed was
+me — I pushed and moved on without reading the result, and only found it later while
+investigating why an unrelated suite run had reported nine failures. Those nine were real:
+they were testing mutated code.
+
+Exactly one commit on the branch carried it, and the tip restores it. Verified file by file
+across all eleven commits: `186891e` is the only one with mutated source, and `b551aa5` is
+clean, as is every other.
+
+The history is **not** rewritten. Evidence in this repository cites commit hashes, and the
+established rule is that a squash or rebase which orphans those references costs more than an
+intermediate bad commit that CI already flagged and the tip already fixed.
+
+Two changes so it fails loudly and early instead:
+
+- **A named CI step.** CI already caught this, but as two failing notification tests about a
+  worker race that is not broken — a true signal pointing at the wrong place. The new step
+  greps tracked source for `# MUTATED` and says what actually happened. The harness registry
+  legitimately contains the string and is excluded.
+- **A rule for myself, stated here because it is not enforceable in code:** never run the
+  mutation harness concurrently with editing the files it mutates. The same mistake produced
+  the meaningless "9 failed" suite run — a full suite across a moving tree reports nothing.

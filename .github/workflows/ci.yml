@@ -132,6 +132,28 @@ jobs:
           fi
           echo "OK: activation correctly blocked (exit $status)"
 
+      - name: No mutated source may be committed
+        working-directory: .
+        run: |
+          # The mutation harness edits real source files in place and restores them
+          # afterwards. If a run is interrupted -- or if someone commits while one is in
+          # flight -- a deliberately broken line can be committed, and it did happen:
+          # 186891e carried a mutated services.py into the branch via `git add -A`.
+          #
+          # CI caught that as two failing notification tests, which is a true signal but
+          # a confusing one: it sends the reader to debug a worker race that is not
+          # broken. This names the actual problem in one line.
+          #
+          # The harness registry legitimately contains the string, so it is excluded.
+          hits=$(grep -rn "# MUTATED" --include=*.py --include=*.ts --include=*.tsx                    services apps scripts 2>/dev/null                  | grep -v "scripts/validation/mutation_guard_check.py" || true)
+          if [ -n "$hits" ]; then
+            echo "FAIL: a mutated source file was committed. The mutation harness edits"
+            echo "source in place; an interrupted run leaves the edit behind."
+            echo "$hits"
+            exit 1
+          fi
+          echo "OK: no mutated source in the tree"
+
       - name: Guard mutation check (negative tests must actually guard)
         run: python scripts/validation/mutation_guard_check.py
 

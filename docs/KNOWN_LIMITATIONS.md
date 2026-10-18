@@ -612,3 +612,12 @@ is baked into the web image at build time for the admin portal's API base, so a 
 address leaves that pointing at nothing until the image is rebuilt. The consumer app is
 unaffected because it reaches the API same-origin — the property the staging cutover was
 done for. Confirm the current address before asking anyone to test on a device.
+
+**The mutation harness edits source in place, and an interrupted run leaves the edit behind.**
+Commit `186891e` on the Dido branch carried a deliberately broken line into the repository
+because the harness was running in the background while `git add -A` ran. CI caught it — runs
+#38 and #39 failed — but as two failing notification tests about a worker race that is not
+broken, which sends the reader to the wrong place. A named CI step now greps tracked source
+for `# MUTATED` and says what actually happened. The harness must not be run concurrently with
+editing the files it mutates, and neither must a full test suite: a suite run across a moving
+tree reports nothing.
