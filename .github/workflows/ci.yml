@@ -144,8 +144,14 @@ jobs:
           # a confusing one: it sends the reader to debug a worker race that is not
           # broken. This names the actual problem in one line.
           #
-          # The harness registry legitimately contains the string, so it is excluded.
-          hits=$(grep -rn "# MUTATED" --include=*.py --include=*.ts --include=*.tsx                    services apps scripts 2>/dev/null                  | grep -v "scripts/validation/mutation_guard_check.py" || true)
+          # The mutation TOOLING legitimately contains the string -- the registry stores
+          # it as data, and the isolation wrapper quotes it while explaining the incident
+          # it exists to prevent. Both are excluded by path.
+          #
+          # This list was incomplete on its first real use: the guard failed the build on
+          # the wrapper's own docstring. That is the guard working, and a reminder that an
+          # exclusion list is itself something to keep correct.
+          hits=$(grep -rn "# MUTATED" --include=*.py --include=*.ts --include=*.tsx                    services apps scripts 2>/dev/null                  | grep -vE "scripts/validation/(mutation_guard_check|run_mutation_isolated)\.py"                  || true)
           if [ -n "$hits" ]; then
             echo "FAIL: a mutated source file was committed. The mutation harness edits"
             echo "source in place; an interrupted run leaves the edit behind."
