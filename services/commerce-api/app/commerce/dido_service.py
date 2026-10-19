@@ -518,22 +518,41 @@ def correct_brief(
 
     brief = json.loads(row.brief_json)
     fields = brief.setdefault("fields", {})
+    touched: set[str] = set()
 
     for name, value in changes.items():
         if name not in dido_brief.ALLOWED_FIELDS:
             raise DidoError(f"unknown brief field: {name!r}")
         if value is None:
             fields.pop(name, None)
+            touched.add(name)
             continue
         cleaned = dido_brief.validate_candidate(name, value)
         if cleaned is None:
             raise DidoError(f"{name} is not a value this brief can hold")
-        fields[name] = {
-            "value": cleaned,
-            "source": tax.SOURCE_SESSION,
-            "evidence": "you corrected this",
-        }
 
+        if name in dido_brief.SET_FIELDS:
+            # A DIRECT EDIT IS THE CUSTOMER STATING THE WHOLE LIST, so unlike a
+            # conversational mention this does replace the field -- but every term is
+            # written with its own session provenance rather than one label over the lot.
+            fields[name] = {
+                "items": [
+                    {"value": v, "source": tax.SOURCE_SESSION, "evidence": "you corrected this"}
+                    for v in cleaned
+                ]
+            }
+        else:
+            fields[name] = {
+                "value": cleaned,
+                "source": tax.SOURCE_SESSION,
+                "evidence": "you corrected this",
+            }
+        touched.add(name)
+
+    # Resolve BEFORE detecting, exactly as the message path does. Without this an
+    # exclusion typed into the review panel sat alongside the profile preference it was
+    # meant to override, and the panel showed a term as both wanted and refused.
+    brief = dido_brief.resolve_precedence_conflicts(brief, touched_now=touched)
     brief["contradictions"] = dido_brief.detect_contradictions(brief)
     row.brief_json = json.dumps(brief)
     row.revision += 1
@@ -616,17 +635,39 @@ def _compose_reply(
     """
 
     fields = brief.get("fields", {})
-    applied = [
-        c.field
-        for c in interpretation.candidates
-        if c.field in fields and fields[c.field].get("source") == tax.SOURCE_SESSION
-    ]
+
+    def landed_as_session(name: str) -> bool:
+        """Did anything from THIS message actually survive into the brief as session input?
+
+        A set field no longer carries one source, so asking the entry is meaningless: the
+        question is whether any TERM in it is attributed to this conversation.
+        """
+
+        entry = dido_brief.normalize_field(name, fields.get(name))
+        if entry is None:
+            return False
+        if name in dido_brief.SET_FIELDS:
+            return any(
+                i.get("source") == tax.SOURCE_SESSION for i in dido_brief.items_of(entry)
+            )
+        return entry.get("source") == tax.SOURCE_SESSION
+
+    applied = [c.field for c in interpretation.candidates if landed_as_session(c.field)]
 
     parts: list[str] = []
     if applied:
         readable = []
         for name in applied[:4]:
-            value = fields[name]["value"]
+            entry = dido_brief.normalize_field(name, fields[name])
+            if name in dido_brief.SET_FIELDS:
+                # Only what this conversation contributed. Reading the whole field would
+                # have Dido reciting profile terms back as though they had just been said.
+                value = [
+                    i["value"] for i in dido_brief.items_of(entry)
+                    if i.get("source") == tax.SOURCE_SESSION
+                ]
+            else:
+                value = entry["value"]
             if name in ("budget_total", "budget_per_piece") and isinstance(value, int):
                 readable.append(
                     f"{'per piece' if 'piece' in name else 'in total'} "

@@ -45,7 +45,17 @@ _SINGLE_SLUG_FIELDS: Final[dict[str, frozenset[str]]] = {
 }
 
 #: Fields whose value is a list of words. Bounded, lowercased, de-duplicated.
-_LIST_FIELDS: Final[tuple[str, ...]] = (
+#: SET-VALUED fields. A statement about one member says nothing about the others.
+#:
+#: This is the distinction that matters. A scalar field has one answer, so a new answer
+#: replaces the old one and that is correct. A set field holds several independent terms,
+#: and "no black" is a statement about black -- it is not a statement that navy, cream and
+#: everything else the customer ever said should be discarded.
+#:
+#: Whole-field replacement on a set field silently drops terms nobody mentioned. A later
+#: recommendation engine reads this brief, so a dropped term changes what gets recommended
+#: without the customer having asked for that.
+_SET_FIELDS: Final[tuple[str, ...]] = (
     "colour_preferences",
     "colour_avoidances",
     "material_preferences",
@@ -56,6 +66,7 @@ _LIST_FIELDS: Final[tuple[str, ...]] = (
     "requested_categories",
 )
 
+#: SCALAR fields. One answer each, so whole-field replacement is right and is kept.
 _MONEY_FIELDS: Final[tuple[str, ...]] = ("budget_total", "budget_per_piece")
 
 _BOOL_FIELDS: Final[tuple[str, ...]] = ("budget_skipped",)
@@ -63,7 +74,7 @@ _BOOL_FIELDS: Final[tuple[str, ...]] = ("budget_skipped",)
 #: Every field a brief may hold. An unknown field name is dropped — a brief with a field
 #: nobody designed is a brief nobody can review.
 ALLOWED_FIELDS: Final[frozenset[str]] = frozenset(
-    set(_SINGLE_SLUG_FIELDS) | set(_LIST_FIELDS) | set(_MONEY_FIELDS) | set(_BOOL_FIELDS)
+    set(_SINGLE_SLUG_FIELDS) | set(_SET_FIELDS) | set(_MONEY_FIELDS) | set(_BOOL_FIELDS)
 )
 
 MAX_LIST_ITEMS: Final = 20
@@ -81,10 +92,98 @@ def empty_brief() -> dict[str, Any]:
     }
 
 
+SCALAR_FIELDS: Final[frozenset[str]] = frozenset(
+    set(_SINGLE_SLUG_FIELDS) | set(_MONEY_FIELDS) | set(_BOOL_FIELDS)
+)
+SET_FIELDS: Final[frozenset[str]] = frozenset(_SET_FIELDS)
+
+
 def _entry(value: Any, source: str, evidence: str = "") -> dict[str, Any]:
-    """A stored field: its value, where it came from, and the words behind it."""
+    """A stored SCALAR field: one value, one source, the words behind it."""
 
     return {"value": value, "source": source, "evidence": evidence}
+
+
+def _item(value: Any, source: str, evidence: str = "") -> dict[str, Any]:
+    """One member of a set field, carrying ITS OWN provenance.
+
+    This is the whole point of the representation. A field holding
+    `navy (from your profile)` and `black (said tonight)` cannot honestly be labelled with
+    a single source, and labelling the whole list SESSION_EXPLICIT because one term was
+    just said would be claiming the customer told us something they did not.
+    """
+
+    return {"value": value, "source": source, "evidence": evidence}
+
+
+def _set_entry(items: list[dict[str, Any]]) -> dict[str, Any]:
+    return {"items": items}
+
+
+def normalize_field(field: str, entry: dict[str, Any] | None) -> dict[str, Any] | None:
+    """Read a stored field in either shape.
+
+    Briefs written before item-level provenance stored a set field as one value with one
+    source. Upgrading on read rather than with a data migration keeps those conversations
+    working: the brief is a JSON document in one column, the old shape is unambiguous, and
+    a migration that rewrote live session state would be a worse risk than a read adapter.
+    """
+
+    if entry is None:
+        return None
+    if field not in SET_FIELDS:
+        return entry
+    if "items" in entry:
+        return entry
+    values = entry.get("value") or []
+    source = entry.get("source", tax.SOURCE_SYSTEM)
+    evidence = entry.get("evidence", "")
+    return _set_entry([_item(v, source, evidence) for v in values])
+
+
+def items_of(entry: dict[str, Any] | None) -> list[dict[str, Any]]:
+    if not entry:
+        return []
+    return entry.get("items") or []
+
+
+def values_of(entry: dict[str, Any] | None) -> list[Any]:
+    """The plain term list, for anything that does not care where each term came from."""
+
+    if not entry:
+        return []
+    if "items" in entry:
+        return [i["value"] for i in entry["items"]]
+    value = entry.get("value")
+    return value if isinstance(value, list) else []
+
+
+def _merge_terms(
+    existing: list[dict[str, Any]],
+    incoming: list[Any],
+    *,
+    source: str,
+    evidence: str,
+) -> list[dict[str, Any]]:
+    """Add or re-source the mentioned terms. LEAVE EVERY UNMENTIONED TERM ALONE.
+
+    A term already held at higher precedence keeps its source -- a system-derived mention
+    must not quietly relabel something the customer stated outright. A term held at the
+    same or lower precedence takes the new source, because the newer statement is the
+    better evidence for why it is there.
+    """
+
+    by_value = {i["value"]: dict(i) for i in existing}
+    for value in incoming:
+        held = by_value.get(value)
+        if held is None or tax.outranks(source, held.get("source")):
+            by_value[value] = _item(value, source, evidence)
+    # Stable order: the terms that were already there, then the new ones, so a brief does
+    # not reshuffle itself between turns.
+    ordered = [by_value[i["value"]] for i in existing if i["value"] in by_value]
+    seen = {i["value"] for i in ordered}
+    ordered.extend(by_value[v] for v in incoming if v not in seen)
+    return ordered
 
 
 # --------------------------------------------------------------------------- validation
@@ -119,7 +218,7 @@ def validate_candidate(field: str, value: Any) -> Any | None:
     if field in _BOOL_FIELDS:
         return value if isinstance(value, bool) else None
 
-    if field in _LIST_FIELDS:
+    if field in _SET_FIELDS:
         if not isinstance(value, list):
             return None
         cleaned: list[str] = []
@@ -173,11 +272,22 @@ def apply_candidates(
         # cannot know the difference, and the service promotes it.
         effective = source if source == tax.SOURCE_SESSION else candidate_source
 
-        existing = fields.get(name)
-        if existing and not tax.outranks(effective, existing.get("source")):
+        evidence = getattr(candidate, "evidence", "")
+        existing = normalize_field(name, fields.get(name))
+
+        if name in SET_FIELDS:
+            # TERM LEVEL. Mentioning black changes black; navy is not mentioned and is
+            # not touched. Whole-field replacement here is what silently dropped terms.
+            fields[name] = _set_entry(
+                _merge_terms(items_of(existing), cleaned, source=effective, evidence=evidence)
+            )
+            touched.add(name)
             continue
 
-        fields[name] = _entry(cleaned, effective, getattr(candidate, "evidence", ""))
+        # Scalar: one answer, so a better-sourced answer replaces it outright.
+        if existing and not tax.outranks(effective, existing.get("source")):
+            continue
+        fields[name] = _entry(cleaned, effective, evidence)
         touched.add(name)
 
     merged = resolve_precedence_conflicts(merged, touched_now=touched)
@@ -185,7 +295,9 @@ def apply_candidates(
     return merged
 
 
-def apply_style_profile(brief: dict[str, Any], profile_payload: dict[str, Any]) -> dict[str, Any]:
+def apply_style_profile(
+    brief: dict[str, Any], profile_payload: dict[str, Any]
+) -> dict[str, Any]:
     """Seed a brief from an accepted Style DNA profile.
 
     ONLY called when personalisation is enabled — the caller enforces that, and a test
@@ -200,10 +312,40 @@ def apply_style_profile(brief: dict[str, Any], profile_payload: dict[str, Any]) 
     merged = json.loads(json.dumps(brief))
     fields: dict[str, Any] = merged.setdefault("fields", {})
 
+    # DROP THE PROFILE'S OWN PREVIOUS TERMS FIRST, keeping everything the session said.
+    #
+    # This is what makes "refresh my Style DNA into this session" mean what it says. A
+    # purely additive merge would leave terms from the profile as it used to be, so a
+    # customer who changed black to green and asked Dido to pick that up would end up
+    # with both -- the brief accumulating a history of their profile rather than
+    # reflecting it.
+    for name in list(fields):
+        if name not in SET_FIELDS:
+            continue
+        entry = normalize_field(name, fields[name])
+        kept = [i for i in items_of(entry) if i.get("source") != tax.SOURCE_STYLE_DNA]
+        if kept:
+            fields[name] = _set_entry(kept)
+        else:
+            fields.pop(name, None)
+
     def seed(name: str, value: Any) -> None:
         if value in (None, [], ""):
             return
-        existing = fields.get(name)
+        existing = normalize_field(name, fields.get(name))
+
+        if name in SET_FIELDS:
+            # Each profile term arrives carrying STYLE_DNA provenance of its own, so a
+            # later session statement about ONE of them leaves the rest correctly
+            # attributed to the profile.
+            fields[name] = _set_entry(
+                _merge_terms(
+                    items_of(existing), list(value),
+                    source=tax.SOURCE_STYLE_DNA, evidence="your Style DNA",
+                )
+            )
+            return
+
         if existing and not tax.outranks(tax.SOURCE_STYLE_DNA, existing.get("source")):
             return
         fields[name] = _entry(value, tax.SOURCE_STYLE_DNA, "your Style DNA")
@@ -303,53 +445,82 @@ def resolve_precedence_conflicts(
     overrides: list[dict[str, str]] = []
 
     for kind, pref_field, avoid_field in _OPPOSED_FIELDS:
-        pref = fields.get(pref_field)
-        avoid = fields.get(avoid_field)
+        pref = normalize_field(pref_field, fields.get(pref_field))
+        avoid = normalize_field(avoid_field, fields.get(avoid_field))
         if not pref or not avoid:
             continue
 
-        shared = sorted(set(pref.get("value") or []) & set(avoid.get("value") or []))
+        pref_items = {i["value"]: i for i in items_of(pref)}
+        avoid_items = {i["value"]: i for i in items_of(avoid)}
+        shared = sorted(set(pref_items) & set(avoid_items))
         if not shared:
             continue
 
-        pref_rank = tax.SOURCE_PRECEDENCE.index(pref.get("source", tax.SOURCE_SYSTEM))
-        avoid_rank = tax.SOURCE_PRECEDENCE.index(avoid.get("source", tax.SOURCE_SYSTEM))
-        if pref_rank == avoid_rank:
-            # SAME PRECEDENCE. Two cases, and they are not alike.
-            #
-            # Said in DIFFERENT turns, the later one is a CORRECTION: "no black", then
-            # "black is fine after all", is somebody changing their mind, which is how
-            # conversation works. Asking them to choose between their old answer and
-            # their new one is the same failure as asking them to repeat an override.
-            #
-            # Said in the SAME turn, they are simultaneous and genuinely conflict --
-            # "I like black but nothing black" -- and there is no rule that picks one.
-            # That is the case `detect_contradictions` exists for, and it is left alone.
-            if touched_now is None or len(touched_now & {pref_field, avoid_field}) != 1:
-                continue
-            winner = pref_field if pref_field in touched_now else avoid_field
-            loser = avoid_field if winner == pref_field else pref_field
-        else:
-            winner, loser = (
-                (avoid_field, pref_field) if avoid_rank < pref_rank else (pref_field, avoid_field)
+        # PER TERM, not per field.
+        #
+        # Each opposed term is settled on its own evidence. Resolving at field level made
+        # one disputed term decide the fate of every other term in the list, which is how
+        # navy came to vanish because black was mentioned.
+        drop_from_pref: list[str] = []
+        drop_from_avoid: list[str] = []
+
+        for term in shared:
+            pref_rank = tax.SOURCE_PRECEDENCE.index(
+                pref_items[term].get("source", tax.SOURCE_SYSTEM)
+            )
+            avoid_rank = tax.SOURCE_PRECEDENCE.index(
+                avoid_items[term].get("source", tax.SOURCE_SYSTEM)
             )
 
-        loser_entry = fields[loser]
-        remaining = [v for v in loser_entry["value"] if v not in shared]
-        overrides.append(
-            {
-                "kind": kind,
-                "terms": ", ".join(shared),
-                "applied": "avoided" if winner == avoid_field else "preferred",
-                "winner_source": fields[winner]["source"],
-                "loser_source": loser_entry["source"],
-            }
-        )
-        if remaining:
-            loser_entry["value"] = remaining
-        else:
-            fields.pop(loser, None)
-        continue
+            if pref_rank == avoid_rank:
+                # SAME PRECEDENCE. Two cases, and they are not alike.
+                #
+                # Different turns: the later one is a CORRECTION -- "no black", then
+                # "black is fine after all" is somebody changing their mind. Asking them
+                # to choose between their old answer and their new one is the same
+                # failure as asking them to repeat an override.
+                #
+                # Same turn: simultaneous and genuinely conflicting -- "I want black but
+                # absolutely no black" -- with no rule to pick a side. Left for
+                # `detect_contradictions`, which is what it exists for.
+                if touched_now is None or len(touched_now & {pref_field, avoid_field}) != 1:
+                    continue
+                winner_field = pref_field if pref_field in touched_now else avoid_field
+            else:
+                winner_field = avoid_field if avoid_rank < pref_rank else pref_field
+
+            if winner_field == avoid_field:
+                drop_from_pref.append(term)
+                winner_source = avoid_items[term].get("source")
+                loser_source = pref_items[term].get("source")
+                applied = "avoided"
+            else:
+                drop_from_avoid.append(term)
+                winner_source = pref_items[term].get("source")
+                loser_source = avoid_items[term].get("source")
+                applied = "preferred"
+
+            overrides.append(
+                {
+                    "kind": kind,
+                    "terms": term,
+                    "applied": applied,
+                    "winner_source": winner_source,
+                    "loser_source": loser_source,
+                }
+            )
+
+        for field_name, dropped in ((pref_field, drop_from_pref), (avoid_field, drop_from_avoid)):
+            if not dropped:
+                continue
+            entry = normalize_field(field_name, fields[field_name])
+            remaining = [i for i in items_of(entry) if i["value"] not in dropped]
+            if remaining:
+                fields[field_name] = _set_entry(remaining)
+            else:
+                # Nothing left in the field; drop it rather than leave an empty list,
+                # which would render as a heading with nothing under it.
+                fields.pop(field_name, None)
 
     if overrides:
         merged["overrides"] = overrides
@@ -368,8 +539,10 @@ def detect_contradictions(brief: dict[str, Any]) -> list[dict[str, str]]:
     found: list[dict[str, str]] = []
 
     def value(name: str):
-        entry = fields.get(name)
-        return entry.get("value") if entry else None
+        entry = normalize_field(name, fields.get(name))
+        if entry is None:
+            return None
+        return values_of(entry) if name in SET_FIELDS else entry.get("value")
 
     # ---- the same term both wanted and refused, AT THE SAME PRECEDENCE
     #
@@ -513,10 +686,28 @@ def summarize(brief: dict[str, Any]) -> dict[str, Any]:
         tax.SOURCE_STYLE_DNA: [],
         tax.SOURCE_SYSTEM: [],
     }
-    for name, entry in sorted(fields.items()):
-        groups.setdefault(entry.get("source", tax.SOURCE_SYSTEM), []).append(
-            {"field": name, "value": entry.get("value"), "evidence": entry.get("evidence", "")}
-        )
+    for name, raw in sorted(fields.items()):
+        entry = normalize_field(name, raw)
+        if name not in SET_FIELDS:
+            groups.setdefault(entry.get("source", tax.SOURCE_SYSTEM), []).append(
+                {"field": name, "value": entry.get("value"), "evidence": entry.get("evidence", "")}
+            )
+            continue
+
+        # A MIXED FIELD APPEARS IN BOTH GROUPS, each holding only the terms that
+        # genuinely came from there. Reporting the whole list under one heading would be
+        # telling the customer their profile said something it did not -- which is the
+        # specific claim the review screen exists to make honestly.
+        by_source: dict[str, list[Any]] = {}
+        evidence_by_source: dict[str, str] = {}
+        for item in items_of(entry):
+            src = item.get("source", tax.SOURCE_SYSTEM)
+            by_source.setdefault(src, []).append(item["value"])
+            evidence_by_source.setdefault(src, item.get("evidence", ""))
+        for src, values in by_source.items():
+            groups.setdefault(src, []).append(
+                {"field": name, "value": values, "evidence": evidence_by_source.get(src, "")}
+            )
 
     missing = [
         policy["field"]
@@ -652,11 +843,24 @@ def answer_query(brief: dict[str, Any], intent: str, *, personalization_used: bo
     unplaced = brief.get("unplaced", [])
 
     def group(source: str) -> list[tuple[str, Any]]:
-        return sorted(
-            (name, entry["value"])
-            for name, entry in fields.items()
-            if entry.get("source") == source
-        )
+        """Only the terms that genuinely came from `source`.
+
+        A field holding navy from the profile and black from tonight must contribute navy
+        here and black there -- never the whole list to whichever source happens to be on
+        the entry. "What came from my Style DNA?" is exactly the question that must not
+        be answered with something the customer said five seconds ago.
+        """
+
+        out: list[tuple[str, Any]] = []
+        for name, raw in fields.items():
+            entry = normalize_field(name, raw)
+            if name in SET_FIELDS:
+                values = [i["value"] for i in items_of(entry) if i.get("source") == source]
+                if values:
+                    out.append((name, values))
+            elif entry.get("source") == source:
+                out.append((name, entry.get("value")))
+        return sorted(out)
 
     from_profile = group(SOURCE_STYLE_DNA)
     from_session = group(SOURCE_SESSION) + group(SOURCE_SYSTEM)
@@ -702,11 +906,18 @@ def answer_query(brief: dict[str, Any], intent: str, *, personalization_used: bo
         return "Your budget for this session is " + " and ".join(parts) + "."
 
     if intent == QUERY_AVOIDANCES:
-        avoid = [
-            (name, entry)
-            for name, entry in sorted(fields.items())
-            if name.endswith("_avoidances")
-        ]
+        # Split each avoidance field by where each term came from, so "what did I tell
+        # you to avoid?" reports what the customer said and attributes the rest to the
+        # profile rather than to them.
+        avoid: list[tuple[str, dict[str, Any]]] = []
+        for name, raw in sorted(fields.items()):
+            if not name.endswith("_avoidances"):
+                continue
+            entry = normalize_field(name, raw)
+            for src in (tax.SOURCE_SESSION, tax.SOURCE_SYSTEM, tax.SOURCE_STYLE_DNA):
+                values = [i["value"] for i in items_of(entry) if i.get("source") == src]
+                if values:
+                    avoid.append((name, {"value": values, "source": src}))
         if not avoid and not unplaced:
             return "You have not told me anything to avoid for this session."
         # The sentence already says "avoid", so the field label would read as

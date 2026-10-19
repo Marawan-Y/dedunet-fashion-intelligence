@@ -89,19 +89,47 @@ def _say(client, headers, session_id: int, message: str, **kwargs) -> dict:
     return response.json()
 
 
-def _fields(payload: dict) -> dict[str, dict]:
-    """Flatten the grouped brief back into field -> entry for assertions."""
+_GROUPS = (
+    ("from_session", tax.SOURCE_SESSION),
+    ("from_style_dna", tax.SOURCE_STYLE_DNA),
+    ("derived_from_your_words", tax.SOURCE_SYSTEM),
+)
 
-    brief = payload["brief"]
-    out = {}
-    for group, source in (
-        ("from_session", tax.SOURCE_SESSION),
-        ("from_style_dna", tax.SOURCE_STYLE_DNA),
-        ("derived_from_your_words", tax.SOURCE_SYSTEM),
-    ):
-        for entry in brief[group]:
-            out[entry["field"]] = {"value": entry["value"], "source": source}
+
+def _fields(payload: dict) -> dict[str, dict]:
+    """Flatten the grouped brief into field -> {value, source}.
+
+    A SET FIELD CAN APPEAR IN MORE THAN ONE GROUP -- navy from the profile, black from
+    tonight -- so this MERGES the term lists instead of letting whichever group is read
+    last win. The first version silently kept one group's terms, which is the same
+    information loss this phase exists to remove, reproduced in the test helper.
+
+    `source` is only meaningful for scalars. Use `_terms_from` when provenance is the
+    thing under test.
+    """
+
+    out: dict[str, dict] = {}
+    for group, source in _GROUPS:
+        for entry in payload["brief"][group]:
+            name, value = entry["field"], entry["value"]
+            if name in out and isinstance(value, list) and isinstance(out[name]["value"], list):
+                merged = list(out[name]["value"])
+                merged.extend(v for v in value if v not in merged)
+                out[name]["value"] = sorted(merged)
+            else:
+                out[name] = {"value": sorted(value) if isinstance(value, list) else value,
+                             "source": source}
     return out
+
+
+def _terms_from(payload: dict, source: str, field: str) -> list:
+    """The terms of one field attributed to exactly one source."""
+
+    group = {src: grp for grp, src in _GROUPS}[source]
+    for entry in payload["brief"][group]:
+        if entry["field"] == field:
+            return sorted(entry["value"]) if isinstance(entry["value"], list) else entry["value"]
+    return []
 
 
 class FakeInterpreter:
@@ -400,8 +428,10 @@ def test_eval_e_session_override_wins_and_profile_is_untouched(client, owner):
     result = _say(client, owner, started["session_id"], "Dinner, smart casual, no black tonight, 90")
     fields = _fields(result)
 
-    assert fields["colour_avoidances"]["value"] == ["black"]
-    assert fields["colour_avoidances"]["source"] == tax.SOURCE_SESSION
+    # The profile already avoided orange, so this field is MIXED. Assert by source
+    # rather than by flattened list -- that distinction is the point of the model.
+    assert _terms_from(result, tax.SOURCE_SESSION, "colour_avoidances") == ["black"]
+    assert _terms_from(result, tax.SOURCE_STYLE_DNA, "colour_avoidances") == ["orange"]
 
     # THE PROFILE IS UNCHANGED. A session instruction is not a profile edit.
     profile = client.get("/api/v1/me/style-dna", headers=owner).json()
@@ -1412,3 +1442,290 @@ def test_an_override_announcement_does_not_survive_into_a_later_turn(client, own
     later = _say(client, owner, started["session_id"], "A wedding", client_message_id="o-2")
     assert later["brief"]["overrides"] == [], "a stale override must not be re-announced"
     assert "have not changed it" not in later["reply"]
+
+
+# --------------------------------------------------------------------------- set fields
+#
+# TERM-LEVEL SEMANTICS ON SET-VALUED FIELDS.
+#
+# A statement about one member of a set says nothing about the others. The first version
+# replaced the whole field, so mentioning black discarded navy -- a term the customer never
+# mentioned, silently removed from a brief a recommendation engine will read.
+#
+# Scalars keep whole-field replacement, which is correct for them: a new budget IS the
+# budget. The distinction is between "one answer" and "several independent terms".
+
+
+def _profile(client, headers, **kwargs) -> None:
+    client.patch("/api/v1/me/style-dna", headers=headers, json=kwargs)
+
+
+def test_set_1_an_unrelated_profile_colour_survives_a_session_exclusion(client, owner):
+    """Profile [black, navy]; session "no black"; navy must remain."""
+
+    _profile(client, owner, colours=[
+        {"slug": "black", "stance": "PREFERRED"},
+        {"slug": "navy", "stance": "PREFERRED"},
+    ])
+    started = _start(client, owner)
+    assert _fields(started)["colour_preferences"]["value"] == ["black", "navy"]
+
+    result = _say(client, owner, started["session_id"], "No black for this one.")
+
+    assert _terms_from(result, tax.SOURCE_STYLE_DNA, "colour_preferences") == ["navy"]
+    assert _terms_from(result, tax.SOURCE_SESSION, "colour_avoidances") == ["black"]
+    assert "black" not in _fields(result)["colour_preferences"]["value"]
+    assert result["brief"]["contradictions"] == []
+
+
+def test_set_2_a_correction_restores_the_term_without_disturbing_the_rest(client, owner):
+    """Then "black is fine after all": black returns, navy never moved."""
+
+    _profile(client, owner, colours=[
+        {"slug": "black", "stance": "PREFERRED"},
+        {"slug": "navy", "stance": "PREFERRED"},
+    ])
+    started = _start(client, owner)
+    _say(client, owner, started["session_id"], "No black for this one.", client_message_id="s2-1")
+    result = _say(
+        client, owner, started["session_id"], "Black is fine after all for this session.",
+        client_message_id="s2-2",
+    )
+
+    assert _fields(result)["colour_preferences"]["value"] == ["black", "navy"]
+    assert _fields(result).get("colour_avoidances", {}).get("value", []) == []
+    # Provenance stays honest: navy is still the profile's, black is now this session's.
+    assert _terms_from(result, tax.SOURCE_STYLE_DNA, "colour_preferences") == ["navy"]
+    assert _terms_from(result, tax.SOURCE_SESSION, "colour_preferences") == ["black"]
+    assert result["brief"]["contradictions"] == []
+
+
+def test_set_3_an_unrelated_profile_material_survives(client, owner):
+    _profile(client, owner, materials=[
+        {"slug": "cotton", "stance": "PREFERRED"},
+        {"slug": "wool", "stance": "PREFERRED"},
+    ])
+    started = _start(client, owner)
+    result = _say(client, owner, started["session_id"], "Nothing in wool for this one.")
+
+    assert _terms_from(result, tax.SOURCE_STYLE_DNA, "material_preferences") == ["cotton"]
+    assert _terms_from(result, tax.SOURCE_SESSION, "material_avoidances") == ["wool"]
+
+
+def test_set_4_an_unrelated_profile_brand_survives(client, owner, db_session):
+    """Brands are foreign keys, so this also proves resolution is value-based."""
+
+    from app.commerce.brands import Brand, BrandOwnershipType
+
+    ensure_canonical_brands(db_session)
+    db_session.add(
+        Brand(
+            slug="second-brand",
+            name="Second Brand",
+            ownership_type=BrandOwnershipType.PLATFORM_CURATED,
+            publication_status="preview",
+            is_development_fixture=False,
+        )
+    )
+    db_session.commit()
+
+    _profile(client, owner, brands=[
+        {"slug": DEDUNET_BRAND_SLUG, "stance": "PREFERRED"},
+        {"slug": "second-brand", "stance": "PREFERRED"},
+    ])
+    started = _start(client, owner)
+    assert _fields(started)["brand_preferences"]["value"] == sorted(
+        [DEDUNET_BRAND_SLUG, "second-brand"]
+    )
+
+    # Exclude one brand for this session only, through the brief-correction path.
+    result = client.patch(
+        f"/api/v1/me/dido/sessions/{started['session_id']}/brief",
+        headers=owner,
+        json={"changes": {"brand_avoidances": ["second-brand"]}},
+    ).json()
+
+    assert _terms_from(result, tax.SOURCE_STYLE_DNA, "brand_preferences") == [DEDUNET_BRAND_SLUG]
+    assert _terms_from(result, tax.SOURCE_SESSION, "brand_avoidances") == ["second-brand"]
+
+    profile = client.get("/api/v1/me/style-dna", headers=owner).json()
+    assert {b["slug"] for b in profile["brands"]} == {DEDUNET_BRAND_SLUG, "second-brand"}
+
+
+def test_set_5_a_new_session_term_coexists_with_profile_terms(client, owner):
+    _profile(client, owner, colours=[{"slug": "navy", "stance": "PREFERRED"}])
+    started = _start(client, owner)
+    result = _say(client, owner, started["session_id"], "I like cream for this one.")
+
+    assert _fields(result)["colour_preferences"]["value"] == ["cream", "navy"]
+    assert _terms_from(result, tax.SOURCE_STYLE_DNA, "colour_preferences") == ["navy"]
+    assert _terms_from(result, tax.SOURCE_SESSION, "colour_preferences") == ["cream"]
+
+
+def test_set_6_a_later_correction_touches_only_the_corrected_term(client, owner):
+    _profile(client, owner, colours=[
+        {"slug": "black", "stance": "PREFERRED"},
+        {"slug": "navy", "stance": "PREFERRED"},
+        {"slug": "cream", "stance": "PREFERRED"},
+    ])
+    started = _start(client, owner)
+    _say(client, owner, started["session_id"], "No black for this one.", client_message_id="s6-1")
+    result = _say(client, owner, started["session_id"], "No cream either.", client_message_id="s6-2")
+
+    assert _fields(result)["colour_preferences"]["value"] == ["navy"]
+    assert _terms_from(result, tax.SOURCE_SESSION, "colour_avoidances") == ["black", "cream"]
+    assert _terms_from(result, tax.SOURCE_STYLE_DNA, "colour_preferences") == ["navy"]
+
+
+def test_set_7_same_turn_opposed_terms_still_contradict(client, owner):
+    """"I want black but absolutely no black" has no later/earlier to separate it."""
+
+    brief = dido_brief.apply_candidates(
+        dido_brief.empty_brief(),
+        (
+            Candidate("colour_preferences", ["black", "navy"], tax.SOURCE_SESSION),
+            Candidate("colour_avoidances", ["black"], tax.SOURCE_SESSION),
+        ),
+        source=tax.SOURCE_SESSION,
+    )
+    assert any(c["kind"] == "colour_conflict" for c in brief["contradictions"])
+    # And the UNDISPUTED term is untouched by the dispute.
+    assert "navy" in dido_brief.values_of(brief["fields"]["colour_preferences"])
+
+
+def test_set_8_style_dna_rows_are_logically_unchanged(client, owner, db_session):
+    from app.commerce.style_dna import StyleColourPreference, StyleProfile
+
+    _profile(client, owner, colours=[
+        {"slug": "black", "stance": "PREFERRED"},
+        {"slug": "navy", "stance": "PREFERRED"},
+    ])
+    before_rows = sorted(
+        (r.colour_slug, r.stance, r.source)
+        for r in db_session.scalars(select(StyleColourPreference)).all()
+    )
+    before_revision = db_session.scalars(select(StyleProfile)).one().revision
+
+    started = _start(client, owner)
+    for text in ("No black for this one.", "Black is fine after all.", "A wedding, formal"):
+        _say(client, owner, started["session_id"], text)
+
+    db_session.expire_all()
+    after_rows = sorted(
+        (r.colour_slug, r.stance, r.source)
+        for r in db_session.scalars(select(StyleColourPreference)).all()
+    )
+    assert after_rows == before_rows
+    assert db_session.scalars(select(StyleProfile)).one().revision == before_revision
+
+
+def test_set_9_the_review_grouping_reports_mixed_provenance_accurately(client, owner):
+    _profile(client, owner, colours=[{"slug": "navy", "stance": "PREFERRED"}])
+    started = _start(client, owner)
+    result = _say(client, owner, started["session_id"], "I like cream for this one.")
+
+    brief = result["brief"]
+    dna = [e for e in brief["from_style_dna"] if e["field"] == "colour_preferences"]
+    session = [e for e in brief["from_session"] if e["field"] == "colour_preferences"]
+
+    assert dna and session, "a mixed field must appear under BOTH headings"
+    assert dna[0]["value"] == ["navy"]
+    assert session[0]["value"] == ["cream"]
+
+
+def test_set_10_the_style_dna_query_never_claims_a_session_term(client, owner):
+    _profile(client, owner, colours=[{"slug": "navy", "stance": "PREFERRED"}])
+    started = _start(client, owner)
+    _say(client, owner, started["session_id"], "I like cream for this one.", client_message_id="s10")
+
+    reply = _say(
+        client, owner, started["session_id"],
+        "What information from my Style DNA are you using?", client_message_id="s10-q",
+    )["reply"]
+
+    assert "navy" in reply
+    attributed_to_profile = reply.split("From this conversation")[0]
+    assert "cream" not in attributed_to_profile, (
+        "a term the customer said tonight must not be attributed to their profile"
+    )
+
+
+def test_set_11_the_avoidance_query_separates_session_from_profile(client, owner):
+    _profile(client, owner, colours=[{"slug": "orange", "stance": "AVOIDED"}])
+    started = _start(client, owner)
+    _say(client, owner, started["session_id"], "No black for this one.", client_message_id="s11")
+
+    reply = _say(
+        client, owner, started["session_id"], "What did I tell you to avoid for this session?",
+        client_message_id="s11-q",
+    )["reply"]
+
+    said_here = reply.split("From your Style DNA")[0]
+    assert "black" in said_here
+    assert "orange" not in said_here, "a profile avoidance is not something said this session"
+    assert "orange" in reply, "but it should still be reported, attributed to the profile"
+
+
+def test_set_12_mixed_provenance_survives_a_reload(client, owner):
+    """The brief is server state, so a fresh read must reconstruct it identically."""
+
+    _profile(client, owner, colours=[{"slug": "navy", "stance": "PREFERRED"}])
+    started = _start(client, owner)
+    written = _say(client, owner, started["session_id"], "I like cream, no black.")
+
+    reloaded = client.get(
+        f"/api/v1/me/dido/sessions/{started['session_id']}", headers=owner
+    ).json()
+
+    assert _fields(reloaded) == _fields(written)
+    assert _terms_from(reloaded, tax.SOURCE_STYLE_DNA, "colour_preferences") == ["navy"]
+    assert _terms_from(reloaded, tax.SOURCE_SESSION, "colour_preferences") == ["cream"]
+    assert _terms_from(reloaded, tax.SOURCE_SESSION, "colour_avoidances") == ["black"]
+
+
+def test_a_legacy_whole_field_brief_is_read_without_a_data_migration(client, owner, db_session):
+    """Sessions written before item provenance must keep working.
+
+    Upgrading on read rather than rewriting live session state: the old shape is
+    unambiguous, and a migration over conversations in flight is a worse risk than an
+    adapter.
+    """
+
+    from app.commerce.dido import DidoSession
+
+    started = _start(client, owner)
+    row = db_session.get(DidoSession, started["session_id"])
+    row.brief_json = json.dumps(
+        {
+            "fields": {
+                "colour_preferences": {
+                    "value": ["black", "navy"],
+                    "source": tax.SOURCE_STYLE_DNA,
+                    "evidence": "your Style DNA",
+                }
+            },
+            "unplaced": [],
+            "contradictions": [],
+            "currency": "EUR",
+        }
+    )
+    db_session.commit()
+
+    result = _say(client, owner, started["session_id"], "No black for this one.")
+
+    assert _terms_from(result, tax.SOURCE_STYLE_DNA, "colour_preferences") == ["navy"]
+    assert _terms_from(result, tax.SOURCE_SESSION, "colour_avoidances") == ["black"]
+
+
+def test_scalar_fields_keep_whole_field_replacement(client, owner):
+    """A new budget IS the budget. Term-level semantics would be wrong here."""
+
+    started = _start(client, owner)
+    _say(client, owner, started["session_id"], "A wedding, around 200 euros",
+         client_message_id="sc-1")
+    result = _say(client, owner, started["session_id"], "Actually make it 300 euros",
+                  client_message_id="sc-2")
+
+    assert _fields(result)["budget_total"]["value"] == 30000
+    assert dido_brief.SCALAR_FIELDS >= {"budget_total", "occasion", "dress_code"}
+    assert dido_brief.SET_FIELDS >= {"colour_preferences", "material_avoidances"}
