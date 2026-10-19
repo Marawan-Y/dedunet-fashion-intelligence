@@ -1301,11 +1301,19 @@ MUTATIONS: tuple[Mutation, ...] = (
     ),
     Mutation(
         mutation_id="M86_dido_session_outranks_the_profile",
-        guard="a session instruction overrides a stored preference",
+        guard="a session instruction overrides a stored preference, SCALAR fields",
         target=DIDO_BRIEF,
+        # This line is now reached only by scalars: the set branch above it returns first.
+        #
+        # It SURVIVED the first isolated run while pointing at
+        # `test_eval_e_session_override_wins_and_profile_is_untouched`, which exercises
+        # colours -- a set field, settled term by term in `_merge_terms` and never reaching
+        # here. The mutation was real, the test was real, and they stopped meeting when the
+        # refactor split one decision into two. Budget is the scalar the profile actually
+        # seeds, so that is what guards this now.
         original="        if existing and not tax.outranks(effective, existing.get(\"source\")):",
         mutated="        if existing:  # MUTATED: whatever landed first wins",
-        tests=(f"{TEST_DIDO}::test_eval_e_session_override_wins_and_profile_is_untouched",),
+        tests=(f"{TEST_DIDO}::test_set_14_a_session_budget_overrides_the_profile_budget",),
         covers=("precedence: what you say tonight beats what you saved in March",),
     ),
     Mutation(
@@ -1351,8 +1359,12 @@ MUTATIONS: tuple[Mutation, ...] = (
         # comparison forced true, a session-versus-profile conflict still resolved through
         # the correction path. A guard aimed at a condition stops guarding the moment the
         # body under it changes. This aims at the assignment that picks the winner.
-        original="                (avoid_field, pref_field) if avoid_rank < pref_rank else (pref_field, avoid_field)",
-        mutated="                (pref_field, avoid_field)  # MUTATED: the lower-precedence side wins",
+        #
+        # Retargeted a second time, for a better reason than the first: resolution moved
+        # from whole fields to single terms, so the tuple this used to anchor on no longer
+        # exists. The decision it made still does, one term at a time.
+        original="                winner_field = avoid_field if avoid_rank < pref_rank else pref_field",
+        mutated="                winner_field = pref_field  # MUTATED: the lower-precedence side wins",
         tests=(
             f"{TEST_DIDO}::test_1_a_session_exclusion_overrides_a_profile_preference_without_asking",
         ),
@@ -1360,6 +1372,27 @@ MUTATIONS: tuple[Mutation, ...] = (
             "a general preference and a specific override are not two constraints in "
             "deadlock; making the customer repeat an instruction they already gave "
             "implies it was not understood",
+        ),
+    ),
+    Mutation(
+        mutation_id="M91_dido_a_term_takes_the_better_evidence",
+        guard="a term already held is re-sourced when a higher-precedence statement names it",
+        target=DIDO_BRIEF,
+        # The other half of the decision M86 used to cover alone. Set fields settle here,
+        # per term, and this is the line that decides whether a term keeps the source it
+        # was first given or takes the newer one.
+        #
+        # Without it a colour the customer names tonight stays attributed to a profile they
+        # may not have opened in months -- the brief would be right about the term and wrong
+        # about why it is there, which is the part the review screen shows them.
+        original="        if held is None or tax.outranks(source, held.get(\"source\")):",
+        mutated="        if held is None:  # MUTATED: a term never changes source once held",
+        tests=(
+            f"{TEST_DIDO}::test_set_13_a_session_restating_a_profile_term_re_sources_that_term",
+        ),
+        covers=(
+            "provenance is shown to the customer, so attributing tonight's words to their "
+            "stored profile misreports where a constraint came from",
         ),
     ),
 )

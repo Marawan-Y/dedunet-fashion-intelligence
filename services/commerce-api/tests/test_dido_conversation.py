@@ -1729,3 +1729,55 @@ def test_scalar_fields_keep_whole_field_replacement(client, owner):
     assert _fields(result)["budget_total"]["value"] == 30000
     assert dido_brief.SCALAR_FIELDS >= {"budget_total", "occasion", "dress_code"}
     assert dido_brief.SET_FIELDS >= {"colour_preferences", "material_avoidances"}
+
+
+# ------------------------------------------------- the two precedence lines, each guarded
+#
+# The first isolated mutation run found M86 SURVIVED: a mutation that broke scalar
+# precedence changed nothing any test could see. The cause was the term-level refactor.
+# Set fields now settle in `_merge_terms`, so every existing precedence test went through
+# that path and the scalar line below it stopped being exercised at all.
+#
+# Two decisions, two lines, two tests. A test that exercises only colours cannot speak for
+# budgets.
+
+
+def test_set_13_a_session_restating_a_profile_term_re_sources_that_term(client, owner):
+    """Saying out loud what the profile already held makes it this session's statement.
+
+    The term neither moves nor duplicates -- its PROVENANCE changes, because the better
+    evidence for why navy is in the brief is now that the customer just said so. This is
+    the precedence check inside the term merge. Without it a term keeps whatever source it
+    was first given, and the review screen would attribute tonight's words to a profile the
+    customer may not have opened in months.
+    """
+
+    _profile(client, owner, colours=[{"slug": "navy", "stance": "PREFERRED"}])
+    started = _start(client, owner)
+    assert _terms_from(started, tax.SOURCE_STYLE_DNA, "colour_preferences") == ["navy"]
+
+    result = _say(client, owner, started["session_id"], "I like navy for this one.")
+
+    assert _fields(result)["colour_preferences"]["value"] == ["navy"]
+    assert _terms_from(result, tax.SOURCE_SESSION, "colour_preferences") == ["navy"]
+    assert _terms_from(result, tax.SOURCE_STYLE_DNA, "colour_preferences") == []
+    assert result["brief"]["contradictions"] == []
+
+
+def test_set_14_a_session_budget_overrides_the_profile_budget(client, owner):
+    """Scalar precedence, which term-level merging deliberately does not touch.
+
+    The profile and the session each have exactly one budget, so the session's replaces it
+    outright. The line that decides this is NOT the line that settles a set field term by
+    term, which is why it needs a test of its own.
+    """
+
+    _profile(client, owner, budget={"per_look_minor_units": 25000, "currency": "EUR"})
+    started = _start(client, owner)
+    assert _fields(started)["budget_total"]["value"] == 25000
+    assert _fields(started)["budget_total"]["source"] == tax.SOURCE_STYLE_DNA
+
+    result = _say(client, owner, started["session_id"], "Around 400 euros for this one.")
+
+    assert _fields(result)["budget_total"]["value"] == 40000
+    assert _fields(result)["budget_total"]["source"] == tax.SOURCE_SESSION
