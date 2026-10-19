@@ -965,6 +965,31 @@ and `.gitattributes` declares the same paths `eol=lf`. `packages/brand/assets/**
 `git add --renormalize` across the package and the three client seams staged nothing, which
 is the proof.
 
+### The address moved again, during this gate
+
+Written down because it is the limitation demonstrating itself rather than being predicted.
+Partway through this run the host's WLAN lease moved from `10.10.30.13` to `10.0.0.3`. The
+first symptom was the gate's own probe timing out with `http=000`, which looks exactly like a
+dead service: every container was running and `127.0.0.1:13080` answered 200.
+
+The deployment provenance gate, the full multi-value smoke and the whole Dido E2E suite were
+therefore **re-run against `10.0.0.3`**, the address a human would now actually type. All
+three passed again unchanged — same image, same `DidoPage` chunk, same `3997afb2…`, same
+`c4a91f27e6d3 (head)`, and E2E 54 passed / 0 failed / 0 flaky, 18 per engine across Chromium,
+WebKit and Mobile Safari.
+
+**`STAGING_ACCEPTANCE_HOST=http://10.0.0.3:13080`.** Read it again before testing; do not copy
+it from here.
+
+One honest consequence. `STAGING_PUBLIC_HOST` is baked into the web image at build time for
+the admin portal's API base, and the deployed image carries `http://10.10.30.13:18080`, which
+is now dead. The image was **not** rebuilt for it, deliberately: rebuilding would discard the
+byte-identity proof above and create a new runtime artifact after the final gate, to fix a
+surface this phase does not touch. The consumer client — and therefore all of Dido — is
+unaffected, because it reaches the API same-origin through the nginx in its own image, which
+is the property the staging cutover was done for. `.env.staging` (gitignored) now names
+`10.0.0.3`, so the next rebuild picks it up.
+
 ### Remaining risks and next action
 
 - **R-019 OPEN.** Provenance is asserted by hand. Nine checks is not an automated gate.
