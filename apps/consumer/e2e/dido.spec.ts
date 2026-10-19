@@ -192,7 +192,17 @@ test.describe("Dido conversational intelligence", () => {
     await say(page, "Dinner, smart casual, 90 euros");
     await say(page, "Actually, no black for this one.");
 
-    await expect(page.getByTestId("brief-colour_avoidances")).toContainText("black");
+    /* The field is MIXED now: orange from the profile, black from tonight. It is shown
+       under both headings on purpose, so this has to say WHICH one it means. An unscoped
+       "contains black somewhere in the brief" would also have passed when a session
+       statement replaced the whole field, which is the bug this test is here to catch. */
+    await expect(
+      page.getByTestId("brief-session").getByTestId("brief-colour_avoidances"),
+    ).toContainText("black");
+    /* And the term nobody mentioned is still attributed to the profile. */
+    await expect(
+      page.getByTestId("brief-style-dna").getByTestId("brief-colour_avoidances"),
+    ).toContainText("orange");
 
     // THE PROFILE IS UNTOUCHED. This is the central promise of the phase.
     const after = await readStyleDna(request);
