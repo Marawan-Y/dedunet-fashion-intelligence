@@ -607,7 +607,10 @@ customer can see on their own profile page would be its own small deception.
 
 **The staging LAN address is not stable, and the retest URL moves with it.** The host's WLAN
 address changed from `10.0.0.2` to `10.0.0.3` between acceptance attempts, which made the
-provenance gate fail to connect before anything else could be checked. `STAGING_PUBLIC_HOST`
+provenance gate fail to connect before anything else could be checked. It has since moved
+again, to `10.10.30.13`. This is a DHCP lease on a Wi-Fi interface, so it will keep moving:
+the address is **not** a repository constant, and no acceptance step may hard-code one. Read
+the current address at acceptance time and record which address the run actually used. `STAGING_PUBLIC_HOST`
 is baked into the web image at build time for the admin portal's API base, so a changed
 address leaves that pointing at nothing until the image is rebuilt. The consumer app is
 unaffected because it reaches the API same-origin — the property the staging cutover was
@@ -622,11 +625,27 @@ for `# MUTATED` and says what actually happened. The harness must not be run con
 editing the files it mutates, and neither must a full test suite: a suite run across a moving
 tree reports nothing.
 
-**A session write replaces a brief field rather than merging into it.** A Styling Brief field
-holds one value with one source, so if a profile contributes `colours: [black, navy]` and the
-customer then says something about colour in the session, the session's list replaces the
-profile's — navy goes with the field. This follows from the provenance model: merging across
-sources would mean a field could no longer carry a single source, and the review screen's
-separation of "from your Style DNA" and "from this conversation" depends on that. The profile
-is untouched and visible on My Style, but a customer could reasonably notice a value
-disappear from the brief without having mentioned it.
+`scripts/validation/run_mutation_isolated.py` now removes the opportunity rather than relying
+on discipline: it runs the harness in a disposable `git worktree add --detach` at a named
+commit, refuses to start against a dirty tree, and verifies afterwards that the active tree is
+unchanged and carries no marker. The active branch cannot acquire a mutation marker no matter
+what the harness does, and an interrupted run leaves a stray directory instead of a broken
+repository. Its first use found a second defect in the same area, recorded below.
+
+**A brief written before item-level provenance keeps its old shape until it is next written.**
+Set-valued Styling Brief fields now carry provenance per **term**, so *"no black"* re-sources
+black and leaves navy exactly where it was. Sessions created before that change stored one
+value and one source for the whole field. They are upgraded when read rather than by a data
+migration: the old shape is unambiguous, and rewriting conversations that are in flight is a
+worse risk than a read adapter. Until such a session is next written, the stored row still
+holds the legacy shape, and nothing reads those rows except the adapter.
+
+This entry previously recorded whole-field replacement as an accepted limitation, on the
+reasoning that a field had to carry a single source or the review screen could not separate
+"from your Style DNA" from "from this conversation". **That reasoning was wrong**, and it was
+right to reject it: it described a limit of the representation, not a requirement of the
+product. A field holding navy from the profile and black from tonight has two sources because
+it genuinely has two, and the review screen now reports such a field under both headings
+rather than forcing a single label onto it. Dropping a term the customer never mentioned was a
+data-semantics defect, not a trade-off. Scalar fields — budget, occasion, formality, dress
+code — still replace wholesale, which is correct for them: a new budget *is* the budget.
