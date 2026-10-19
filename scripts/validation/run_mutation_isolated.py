@@ -38,9 +38,76 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 
+#: Dependency stores the guarding tests need but a fresh checkout never has. Six backend
+#: test modules gate themselves on `apps/mobile/node_modules/jsdom` and hand that directory
+#: to node as NODE_PATH.
+SHARED_NODE_MODULES = (Path("apps") / "mobile" / "node_modules",)
+
 
 def _run(args: list[str], **kwargs) -> subprocess.CompletedProcess[str]:
     return subprocess.run(args, text=True, capture_output=True, **kwargs)
+
+
+def _share_node_modules(worktree: Path) -> list[tuple[Path, Path]]:
+    """Point the worktree at the already-installed node modules.
+
+    ISOLATION MUST NOT COST COVERAGE. A fresh worktree has no installed dependencies, and
+    the six test modules that drive node skip themselves when jsdom is missing. pytest
+    exits 0 when every selected test is skipped, so the harness reports those mutations
+    INCONCLUSIVE -- correctly, and INCONCLUSIVE is a failure, not a pass. The first
+    isolated run turned nine real verdicts into shrugs for exactly this reason.
+
+    A link rather than a copy: the harness never writes inside node_modules, and copying it
+    for every run would cost more than the run. A junction on Windows, which needs no
+    elevation, unlike a directory symlink.
+    """
+
+    shared: list[tuple[Path, Path]] = []
+    for rel in SHARED_NODE_MODULES:
+        source = ROOT / rel
+        if not source.is_dir():
+            print(
+                f"mutation harness: {rel.as_posix()} is not installed, so the guards that "
+                "need node will report INCONCLUSIVE"
+            )
+            continue
+        dest = worktree / rel
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        if os.name == "nt":
+            made = _run(["cmd", "/c", "mklink", "/J", str(dest), str(source)])
+            failed = made.returncode != 0
+            detail = (made.stderr or made.stdout).strip()
+        else:
+            try:
+                os.symlink(source, dest, target_is_directory=True)
+                failed, detail = False, ""
+            except OSError as exc:  # pragma: no cover - platform dependent
+                failed, detail = True, str(exc)
+        if failed:
+            print(f"mutation harness: could not link {rel.as_posix()}: {detail}")
+            continue
+        shared.append((source, dest))
+    return shared
+
+
+def _unshare_node_modules(shared: list[tuple[Path, Path]]) -> None:
+    """Drop the links BEFORE the worktree is deleted.
+
+    This ordering is the whole safety argument. Deleting a tree that contains a junction
+    can follow it, and on the other side is the real, installed node_modules. `os.rmdir`
+    removes the reparse point itself and never touches what it points at.
+    """
+
+    for _source, dest in shared:
+        try:
+            os.rmdir(dest)
+        except OSError as exc:
+            print(
+                f"mutation harness: WARNING: could not unlink {dest}: {exc}. Not deleting "
+                "the worktree, because doing so could reach through the link.",
+                file=sys.stderr,
+            )
+            raise
 
 
 def main() -> int:
@@ -88,6 +155,8 @@ def main() -> int:
         shutil.rmtree(parent, ignore_errors=True)
         return 2
 
+    shared = _share_node_modules(worktree)
+
     try:
         harness = worktree / "scripts" / "validation" / "mutation_guard_check.py"
         result = subprocess.run(
@@ -100,11 +169,24 @@ def main() -> int:
         if args.keep:
             print(f"mutation harness: worktree kept at {worktree}")
         else:
+            _unshare_node_modules(shared)
             # Remove the registration first, then the files. The reverse order leaves git
             # holding a record of a worktree that is no longer there.
             _run(["git", "worktree", "remove", "--force", str(worktree)], cwd=ROOT)
             shutil.rmtree(parent, ignore_errors=True)
             _run(["git", "worktree", "prune"], cwd=ROOT)
+
+    # Insurance against the one way linking could go badly wrong. If cleanup had followed
+    # a junction, the installed dependencies would be gone, and the next thing anyone would
+    # see is unrelated tests skipping for a week.
+    for source, _dest in shared:
+        if not source.is_dir():
+            print(
+                f"ERROR: {source} disappeared during the run. Worktree cleanup followed a "
+                "link into the real dependency store. Reinstall before trusting any result.",
+                file=sys.stderr,
+            )
+            return 1
 
     # The active tree must be exactly as it was. This is the invariant the whole script
     # exists for, so it is checked rather than assumed.
