@@ -44,6 +44,20 @@ host URL  →  intended container  →  intended image  →  intended source rev
 
 Run against the real acceptance URL — the LAN address the human will use, not `localhost`.
 
+**Read that address at acceptance time; do not copy one out of this file.** It is a DHCP
+lease on a Wi-Fi interface and it moves: it has been `10.0.0.2`, then `10.0.0.3`, then
+`10.10.30.13`. A stale address has already cost one acceptance cycle, when the gate failed
+to connect and the first guess was that the service was down. The address is runtime state,
+not repository truth, so the commands below take it from the environment and every
+acceptance run records the address it actually used.
+
+```bash
+# Windows host, PowerShell:
+HOST=$(powershell -NoProfile -Command \
+  "(Get-NetIPAddress -AddressFamily IPv4 | Where-Object InterfaceAlias -eq 'WLAN').IPAddress")
+echo "STAGING_ACCEPTANCE_HOST=http://$HOST:13080"
+```
+
 ### 1. Exclusive port ownership
 
 ```bash
@@ -56,7 +70,7 @@ a binding counts: it is what a restart can hand the port back to.
 ### 2. Access-log probe — the decisive one
 
 ```bash
-MARK="probe-$RANDOM"; curl -s -o /dev/null "http://10.0.0.2:13080/$MARK"
+MARK="probe-$RANDOM"; curl -s -o /dev/null "http://$HOST:13080/$MARK"
 docker logs --tail 20 dedunet-staging-web-1 | grep "$MARK"
 ```
 
@@ -69,7 +83,7 @@ as a failure of this gate, not as a quiet period.
 ### 3. Artifact identity — host response vs container file
 
 ```bash
-curl -s -D - -o /dev/null http://10.0.0.2:13080/ | grep -i etag
+curl -s -D - -o /dev/null "http://$HOST:13080/" | grep -i etag
 docker exec dedunet-staging-web-1 sh -c 'grep -oE "assets/index-[A-Za-z0-9_-]+\.js" /usr/share/nginx/html/index.html'
 ```
 
@@ -98,7 +112,8 @@ still reachable — check it with `git cat-file -e <sha>`.
 ### 5. The stale artifact is actually gone
 
 ```bash
-curl -s -o /dev/null -w '%{http_code}\n' http://10.0.0.2:13080/assets/<old-entry-chunk>.js
+curl -s -o /dev/null -w '%{http_code}\n' \
+  "http://$HOST:13080/assets/<old-entry-chunk>.js"
 ```
 
 Expect **404**. Positive evidence that the new build is served is not evidence that the old one

@@ -778,3 +778,196 @@ It is defensible — once you start telling Dido about colours in this session, 
 colour list is what you said — but it is **not obvious**, and a customer could reasonably
 notice navy disappear. Recorded as a known limitation rather than redesigned under a
 checkpoint fix, because changing it means changing how provenance is modelled.
+
+---
+
+## Multi-value override gate — the limitation above was rejected, and rightly
+
+**ARTIFACT** `EV-P7-MULTIVALUE-001` v1.0 · **OWNER** side_b_platform · **STATUS**
+`AUTOMATED-TESTED` for everything below; `BLOCKED` on physical acceptance, which is a human
+act. **R-019 stays OPEN**: provenance is still asserted by hand.
+
+The section immediately above is left exactly as written, because it is the record of what
+was believed at the time. It was wrong, and the rejection was correct. Whole-field
+replacement was not "a consequence of the provenance model" — it was a data-semantics
+defect. The reasoning that a field must carry a single source described a limit of the
+*representation*, not a requirement of the product: a field holding navy from the profile
+and black from tonight has two sources because it genuinely has two, and the review screen
+now reports it under both headings instead of forcing one label onto it.
+
+A statement about one term is not a statement about the whole set.
+
+### MULTIVALUE_MODEL
+
+Option A, item-level provenance. A set-valued field stores `{"items": [{value, source,
+evidence}, ...]}`. `_merge_terms` adds or re-sources only the terms a message mentions and
+leaves every unmentioned term alone. Precedence is resolved **per term** in
+`resolve_precedence_conflicts`, so one disputed term no longer decides the fate of the
+others — which is how navy came to vanish because black was mentioned.
+
+Scalars are unchanged and deliberately so: `budget_total`, `budget_per_piece`, `occasion`,
+`formality`, `dress_code` still replace wholesale. A new budget *is* the budget.
+
+Set fields: `colour_preferences`, `colour_avoidances`, `material_preferences`,
+`material_avoidances`, `brand_preferences`, `brand_avoidances`, `style_directions`, `fits`,
+`garment_categories`.
+
+### PROVENANCE_MODEL
+
+`SESSION_EXPLICIT > STYLE_DNA_EXPLICIT > SYSTEM_DERIVED`, applied term by term. The client
+is never handed a per-item `source` key: provenance reaches the browser as **which group**
+a field entry appears in — `from_session`, `from_style_dna`, `derived_from_your_words` — and
+a mixed field appears in more than one group, each carrying its own subset of terms. That is
+the contract the review screen renders, so that is the contract the smoke exercises.
+
+### What was run, and against what
+
+| | |
+|---|---|
+| PR head (CI-verified) | `fe41696` — `7e1dc6f` plus one test-only commit |
+| Deployed head | `7e1dc6f` |
+| Runtime bytes | **identical** — see below |
+| `STAGING_ACCEPTANCE_HOST` | `http://10.10.30.13:13080` |
+
+CI runs #50 and #51 on `7e1dc6f`: success, all jobs. Backend 891 passed / 2 skipped.
+Mutations 89 run, 89 DETECTED, 0 SURVIVED, 0 INCONCLUSIVE.
+
+**Deployment provenance** — `OPS_GATE_001_PASS`, nine checks against `10.10.30.13`:
+exclusive port ownership; the probe landing in that container's own access log; entry chunk
+served == entry chunk on its disk; image built 28 minutes after the head commit; the
+LAN-served `DidoPage` chunk carrying this phase's strings and matching the container file
+byte for byte (`3997afb2…`); `/api` read from the running nginx config (`proxy_pass
+http://api:8000`) and resolved to `172.19.0.3`; that IP owned by `dedunet-staging-api-1`
+**by address, not by name**; 40 API source files byte-identical to the head's source after
+newline normalisation; `alembic current` = `c4a91f27e6d3 (head)`.
+
+**E2E against the deployed artifact**, Chromium + WebKit + Mobile Safari: **54 passed, 0
+failed, 0 flaky**.
+
+**Smoke against the deployed artifact**, disposable customers, `MULTIVALUE_SMOKE_PASS`:
+
+```
+profile black LIKE, navy LIKE
+A  "No black for this one."                     preferred [navy]          navy  <- STYLE_DNA
+                                                avoided   [black]         black <- SESSION
+                                                contradictions []         profile revision unchanged
+B  "Black is fine after all for this session."  preferred [black, navy]   black <- SESSION
+                                                avoided   []              navy  <- STYLE_DNA
+                                                contradictions []         profile revision unchanged
+```
+
+Material: profile `cotton, wool` LIKE; *"Nothing in wool for this one."* leaves cotton
+preferred and attributed to the profile, wool avoided and attributed to the session, no
+clarification question, profile untouched.
+
+### Three things that are not as clean as the table
+
+**The first E2E run failed three tests, and it was a real finding.**
+`getByTestId("brief-colour_avoidances")` resolved to two elements — orange under *From your
+Style DNA*, black under *From this conversation* — because the field is now genuinely mixed.
+Playwright's strict mode was right to refuse it. The product behaviour is correct and
+intended; the assertion had become ambiguous. Scoped to the session group and extended to
+assert the other half, which is the actual guarantee: orange, which nobody mentioned, is
+still the profile's. Test-only, and the artifact was **not** rebuilt for it.
+
+**A two-member brand override could not be exercised on this deployment.** Staging has two
+brands and only one is eligible for a Style DNA preference — `internal-development-fixtures`
+is refused by design, which mutation `M81` exists to keep true. So the brand sequence proves
+session-over-profile precedence and an untouched profile, but not member-level survival. That
+case is covered in CI by `test_set_4_an_unrelated_profile_brand_survives`, which creates a
+second brand; `_merge_terms` is field-agnostic, so brands take the identical path proven on
+colours and materials. Creating a brand in the staging catalogue to make a smoke convenient
+was not worth mutating accepted data for.
+
+**Two of the gate's own checks failed on first run, and both were measurement bugs.** Check 4
+compared ISO timestamps as *strings* — `15:06:33Z` sorts below `16:38:28+02:00` while being
+28 minutes later. Check 5 searched the entry chunk for strings that live in a lazy chunk, and
+two of them were the *server's* reply text, which the client never contains; a third was
+miscased. Recorded because a FAIL that is really a bad measurement is worse than no check at
+all: it teaches you to argue with the gate.
+
+### LEGACY_BRIEF_COMPATIBILITY
+
+Pre-item-level briefs are not hypothetical. At acceptance time staging held **50 Dido
+sessions, 34 of them in the legacy whole-field shape**.
+
+Behaviour, proved once on a session created seconds earlier for the purpose and belonging to
+a disposable customer — **no historical conversation was migrated, rewritten, or read
+destructively**:
+
+- **On read:** the old shape is upgraded in memory. Both terms survive and each carries the
+  old field's single source. The stored row is **not** rewritten; a read is a read.
+- **On the next write:** term-level semantics apply immediately. *"No black for this one."*
+  leaves navy preferred and attributed to the profile, moves black to avoidances attributed
+  to the session, asks nothing — and the row is persisted in the item shape from then on.
+
+Upgrade-on-read rather than a data migration: the old shape is unambiguous, and rewriting
+conversations that are in flight is a worse risk than a read adapter. The inventory after the
+proof was unchanged at 34 legacy rows.
+
+### MUTATION_HARNESS_ISOLATION
+
+`scripts/validation/run_mutation_isolated.py` runs the harness in a disposable
+`git worktree add --detach` at a named commit, refuses to start against a dirty tree, and
+verifies afterwards that the active tree is unchanged and carries no marker. Observed live
+during a run at `7e1dc6f`: the harness held
+`…/dedunet-mutation-6xj95f5m/tree` while the active tree carried no `# MUTATED` marker, and
+the run ended `active tree verified clean`. The CI marker guard is retained.
+
+Isolation cost coverage once, and that is worth recording. Nine mutations came back
+INCONCLUSIVE on the first isolated run because six backend test modules gate themselves on
+`apps/mobile/node_modules/jsdom`, which a fresh worktree does not have, and pytest exits 0
+when every selected test skips. CI was never affected — it installs jsdom and has a step
+asserting those harnesses *must run, not skip*, whose comment already recorded nine
+unchecked mutations from an earlier instance of the same mistake. The runner now links the
+installed modules into the worktree, and `M68` went from INCONCLUSIVE to DETECTED.
+
+The link is dropped *before* the worktree is deleted. That ordering is load-bearing, not
+decoration: for a Windows junction `os.path.isjunction` is true while `os.path.islink` is
+false, so a naive recursive delete can walk straight through it into the real dependency
+store. `os.rmdir` removes the reparse point and never touches the target; a failed unlink
+refuses the deletion rather than risking it; and the run fails loudly if the source
+directory has vanished.
+
+### Runtime bytes did not change when HEAD advanced
+
+`fe41696` differs from the deployed `7e1dc6f` by exactly one file,
+`apps/consumer/e2e/dido.spec.ts`. Rather than argue that a test file cannot reach the bundle,
+it was measured: the web image was rebuilt from `fe41696` to a throwaway tag and its
+`dist` compared with the running container's.
+
+```
+deployed (7e1dc6f)  combined dist digest  b590c3081207e69097cffff286a79537945be8f901f6afe5b890cd13f463f503
+rebuilt  (fe41696)  combined dist digest  b590c3081207e69097cffff286a79537945be8f901f6afe5b890cd13f463f503
+                    assets/index-BKpE_mrO.js      c531bb2589c5ed03e11d7d26e60739e6167613bc56411126fe3b7cb4e080b7dd
+                    assets/DidoPage-Dro1k16C.js   3997afb24c2d04e7f2ac24573aaa2d52b4a2e7015a5216bcbaa9c5170367f8a2
+```
+
+Identical, same chunk names and hashes. The consumer image copies `apps/consumer/` but ships
+only `/build/dist`, and Vite bundles the `src` entry graph, which `e2e/` is not part of. The
+throwaway image was removed; the rollback images were kept.
+
+### The brand package was byte-comparing the build machine
+
+Unrelated to Dido and found while unblocking the harness. `build_brand_package.py
+--verify-no-drift` rebuilds the package and compares it to the committed copy byte for byte.
+Every write used `write_text(encoding="utf-8")` with no `newline`, so the rebuild emitted
+`os.linesep` — CRLF on Windows — while `.gitattributes` already declared `*.json text
+eol=lf`. A fresh checkout therefore reported all eleven package JSON files as drift with
+content identical line for line, and it reproduced only in a *fresh* tree: the main checkout
+passed because the generator had itself last written those files there, so both sides were
+CRLF by accident.
+
+Fixed at the cause rather than by relaxing the comparison, because the byte comparison is the
+point of the check: writes go through `_write_generated`, which writes LF unconditionally,
+and `.gitattributes` declares the same paths `eol=lf`. `packages/brand/assets/**` stays
+`-text` — those are checksum-verified byte copies. No committed artefact changed:
+`git add --renormalize` across the package and the three client seams staged nothing, which
+is the proof.
+
+### Remaining risks and next action
+
+- **R-019 OPEN.** Provenance is asserted by hand. Nine checks is not an automated gate.
+- Physical iPhone acceptance of the black/navy and material sequences is the next action and
+  is a human act; nothing above substitutes for it.
+- The staging LAN address is a DHCP lease and will move again. Read it at acceptance time.

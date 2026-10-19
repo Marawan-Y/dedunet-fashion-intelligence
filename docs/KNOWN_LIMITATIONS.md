@@ -605,6 +605,16 @@ repeat themselves. Precedence now resolves first; only a conflict between constr
 rule to apply. The override is recorded and stated, because silently dropping a value the
 customer can see on their own profile page would be its own small deception.
 
+**A member-level BRAND override cannot be verified on staging.** Set-valued fields settle
+term by term, and that was smoked on the deployed artifact for colours and materials. Brands
+could not be: staging carries two brands and only one is eligible for a Style DNA preference,
+because `internal-development-fixtures` is refused by design and mutation `M81` exists to keep
+that refusal true. So the brand smoke proves session-over-profile precedence and an untouched
+profile, but not that an unmentioned brand survives. That case is covered in CI by
+`test_set_4_an_unrelated_profile_brand_survives`, which creates a second brand, and
+`_merge_terms` is field-agnostic — brands take the identical code path. Creating a brand in the
+staging catalogue to make a smoke convenient was not worth mutating accepted data for.
+
 **The staging LAN address is not stable, and the retest URL moves with it.** The host's WLAN
 address changed from `10.0.0.2` to `10.0.0.3` between acceptance attempts, which made the
 provenance gate fail to connect before anything else could be checked. It has since moved
