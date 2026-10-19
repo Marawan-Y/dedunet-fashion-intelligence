@@ -410,3 +410,104 @@ export interface StyleConflictDetail {
   expected_revision: number;
   current_revision: number;
 }
+
+/* ------------------------------------------------------------------ Dido
+ *
+ * A conversational stylist INTAKE. The `capabilities` block travels on every response so
+ * the boundary is in the contract rather than only in the UI copy: there is no
+ * recommender and no outfit engine, and the client is told so rather than assuming it.
+ */
+
+export type ConstraintSource = "STYLE_DNA_EXPLICIT" | "SESSION_EXPLICIT" | "SYSTEM_DERIVED";
+export type DidoStatus = "ACTIVE" | "BRIEF_READY" | "ABANDONED";
+
+export interface BriefEntry {
+  field: string;
+  value: unknown;
+  /** The customer's own words behind a derived value, so it can be explained. */
+  evidence: string;
+}
+
+export interface BriefContradiction {
+  kind: string;
+  detail: string;
+  question: string;
+}
+
+export interface SizeContextEntry {
+  garment_category: string;
+  size_system: string;
+  size_label: string;
+  source: ConstraintSource;
+}
+
+export interface StylingBrief {
+  from_session: BriefEntry[];
+  from_style_dna: BriefEntry[];
+  derived_from_your_words: BriefEntry[];
+  unplaced: string[];
+  contradictions: BriefContradiction[];
+  /** Stated sizes, carried verbatim. Never converted between systems or brands. */
+  size_context: SizeContextEntry[];
+  currency: string;
+  still_unset: string[];
+  ready: boolean;
+}
+
+export interface DidoQuestion {
+  key: string;
+  prompt: string;
+  why: string;
+  kind?: "question" | "conflict";
+  detail?: string;
+}
+
+export interface DidoTurnPayload {
+  ordinal: number;
+  role: "CUSTOMER" | "DIDO";
+  body: string;
+  question_key: string;
+  created_at: string;
+}
+
+export interface DidoCapabilities {
+  understands_constraints: boolean;
+  uses_style_dna: boolean;
+  /** Always false in this phase, and stated rather than implied. */
+  recommends_products: boolean;
+  builds_outfits: boolean;
+}
+
+export interface DidoSessionPayload {
+  session_id: number;
+  status: DidoStatus;
+  revision: number;
+  turn_count: number;
+  personalization_used: boolean;
+  style_profile_revision_used: number | null;
+  brief: StylingBrief;
+  next_question: DidoQuestion | null;
+  capabilities: DidoCapabilities;
+  turns?: DidoTurnPayload[];
+  created_at: string;
+  updated_at: string;
+  reply?: string;
+  interpretation?: { degraded: boolean; reason: string; ambiguous: boolean };
+}
+
+export interface DidoOptions {
+  occasions: StyleTerm[];
+  dress_codes: StyleTerm[];
+  settings: StyleTerm[];
+  temperatures: StyleTerm[];
+  sources: ConstraintSource[];
+  currencies: string[];
+  limits: Record<string, number>;
+}
+
+export interface DidoInUse {
+  from_style_dna: BriefEntry[];
+  from_this_conversation: BriefEntry[];
+  style_dna_available_but_unused: boolean;
+  note: string;
+}

@@ -564,3 +564,98 @@ even when its output is piped.
 Style DNA acceptance was performed in mobile Safari; the automated "Mobile Safari" Playwright
 project is a desktop browser emulating a viewport and is weaker evidence again. Neither is
 native-iOS acceptance. iOS native has still never been built.
+
+**Dido understands a styling brief. It does not pick the clothes.** Phase 7 built a
+conversational intake: it reads free text, applies accepted Style DNA when personalisation is
+on, detects contradictions and produces a structured Styling Brief. There is no
+recommendation ranking, no product scoring, no outfit generation and no fashion RAG — none
+has a schema, an endpoint, a stub or a flag, and every API response carries a `capabilities`
+block saying so rather than leaving the boundary to UI copy one refactor from disappearing.
+
+**The interpreter proposes and never decides.** Everything a language model returns is a
+candidate, validated against the taxonomy and re-parsed for money before it can enter a
+brief. A model that returns an unknown occasion or a float budget changes nothing. The
+deterministic interpreter is the fallback *and* what CI runs, so no test in the phase needs an
+API key — a phase whose tests require paid credentials is a phase whose tests nobody runs.
+
+**Two home-page overclaims were removed, and the second was the larger one.** The Dido
+animation ran through `searching`, `assembling` and `presenting`, none of which exists; an
+animation of a catalogue search is a stronger claim than any sentence, because nobody reads a
+caption as carefully as they watch a thing move. While verifying that fix, the hero two
+sections above was found still saying Dido *"builds complete looks"*. Fixing the smaller
+overclaim and walking past the larger one would have been worse than leaving both.
+
+**The old Dido disclosure had to be removed, which is the awkward half of the disclosure
+rule.** *"This is the conversation, not the intelligence"* was true and became false; leaving
+it would understate the platform exactly as the rule forbids overstating it. What replaced it
+states the boundary that still holds — understanding is not recommending — before the
+conversation and again at completion, which is the moment a customer expects an outfit.
+
+**A disabled input loses focus, and that was a real accessibility defect.** The Dido textarea
+was disabled while a message was in flight, so anyone typing and pressing Enter was thrown out
+of the box on every message — worse for keyboard and screen-reader users than anyone else. It
+is `readOnly` with `aria-busy` now. Found by a browser test, not by review.
+
+**A session override is the precedence rule working, not a contradiction.** Checkpoint 6 of
+the Dido acceptance failed because the contradiction check intersected the preferred and
+avoided lists without looking at where either side came from — so a profile preference and a
+session instruction to the contrary were treated as a deadlock and the customer was asked to
+repeat themselves. Precedence now resolves first; only a conflict between constraints of the
+**same** effective precedence reaches contradiction detection, which is the one case with no
+rule to apply. The override is recorded and stated, because silently dropping a value the
+customer can see on their own profile page would be its own small deception.
+
+**A member-level BRAND override cannot be verified on staging.** Set-valued fields settle
+term by term, and that was smoked on the deployed artifact for colours and materials. Brands
+could not be: staging carries two brands and only one is eligible for a Style DNA preference,
+because `internal-development-fixtures` is refused by design and mutation `M81` exists to keep
+that refusal true. So the brand smoke proves session-over-profile precedence and an untouched
+profile, but not that an unmentioned brand survives. That case is covered in CI by
+`test_set_4_an_unrelated_profile_brand_survives`, which creates a second brand, and
+`_merge_terms` is field-agnostic — brands take the identical code path. Creating a brand in the
+staging catalogue to make a smoke convenient was not worth mutating accepted data for.
+
+**The staging LAN address is not stable, and the retest URL moves with it.** The host's WLAN
+address changed from `10.0.0.2` to `10.0.0.3` between acceptance attempts, which made the
+provenance gate fail to connect before anything else could be checked. It has since moved
+again, to `10.10.30.13`. This is a DHCP lease on a Wi-Fi interface, so it will keep moving:
+the address is **not** a repository constant, and no acceptance step may hard-code one. Read
+the current address at acceptance time and record which address the run actually used. `STAGING_PUBLIC_HOST`
+is baked into the web image at build time for the admin portal's API base, so a changed
+address leaves that pointing at nothing until the image is rebuilt. The consumer app is
+unaffected because it reaches the API same-origin — the property the staging cutover was
+done for. Confirm the current address before asking anyone to test on a device.
+
+**The mutation harness edits source in place, and an interrupted run leaves the edit behind.**
+Commit `186891e` on the Dido branch carried a deliberately broken line into the repository
+because the harness was running in the background while `git add -A` ran. CI caught it — runs
+#38 and #39 failed — but as two failing notification tests about a worker race that is not
+broken, which sends the reader to the wrong place. A named CI step now greps tracked source
+for `# MUTATED` and says what actually happened. The harness must not be run concurrently with
+editing the files it mutates, and neither must a full test suite: a suite run across a moving
+tree reports nothing.
+
+`scripts/validation/run_mutation_isolated.py` now removes the opportunity rather than relying
+on discipline: it runs the harness in a disposable `git worktree add --detach` at a named
+commit, refuses to start against a dirty tree, and verifies afterwards that the active tree is
+unchanged and carries no marker. The active branch cannot acquire a mutation marker no matter
+what the harness does, and an interrupted run leaves a stray directory instead of a broken
+repository. Its first use found a second defect in the same area, recorded below.
+
+**A brief written before item-level provenance keeps its old shape until it is next written.**
+Set-valued Styling Brief fields now carry provenance per **term**, so *"no black"* re-sources
+black and leaves navy exactly where it was. Sessions created before that change stored one
+value and one source for the whole field. They are upgraded when read rather than by a data
+migration: the old shape is unambiguous, and rewriting conversations that are in flight is a
+worse risk than a read adapter. Until such a session is next written, the stored row still
+holds the legacy shape, and nothing reads those rows except the adapter.
+
+This entry previously recorded whole-field replacement as an accepted limitation, on the
+reasoning that a field had to carry a single source or the review screen could not separate
+"from your Style DNA" from "from this conversation". **That reasoning was wrong**, and it was
+right to reject it: it described a limit of the representation, not a requirement of the
+product. A field holding navy from the profile and black from tonight has two sources because
+it genuinely has two, and the review screen now reports such a field under both headings
+rather than forcing a single label onto it. Dropping a term the customer never mentioned was a
+data-semantics defect, not a trade-off. Scalar fields — budget, occasion, formality, dress
+code — still replace wholesale, which is correct for them: a new budget *is* the budget.

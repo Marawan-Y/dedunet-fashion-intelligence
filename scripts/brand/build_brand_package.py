@@ -64,6 +64,27 @@ CLIENT_DIRS = {
 sys.path.insert(0, str(ROOT / "services" / "commerce-api"))
 from app.money import FloatMoneyRejected, to_minor_units  # noqa: E402
 
+def _write_generated(path: Path, text: str) -> None:
+    """Write a generated artefact as UTF-8 with LF endings, on EVERY platform.
+
+    `--verify-no-drift` rebuilds the package and compares it to the committed copy byte
+    for byte, because bytes are what catch a stale client artefact. That comparison only
+    means something if the canonical form of these files does not depend on the machine
+    doing the build.
+
+    `write_text` without `newline` uses `os.linesep`. So on Windows the rebuild emitted
+    CRLF while `.gitattributes` checks the same files out as LF, and every JSON file in
+    the package reported as drift in a fresh checkout -- eleven files whose content was
+    identical, differing only in newlines. The check was describing the build machine
+    rather than the brand package.
+
+    LF here, and `eol=lf` in `.gitattributes` for the same paths: one canonical form, so
+    a byte-exact comparison stays a statement about the artefacts.
+    """
+
+    path.write_text(text, encoding="utf-8", newline="\n")
+
+
 EXPECTED = {"products": 5, "variants": 62, "skus": 62, "assets": 31, "checksums": 54}
 
 # Media roles derived from the Side A asset-id suffix. Ordering is DETERMINISTIC and is the
@@ -682,11 +703,11 @@ def build(check_only: bool) -> int:
             )
 
     for name, payload in outputs.items():
-        (OUT / name).write_text(
+        _write_generated(
+            OUT / name,
             json.dumps(payload, indent=2, ensure_ascii=False, sort_keys=False) + "\n",
-            encoding="utf-8",
         )
-    (OUT / "tokens.css").write_text(css, encoding="utf-8")
+    _write_generated(OUT / "tokens.css", css)
 
     # --- generated brand seam for the two static browser clients --------------------
     #
@@ -722,9 +743,9 @@ def build(check_only: bool) -> int:
     # must not touch the working tree it is inspecting.
     if OUT == ROOT / "packages" / "brand":
         for target in CLIENT_DIRS.values():
-            (ROOT / target / "brand.generated.js").write_text(seam, encoding="utf-8")
+            _write_generated(ROOT / target / "brand.generated.js", seam)
     else:
-        (OUT / "brand.generated.js").write_text(seam, encoding="utf-8")
+        _write_generated(OUT / "brand.generated.js", seam)
 
     # --- generated design tokens for the two static browser clients ------------------
     #
@@ -737,11 +758,12 @@ def build(check_only: bool) -> int:
     # that they agreed. The design system now consumes these and only these.
     if OUT == ROOT / "packages" / "brand":
         for target in CLIENT_DIRS.values():
-            (ROOT / target / "tokens.generated.css").write_text(css, encoding="utf-8")
+            _write_generated(ROOT / target / "tokens.generated.css", css)
     else:
-        (OUT / "tokens.generated.css").write_text(css, encoding="utf-8")
+        _write_generated(OUT / "tokens.generated.css", css)
 
-    (OUT / "README.md").write_text(
+    _write_generated(
+        OUT / "README.md",
         "# packages/brand — GENERATED\n\n"
         "Normalized runtime brand package. **Do not edit by hand.**\n\n"
         "Regenerate with:\n\n"
@@ -751,7 +773,6 @@ def build(check_only: bool) -> int:
         "and never modifies. Applications read THIS directory, never the handoff.\n\n"
         "Money here is integer minor units. Product and variant identity is the Side A\n"
         "`external_product_id` / `external_variant_id`, never array position or insertion order.\n",
-        encoding="utf-8",
     )
 
     print(f"wrote {len(outputs) + 2} files to {_display(OUT)}")

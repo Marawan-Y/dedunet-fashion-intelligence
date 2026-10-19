@@ -102,6 +102,15 @@ TEST_STYLE_DNA = "tests/test_style_dna.py"
 # profile must not survive erasure.
 STYLE_DNA_SERVICE = BACKEND / "app" / "commerce" / "style_dna_service.py"
 STYLE_DNA_MODEL = BACKEND / "app" / "commerce" / "style_dna.py"
+TEST_DIDO = "tests/test_dido_conversation.py"
+
+# Dido. The guards worth mutating are the ones that keep the conversation HONEST rather
+# than merely working: personalisation OFF must load nothing, a session instruction must
+# outrank a stored preference, an unknown taxonomy value must be dropped rather than
+# coerced, a failed interpretation must never become invented state, and a conversation
+# must not survive account erasure.
+DIDO_SERVICE = BACKEND / "app" / "commerce" / "dido_service.py"
+DIDO_BRIEF = BACKEND / "app" / "commerce" / "dido_brief.py"
 
 API = BACKEND / "app" / "commerce" / "api.py"
 SYNTHETIC = BACKEND / "app" / "commerce" / "synthetic_inventory.py"
@@ -1277,6 +1286,113 @@ MUTATIONS: tuple[Mutation, ...] = (
             "the defining rule of Style DNA: every row exists because a person chose it, "
             "enforced in the schema so a future code path cannot write an inferred "
             "preference into a table that claims to hold explicit ones",
+        ),
+    ),
+    Mutation(
+        mutation_id="M85_dido_personalization_off_loads_nothing",
+        guard="a profile is not used when personalisation is off",
+        target=DIDO_SERVICE,
+        original="    if profile is None or not profile.personalization_enabled:",
+        mutated="    if profile is None:  # MUTATED: the personalisation switch is ignored",
+        tests=(f"{TEST_DIDO}::test_eval_d_personalization_off_loads_nothing",),
+        covers=(
+            "the hard invariant: a stored profile may exist and remain entirely unused",
+        ),
+    ),
+    Mutation(
+        mutation_id="M86_dido_session_outranks_the_profile",
+        guard="a session instruction overrides a stored preference, SCALAR fields",
+        target=DIDO_BRIEF,
+        # This line is now reached only by scalars: the set branch above it returns first.
+        #
+        # It SURVIVED the first isolated run while pointing at
+        # `test_eval_e_session_override_wins_and_profile_is_untouched`, which exercises
+        # colours -- a set field, settled term by term in `_merge_terms` and never reaching
+        # here. The mutation was real, the test was real, and they stopped meeting when the
+        # refactor split one decision into two. Budget is the scalar the profile actually
+        # seeds, so that is what guards this now.
+        original="        if existing and not tax.outranks(effective, existing.get(\"source\")):",
+        mutated="        if existing:  # MUTATED: whatever landed first wins",
+        tests=(f"{TEST_DIDO}::test_set_14_a_session_budget_overrides_the_profile_budget",),
+        covers=("precedence: what you say tonight beats what you saved in March",),
+    ),
+    Mutation(
+        mutation_id="M87_dido_unknown_taxonomy_value_is_dropped",
+        guard="a value outside the taxonomy cannot enter a brief",
+        target=DIDO_BRIEF,
+        original="        return slug if slug in _SINGLE_SLUG_FIELDS[field] else None",
+        mutated="        return slug  # MUTATED: anything the model says is accepted",
+        tests=(f"{TEST_DIDO}::test_eval_h_unsupported_enum_from_the_model_is_dropped",),
+        covers=("the interpreter proposes and never decides",),
+    ),
+    Mutation(
+        mutation_id="M88_dido_float_money_is_refused",
+        guard="an authoritative budget cannot be a float",
+        target=DIDO_BRIEF,
+        original="        if isinstance(value, bool) or not isinstance(value, int):",
+        mutated="        if False:  # MUTATED: a float budget is silently truncated",
+        tests=(
+            f"{TEST_DIDO}::test_a_float_budget_candidate_is_refused_not_rounded",
+        ),
+        covers=("SIDE_B_MONEY_CONTRACT rule 1, inside the conversation",),
+    ),
+    Mutation(
+        mutation_id="M89_dido_conversations_are_erased_with_the_customer",
+        guard="a styling conversation does not survive account erasure",
+        target=DIDO_SERVICE,
+        original="    result = session.execute(delete(DidoSession).where(DidoSession.id.in_(ids)))",
+        mutated="    result = None  # MUTATED: conversation text outlives the erasure request",
+        tests=(f"{TEST_DIDO}::test_erase_customer_removes_every_conversation",),
+        covers=(
+            "erase_customer pseudonymizes, so the FK cascade never fires and explicit "
+            "deletion is the only thing that removes conversation text",
+        ),
+    ),
+    Mutation(
+        mutation_id="M90_dido_session_override_is_not_a_contradiction",
+        guard="a session instruction overriding a profile value resolves without asking",
+        target=DIDO_BRIEF,
+        # ANCHORED ON THE LINE THAT DECIDES, not on the branch that guards it.
+        #
+        # The first version mutated `if pref_rank == avoid_rank:` and SURVIVED, because a
+        # later refactor gave the same-precedence branch real work to do: with the
+        # comparison forced true, a session-versus-profile conflict still resolved through
+        # the correction path. A guard aimed at a condition stops guarding the moment the
+        # body under it changes. This aims at the assignment that picks the winner.
+        #
+        # Retargeted a second time, for a better reason than the first: resolution moved
+        # from whole fields to single terms, so the tuple this used to anchor on no longer
+        # exists. The decision it made still does, one term at a time.
+        original="                winner_field = avoid_field if avoid_rank < pref_rank else pref_field",
+        mutated="                winner_field = pref_field  # MUTATED: the lower-precedence side wins",
+        tests=(
+            f"{TEST_DIDO}::test_1_a_session_exclusion_overrides_a_profile_preference_without_asking",
+        ),
+        covers=(
+            "a general preference and a specific override are not two constraints in "
+            "deadlock; making the customer repeat an instruction they already gave "
+            "implies it was not understood",
+        ),
+    ),
+    Mutation(
+        mutation_id="M91_dido_a_term_takes_the_better_evidence",
+        guard="a term already held is re-sourced when a higher-precedence statement names it",
+        target=DIDO_BRIEF,
+        # The other half of the decision M86 used to cover alone. Set fields settle here,
+        # per term, and this is the line that decides whether a term keeps the source it
+        # was first given or takes the newer one.
+        #
+        # Without it a colour the customer names tonight stays attributed to a profile they
+        # may not have opened in months -- the brief would be right about the term and wrong
+        # about why it is there, which is the part the review screen shows them.
+        original="        if held is None or tax.outranks(source, held.get(\"source\")):",
+        mutated="        if held is None:  # MUTATED: a term never changes source once held",
+        tests=(
+            f"{TEST_DIDO}::test_set_13_a_session_restating_a_profile_term_re_sources_that_term",
+        ),
+        covers=(
+            "provenance is shown to the customer, so attributing tonight's words to their "
+            "stored profile misreports where a constraint came from",
         ),
     ),
 )

@@ -207,3 +207,167 @@
   color: var(--ds-text-muted);
   white-space: nowrap;
 }
+
+/* ------------------------------------------------- Dido conversation, Phase 7
+   Design-system tokens only. No new palette, no new type scale: this phase replaces
+   what the page DOES, not how the platform looks. */
+
+.composer {
+  display: grid;
+  gap: var(--ds-space-3);
+  padding-top: var(--ds-space-4);
+  border-top: var(--ds-border-width) solid var(--ds-border);
+}
+
+.composerLabel {
+  font-size: var(--ds-text-sm);
+  color: var(--ds-text);
+}
+
+.input {
+  width: 100%;
+  min-height: var(--ds-target-min);
+  padding: var(--ds-space-3) var(--ds-space-4);
+  font: inherit;
+  font-size: var(--ds-text-base);
+  color: var(--ds-text);
+  background: var(--ds-surface);
+  border: var(--ds-border-width) solid var(--ds-border);
+  resize: vertical;
+  /* 16px minimum: anything smaller makes iOS Safari zoom the page on focus, which jumps
+     the layout and pushes the controls out of reach. */
+  font-size: max(16px, var(--ds-text-base));
+}
+
+.input:focus-visible { outline: 2px solid var(--ds-text); outline-offset: 2px; }
+.input:disabled { opacity: 0.6; }
+
+.composerRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--ds-space-3);
+}
+
+.whyLink {
+  background: none;
+  border: none;
+  padding: var(--ds-space-2);
+  min-height: var(--ds-target-min);
+  font: inherit;
+  font-size: var(--ds-text-sm);
+  color: var(--ds-text-muted);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.why, .notice, .stillUnset, .inUseDetail {
+  margin: 0;
+  font-size: var(--ds-text-sm);
+  color: var(--ds-text-muted);
+}
+
+.notice, .conflict, .completed, .inUse, .personalisation {
+  margin: 0;
+  padding: var(--ds-space-4);
+  border: var(--ds-border-width) solid var(--ds-border);
+  background: var(--ds-surface);
+  font-size: var(--ds-text-sm);
+}
+
+.conflict { border-style: dashed; }
+
+.brief {
+  padding-top: var(--ds-space-5);
+  border-top: var(--ds-border-width) solid var(--ds-border);
+  display: grid;
+  gap: var(--ds-space-4);
+}
+
+.groups {
+  display: grid;
+  gap: var(--ds-space-5);
+  grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr));
+}
+
+.groupTitle {
+  margin: 0 0 var(--ds-space-3);
+  font-size: var(--ds-text-xs);
+  letter-spacing: var(--ds-tracking-eyebrow);
+  text-transform: uppercase;
+  color: var(--ds-text-muted);
+}
+
+.entryList { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--ds-space-2); }
+
+.entry {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--ds-space-3);
+  min-height: var(--ds-target-min);
+  padding: var(--ds-space-2) var(--ds-space-4);
+  background: var(--ds-surface);
+  border: var(--ds-border-width) solid var(--ds-border);
+  font-size: var(--ds-text-sm);
+}
+
+.entryLabel { color: var(--ds-text-muted); }
+.entryValue { font-weight: 500; }
+
+.clear {
+  margin-left: auto;
+  background: none;
+  border: none;
+  padding: var(--ds-space-2);
+  min-height: var(--ds-target-min);
+  font: inherit;
+  font-size: var(--ds-text-xs);
+  letter-spacing: var(--ds-tracking-eyebrow);
+  text-transform: uppercase;
+  color: var(--ds-text-muted);
+  cursor: pointer;
+}
+
+.clear:hover:not(:disabled) { color: var(--ds-text); }
+
+.briefActions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--ds-space-3);
+}
+
+.sizes, .unplaced { display: grid; gap: var(--ds-space-3); }
+
+@media (prefers-reduced-motion: reduce) {
+  .log { scroll-behavior: auto; }
+}
+
+/* The signed-out preview. Reuses the row treatment from the Style DNA preview, because
+   what it communicates -- a named thing with no value yet -- is the same idea. */
+.previewGroup {
+  padding-bottom: var(--ds-space-5);
+  border-bottom: var(--ds-border-width) solid var(--ds-border);
+}
+
+.previewGroup:last-child { border-bottom: none; }
+
+.previewList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ds-space-2);
+}
+
+.previewItem {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--ds-target-min);
+  padding: var(--ds-space-2) var(--ds-space-4);
+  background: var(--ds-surface);
+  border: var(--ds-border-width) solid var(--ds-border);
+  font-size: var(--ds-text-sm);
+}

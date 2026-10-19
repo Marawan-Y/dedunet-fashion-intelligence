@@ -12,6 +12,21 @@ docker-entrypoint.sh text eol=lf
 *.yaml           text eol=lf
 *.json           text eol=lf
 
+# Every artefact of `scripts/brand/build_brand_package.py`. Its `--verify-no-drift` mode
+# rebuilds the package and compares it to the committed copy BYTE FOR BYTE, because bytes
+# are what catch a stale client artefact. So the canonical form of these files must not
+# depend on the platform, or on a developer's core.autocrlf setting.
+#
+# The generator writes LF unconditionally; these keep the checkout agreeing with it.
+# Without them a fresh Windows checkout reported all eleven package JSON files as drift
+# while their content was identical -- the check describing the build machine rather than
+# the brand package.
+#
+# `packages/brand/assets/**` is deliberately overridden back to -text further down.
+packages/brand/**        text eol=lf
+brand.generated.js       text eol=lf
+tokens.generated.css     text eol=lf
+
 # Incoming handoffs are IMMUTABLE EVIDENCE whose integrity is asserted by SHA-256
 # manifests. Any line-ending normalisation rewrites their bytes, so a fresh clone would
 # fail its own checksum verification and the evidence would no longer be evidence.
